@@ -71,10 +71,9 @@ export const CenterColumn = styled.div`
 export const Card = styled.section`
   background: #151515;
   border-radius: 18px;
-  border: 1px solid rgba(109, 167, 117, 0.25);
-  box-shadow: 0 0 0 1px rgba(42, 80, 50, 0.4);
+  border: 1px solid #104912;
+  box-shadow: 0 0 0 1px #104912;
 `
-
 
 export const CardHeader = styled.div`
   padding: 18px 18px 10px;
@@ -191,14 +190,6 @@ export const ViewerHeader = styled.div`
   flex-wrap: wrap;
 `
 
-export const ViewerTitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 18px;
-  font-weight: 600;
-`
-
 export const ViewerDivider = styled.div`
   width: 2px;
   height: 16px;
@@ -250,83 +241,99 @@ export const ToolbarButton = styled.button<{ $active?: boolean }>`
   font-size: 12px;
 `
 
-export const ViewerTabs = styled.div`
-  position: absolute;
-  left: 90px;
-  top: 18px;
-  display: flex;
-  gap: 8px;
-  z-index: 3;
-`
-
-export const TabButton = styled.button<{ $active?: boolean }>`
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid ${({ $active }) => ($active ? '#6da775' : 'rgba(109, 167, 117, 0.3)')};
-  background: ${({ $active }) => ($active ? 'rgba(109, 167, 117, 0.22)' : 'transparent')};
-  color: ${({ $active }) => ($active ? '#cfe0d6' : '#aeb8cc')};
-  font-size: 11px;
-  cursor: pointer;
-`
-
 export const NotePanel = styled.div`
   position: absolute;
-  right: 20px;
+  right: 64px;
   top: 26px;
-  width: 220px;
+  width: 280px;
+  min-height: 260px;
   background: #1b1b1b;
-  border-radius: 14px;
+  border-radius: 22px;
   border: 1px solid rgba(109, 167, 117, 0.4);
-  padding: 10px;
-  display: grid;
-  gap: 8px;
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   z-index: 3;
 `
 
 export const NoteHeader = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #c9d3e6;
+  justify-content: flex-start;
+  gap: 18px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #e6e8ee;
+  margin-top: 0;
 `
 
-export const NoteToggle = styled.button`
-  width: 18px;
-  height: 18px;
+export const NoteToggleOutside = styled.button`
+  position: absolute;
+  right: 5px;
+  top: 30px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: 1px solid rgba(109, 167, 117, 0.5);
-  background: rgba(109, 167, 117, 0.2);
+  background: rgba(109, 167, 117, 0.35);
   color: #cfe0d6;
-  font-size: 10px;
+  font-size: 28px;
+  line-height: 1;
   display: grid;
   place-items: center;
   cursor: pointer;
+  z-index: 4;
+`
+
+export const NoteToggleIcon = styled.span`
+  display: inline-block;
+  transform: translateY(-10px);
 `
 
 export const NoteSearch = styled.input`
-  width: 100%;
-  margin-left: -4px;
-  width: calc(100% - 4px);
-  padding: 6px 6px;
+  width: 45%;
+  margin-left: 110px;
+  padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid #2a2f2d;
-  background: #141414;
+  background: #222222;
   color: #e6e8ee;
-  font-size: 11px;
+  font-size: 13px;
 `
 
 export const NoteList = styled.div`
-  display: grid;
-  gap: 8px;
-  max-height: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-height: 220px;
   overflow-y: auto;
-  font-size: 10px;
+  align-items: stretch;
 `
 
 export const NoteItem = styled.div`
-  color: #aeb8cc;
+  display: grid;
+  gap: 8px;
+`
+
+export const NoteEmpty = styled.div`
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`
+
+export const NoteMeta = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  font-size: 16px;
+  color: #8b8f94;
+`
+
+export const NoteBody = styled.div`
+  font-size: 22px;
   line-height: 1.4;
+  color: #d9e4d6;
 `
 
 export const ViewerFooter = styled.div`
@@ -435,4 +442,3 @@ export const ChatSend = styled.button`
   font-size: 12px;
   cursor: pointer;
 `
-

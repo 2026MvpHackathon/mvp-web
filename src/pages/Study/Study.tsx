@@ -7,6 +7,7 @@ import * as S from './Study.style'
 type Note = {
   id: string
   text: string
+  parentName?: string | null
 }
 
 type NoteEditorState = {
@@ -77,7 +78,7 @@ export const StudyPage = () => {
   })
   const [, setStatus] = useState('로딩 중...')
   const [parts, setParts] = useState<string[]>([])
-  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
   const [explodePercent, setExplodePercent] = useState(0)
   const [, setIsAssemble] = useState(true)
   const [editMode, setEditMode] = useState(true)
@@ -92,6 +93,7 @@ export const StudyPage = () => {
     y: 0,
     visible: false,
   })
+  const [notePanelOpen, setNotePanelOpen] = useState(true)
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
 
   const storageKey = `assembly-layout-${projectId}`
@@ -106,7 +108,13 @@ export const StudyPage = () => {
     projectDescriptions[projectId] ?? '프로젝트 설명이 준비 중입니다.'
   const partDescription = '드론의 주요 부품으로 기능 설명이 제공됩니다.'
 
-  const normalizePartName = (name: string) => name.replace(/\s*\d+$/, '').trim()
+  const normalizePartName = (name: string) => {
+    if (projectId === 'robotArm') {
+      if (name.startsWith('Part8')) return 'Part8'
+      return name
+    }
+    return name.replace(/\s*\d+$/, '').trim()
+  }
 
   const uniqueParts = parts.reduce(
     (acc, name) => {
@@ -210,10 +218,16 @@ export const StudyPage = () => {
     }
   }
 
-  const handleToggleEdit = () => {
-    const next = !editMode
-    setEditMode(next)
-    viewerRef.current?.setEditMode(next)
+  const handleSelectMode = () => {
+    setEditMode(true)
+    viewerRef.current?.setEditMode(true)
+    setTransformMode('translate')
+    viewerRef.current?.setTransformMode('translate')
+  }
+
+  const handleSwipeMode = () => {
+    setEditMode(false)
+    viewerRef.current?.setEditMode(false)
   }
 
   const handleTransformMode = (mode: string) => {
@@ -319,10 +333,21 @@ export const StudyPage = () => {
                 {uniqueParts.map((part) => (
                   <S.PartRow
                     key={part.base}
-                    $active={normalizePartName(parts[selectedIndex] || '') === part.base}
-                    onClick={() =>
-                      handleSelectPart(parts.findIndex((item) => normalizePartName(item) === part.base))
+                    $active={
+                      selectedIndex >= 0 &&
+                      normalizePartName(parts[selectedIndex] || '') === part.base
                     }
+                    onClick={() => {
+                      const nextIndex = parts.findIndex(
+                        (item) => normalizePartName(item) === part.base,
+                      )
+                      if (selectedIndex === nextIndex) {
+                        setSelectedIndex(-1)
+                        viewerRef.current?.setSelectedIndex?.(-1)
+                        return
+                      }
+                      handleSelectPart(nextIndex)
+                    }}
                   >
                     <S.PartIcon
                       style={{
@@ -377,48 +402,49 @@ export const StudyPage = () => {
               </S.ViewerHeader>
               <S.ViewerBody>
                 <S.ViewerToolbar>
-                  <S.ToolbarButton $active={editMode} onClick={handleToggleEdit}>
+                  <S.ToolbarButton $active={editMode} onClick={handleSelectMode}>
+                    ➤
+                  </S.ToolbarButton>
+                  <S.ToolbarButton
+                    $active={!editMode}
+                    onClick={handleSwipeMode}
+                  >
                     ✋
                   </S.ToolbarButton>
-                  <S.ToolbarButton
-                    $active={transformMode === 'translate'}
-                    onClick={() => handleTransformMode('translate')}
-                  >
-                    ↔
-                  </S.ToolbarButton>
-                  <S.ToolbarButton
-                    $active={transformMode === 'rotate'}
-                    onClick={() => handleTransformMode('rotate')}
-                  >
-                    ⟳
-                  </S.ToolbarButton>
-                  <S.ToolbarButton
-                    $active={transformMode === 'scale'}
-                    onClick={() => handleTransformMode('scale')}
-                  >
-                    ⤢
-                  </S.ToolbarButton>
                   <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
-                    ✎
+                    💬
                   </S.ToolbarButton>
                 </S.ViewerToolbar>
 
-                <S.NotePanel>
-                  <S.NoteHeader>
-                    <span>note</span>
-                    <S.NoteToggle>⌄</S.NoteToggle>
-                  </S.NoteHeader>
-                  <S.NoteSearch placeholder="검색" />
-                  <S.NoteList>
+                <S.NoteToggleOutside
+                  type="button"
+                  onClick={() => setNotePanelOpen((prev) => !prev)}
+                >
+                  <S.NoteToggleIcon>⌄</S.NoteToggleIcon>
+                </S.NoteToggleOutside>
+                {notePanelOpen && (
+                  <S.NotePanel>
+                    <S.NoteHeader>
+                      <span>note</span>
+                      <S.NoteSearch placeholder="검색" />
+                    </S.NoteHeader>
+                    <S.NoteList>
                     {notes.slice(0, 4).map((note) => (
-                      <S.NoteItem key={note.id}>
-                        {note.text || '메모 show'}
-                        {note.id === activeNoteId ? ' · 선택됨' : ''}
-                      </S.NoteItem>
-                    ))}
-                    {!notes.length && <S.NoteItem>메모가 없습니다.</S.NoteItem>}
-                  </S.NoteList>
-                </S.NotePanel>
+                        <S.NoteItem key={note.id}>
+                        <S.NoteMeta>
+                          <span>{note.parentName || '알 수 없는 부품'}</span>
+                        </S.NoteMeta>
+                          <S.NoteBody>{note.text || '메모 show 메모 show 메모 show'}</S.NoteBody>
+                        </S.NoteItem>
+                      ))}
+                    {!notes.length && (
+                      <S.NoteEmpty>
+                        <S.NoteBody>메모가 없습니다.</S.NoteBody>
+                      </S.NoteEmpty>
+                    )}
+                    </S.NoteList>
+                  </S.NotePanel>
+                )}
 
                 <AssemblyViewer
                   ref={viewerRef}
@@ -438,7 +464,8 @@ export const StudyPage = () => {
                       setPartThumbnails(nextThumbs)
                     }
                     if (nextParts.length) {
-                      setSelectedIndex(0)
+                      setSelectedIndex(-1)
+                      viewerRef.current?.setSelectedIndex?.(-1)
                     }
                     const raw =
                       localStorage.getItem(storageKey) ||

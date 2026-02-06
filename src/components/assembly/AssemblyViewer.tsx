@@ -138,6 +138,9 @@ class AssemblyEngine {
       alpha: true,
       preserveDrawingBuffer: true
     });
+    this.highlightedParts = [];
+    this.dimmedParts = [];
+    this.outlineColor = new THREE.Color(0x6ea8fe);
 
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
@@ -209,7 +212,11 @@ class AssemblyEngine {
   emitNotes() {
     if (this.callbacks?.onNotesChange) {
       this.callbacks.onNotesChange(
-        this.notes.map((note) => ({ id: note.id, text: note.text }))
+        this.notes.map((note) => ({
+          id: note.id,
+          text: note.text,
+          parentName: note.parentName || null
+        }))
       );
     }
   }
@@ -330,7 +337,7 @@ class AssemblyEngine {
     while (target?.parent && target.parent !== this.group) {
       target = target.parent;
     }
-    return target?.parent === this.group ? target : null;
+    return target;
   }
 
   addNoteAt(point, hitObject) {
@@ -808,6 +815,8 @@ class AssemblyEngine {
     pivot.updateMatrixWorld(true);
 
     part.object = pivot;
+    part.object.name = part.name;
+    part.object.userData.name = part.name;
     const manual = this.manualDefaults[part.name];
     if (manual) {
       part.manual = true;
@@ -962,7 +971,7 @@ class AssemblyEngine {
     this.fitCameraToObject(this.group, this.camera, this.controls);
     this.updateStatus("준비 완료");
     this.emitParts();
-    this.setSelectedIndex(0);
+    this.setSelectedIndex(-1);
     this.syncRodCapMaterial();
   }
 
@@ -1275,10 +1284,47 @@ class AssemblyEngine {
   }
 
   setSelectedIndex(index) {
+    if (index < 0) {
+      if (this.highlightedParts.length) {
+        this.highlightedParts.forEach((part) => this.setPartHighlight(part, false));
+        this.highlightedParts = [];
+      }
+      if (this.dimmedParts.length) {
+        this.dimmedParts.forEach((part) => this.setPartDim(part, false));
+        this.dimmedParts = [];
+      }
+      this.transformControls.detach();
+      return;
+    }
+    if (index === this.state.selectedIndex && this.highlightedParts.length) {
+      this.highlightedParts.forEach((part) => this.setPartHighlight(part, false));
+      this.highlightedParts = [];
+      if (this.dimmedParts.length) {
+        this.dimmedParts.forEach((part) => this.setPartDim(part, false));
+        this.dimmedParts = [];
+      }
+      this.transformControls.detach();
+      this.emitSelection(index);
+      return;
+    }
+    if (this.highlightedParts.length) {
+      this.highlightedParts.forEach((part) => this.setPartHighlight(part, false));
+      this.highlightedParts = [];
+    }
+    if (this.dimmedParts.length) {
+      this.dimmedParts.forEach((part) => this.setPartDim(part, false));
+      this.dimmedParts = [];
+    }
     this.state.selectedIndex = index;
     const part = this.parts[index];
     if (!part || !part.object) return;
     this.transformControls.attach(part.object);
+    const baseName = this.normalizeHighlightName(part.name);
+    const dimTargets = this.parts.filter(
+      (item) => this.normalizeHighlightName(item.name) !== baseName
+    );
+    dimTargets.forEach((target) => this.setPartDim(target, true));
+    this.dimmedParts = dimTargets;
     this.emitSelection(index);
   }
 
@@ -1324,6 +1370,72 @@ class AssemblyEngine {
     if (!visible && this.transformControls.object === part.object) {
       this.transformControls.detach();
     }
+  }
+
+  setPartHighlight(part, enabled) {
+    if (!part?.object) return;
+    if (part.outlineGroup) {
+      this.detachOutline(part);
+    }
+    part.object.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((mat) => {
+        if (!("emissive" in mat)) return;
+        if (!mat.userData.__origEmissive) {
+          mat.userData.__origEmissive = mat.emissive.clone();
+          mat.userData.__origEmissiveIntensity = mat.emissiveIntensity ?? 0;
+        }
+        if (enabled) {
+          const baseColor = mat.color ? mat.color.clone() : new THREE.Color(0xffffff);
+          mat.emissive.copy(baseColor);
+          mat.emissiveIntensity = 1.2;
+        } else if (mat.userData.__origEmissive) {
+          mat.emissive.copy(mat.userData.__origEmissive);
+          mat.emissiveIntensity = mat.userData.__origEmissiveIntensity ?? 0;
+        }
+        mat.needsUpdate = true;
+      });
+    });
+  }
+
+  setPartDim(part, enabled) {
+    if (!part?.object) return;
+    part.object.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((mat) => {
+        if (!mat.userData.__origOpacity) {
+          mat.userData.__origOpacity = mat.opacity ?? 1;
+          mat.userData.__origTransparent = Boolean(mat.transparent);
+        }
+        if (enabled) {
+          mat.transparent = true;
+          mat.opacity = 0.13;
+        } else {
+          mat.opacity = mat.userData.__origOpacity ?? 1;
+          mat.transparent = mat.userData.__origTransparent ?? false;
+        }
+        mat.needsUpdate = true;
+      });
+    });
+  }
+
+  detachOutline(part) {
+    if (!part?.outlineGroup || !part.object) return;
+    part.object.remove(part.outlineGroup);
+    part.outlineGroup.traverse((child) => {
+      if (child.material?.dispose) child.material.dispose();
+    });
+    part.outlineGroup = null;
+  }
+
+  normalizeHighlightName(name) {
+    if (this.currentProjectId === "robotArm") {
+      if (name.startsWith("Part8")) return "Part8";
+      return name;
+    }
+    return name.replace(/\s*\d+$/, "").trim();
   }
 
   setHiddenParts(names = []) {
