@@ -133,11 +133,6 @@ class AssemblyEngine {
     this.groupSelection = [];
     this.groupPivot = null;
     this.groupPivotPosition = null;
-    this.thumbRenderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      preserveDrawingBuffer: true
-    });
     this.highlightedParts = [];
     this.dimmedParts = [];
     this.outlineColor = new THREE.Color(0x6ea8fe);
@@ -168,7 +163,6 @@ class AssemblyEngine {
     this.renderer.domElement.removeEventListener("pointermove", this.onPointerMove);
     window.removeEventListener("resize", this.handleResize);
     this.renderer.dispose();
-    this.thumbRenderer?.dispose();
   }
 
   resize() {
@@ -1435,6 +1429,9 @@ class AssemblyEngine {
       if (name.startsWith("Part8")) return "Part8";
       return name;
     }
+    if (this.currentProjectId === "robotGripper") {
+      if (name.toLowerCase().startsWith("gear link")) return name;
+    }
     return name.replace(/\s*\d+$/, "").trim();
   }
 
@@ -1571,39 +1568,6 @@ class AssemblyEngine {
     this.emitSelection(this.state.selectedIndex);
   }
 
-  getPartThumbnail(name, size = 64) {
-    const part = this.parts.find((item) => item.name === name);
-    if (!part?.object) return null;
-
-    const clone = part.object.clone(true);
-    const box = new THREE.Box3().setFromObject(clone);
-    if (box.isEmpty()) return null;
-    const center = box.getCenter(new THREE.Vector3());
-    clone.position.sub(center);
-
-    const scene = new THREE.Scene();
-    scene.add(clone);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    dirLight.position.set(1, 1, 1);
-    scene.add(dirLight);
-
-    const maxDim = Math.max(
-      box.max.x - box.min.x,
-      box.max.y - box.min.y,
-      box.max.z - box.min.z
-    );
-    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
-    const distance = maxDim / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
-    camera.position.set(0, 0, distance * 1.4);
-    camera.lookAt(0, 0, 0);
-
-    const renderer = this.thumbRenderer;
-    renderer.setSize(size, size, false);
-    renderer.render(scene, camera);
-    return renderer.domElement.toDataURL("image/png");
-  }
-
   animate() {
     if (this.isDisposed) return;
     this.rafId = requestAnimationFrame(this.animate);
@@ -1670,8 +1634,7 @@ const AssemblyViewer = forwardRef(function AssemblyViewer(
     deleteNote: (id) => engineRef.current?.deleteNote(id),
     getNoteScreenPosition: (id) => engineRef.current?.getNoteScreenPosition(id),
     getCurrentTransforms: () => engineRef.current?.getCurrentTransforms(),
-    applyTransformsByName: (transforms) => engineRef.current?.applyTransformsByName(transforms),
-    getPartThumbnail: (name, size) => engineRef.current?.getPartThumbnail(name, size)
+    applyTransformsByName: (transforms) => engineRef.current?.applyTransformsByName(transforms)
   }));
 
   return <canvas ref={canvasRef} id="canvas" />;
