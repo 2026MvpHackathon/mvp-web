@@ -117,7 +117,7 @@ export const PartIcon = styled.div`
   height: 36px;
   border-radius: 10px;
   background: #1c241f;
-  background-size: cover;
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
   display: grid;

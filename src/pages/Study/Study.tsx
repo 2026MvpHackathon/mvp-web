@@ -47,7 +47,6 @@ type ViewerRef = {
   getNoteScreenPosition?: (id: string) => { x: number; y: number; visible: boolean }
   deleteNote?: (id: string) => void
   setGroupSelection?: (names: string[]) => void
-  getPartThumbnail?: (name: string, size?: number) => string | null
 }
 
 export const StudyPage = () => {
@@ -112,6 +111,9 @@ export const StudyPage = () => {
     if (projectId === 'robotArm') {
       if (name.startsWith('Part8')) return 'Part8'
       return name
+    }
+    if (projectId === 'robotGripper') {
+      if (name.toLowerCase().startsWith('gear link')) return name
     }
     return name.replace(/\s*\d+$/, '').trim()
   }
@@ -185,6 +187,76 @@ export const StudyPage = () => {
     `
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
   }
+
+  const getPartThumbnailCandidates = (baseName: string) => {
+    if (!projectConfig?.basePath) return []
+    const basePath =
+      projectId === 'leafSpring' && baseName === 'Pin'
+        ? '/assets/Robot Gripper'
+        : projectConfig.basePath
+    const candidates = new Set<string>()
+    const addCandidate = (name: string) => {
+      if (!name) return
+      candidates.add(encodeURI(`${basePath}/${name}.png`))
+    }
+    const addCaseVariants = (name: string) => {
+      addCandidate(name)
+      const lower = name.toLowerCase()
+      if (lower !== name) addCandidate(lower)
+    }
+    const trimmed = baseName.replace(/\s+/g, ' ').trim()
+    addCaseVariants(trimmed)
+    if (baseName.includes(' MIR')) {
+      addCaseVariants(baseName.replace(' MIR', '_MIR'))
+    }
+    if (projectId === 'drone') {
+      const droneAliases: Record<string, string> = {
+        Arm: 'Arm gear',
+        Blade: 'Impellar Blade',
+        'Beater disc': 'Beater disc',
+        Gearing: 'Gearing',
+        Leg: 'Leg',
+        'Main frame': 'Main frame',
+        'Main frame MIR': 'Main frame_MIR',
+        Nut: 'Nut',
+        Screw: 'Screw',
+        xyz: 'xyz',
+      }
+      const alias = droneAliases[baseName]
+      if (alias) addCaseVariants(alias)
+      if (baseName === 'Main frame MIR') {
+        addCandidate('main frame_MIR')
+      }
+      if (baseName === 'Beater disc') addCaseVariants('bester disc')
+    }
+    if (projectId === 'v4Engine') {
+      if (baseName === 'Piston Pin') addCaseVariants('poston pin')
+    }
+    return Array.from(candidates)
+  }
+
+  const resolvePartThumbnail = (baseName: string) =>
+    new Promise<string | null>((resolve) => {
+      const candidates = getPartThumbnailCandidates(baseName)
+      if (!candidates.length) {
+        resolve(null)
+        return
+      }
+      let index = 0
+      const tryNext = () => {
+        if (index >= candidates.length) {
+          resolve(null)
+          return
+        }
+        const url = candidates[index]
+        index += 1
+        const img = new Image()
+        img.onload = () => resolve(url)
+        img.onerror = () => tryNext()
+        img.src = url
+      }
+      tryNext()
+    })
   const thumbWidth = 58
   const progressLeft = progressWidth
     ? ((progressWidth - thumbWidth) * explodePercent) / 100 + thumbWidth / 2
@@ -294,6 +366,45 @@ export const StudyPage = () => {
   }, [noteEditor.visible, noteEditor.id])
 
   useEffect(() => {
+    let cancelled = false
+    const loadThumbnails = async () => {
+      if (!parts.length) {
+        setPartThumbnails({})
+        return
+      }
+      const unique = parts.reduce(
+        (acc, name) => {
+          const isRobotArm = projectId === 'robotArm'
+          const base = isRobotArm
+            ? name.startsWith('Part8') || name === 'Part8'
+              ? 'Part8'
+              : name
+            : normalizePartName(name)
+          if (!acc.seen.has(base)) {
+            acc.seen.add(base)
+            acc.items.push(base)
+          }
+          return acc
+        },
+        { seen: new Set<string>(), items: [] as string[] },
+      ).items
+      const entries = await Promise.all(
+        unique.map(async (base) => [base, await resolvePartThumbnail(base)] as const),
+      )
+      if (cancelled) return
+      const nextThumbs: Record<string, string> = {}
+      entries.forEach(([base, url]) => {
+        if (url) nextThumbs[base] = url
+      })
+      setPartThumbnails(nextThumbs)
+    }
+    loadThumbnails()
+    return () => {
+      cancelled = true
+    }
+  }, [projectId, parts])
+
+  useEffect(() => {
     if (!noteEditor.visible || !noteEditor.id) return
     const note = notes.find((item) => item.id === noteEditor.id)
     if (!note) return
@@ -352,7 +463,7 @@ export const StudyPage = () => {
                     <S.PartIcon
                       style={{
                         backgroundImage: `url(${
-                          partThumbnails[part.name] || getPartIconSvg(part.base)
+                          partThumbnails[part.base] || getPartIconSvg(part.base)
                         })`,
                       }}
                     />
@@ -453,16 +564,6 @@ export const StudyPage = () => {
                   onStatusChange={setStatus}
                   onPartsChange={(nextParts) => {
                     setParts(nextParts)
-                    if (viewerRef.current?.getPartThumbnail) {
-                      const nextThumbs: Record<string, string> = {}
-                      nextParts.forEach((partName) => {
-                        const thumb = viewerRef.current?.getPartThumbnail?.(partName, 64)
-                        if (thumb) {
-                          nextThumbs[partName] = thumb
-                        }
-                      })
-                      setPartThumbnails(nextThumbs)
-                    }
                     if (nextParts.length) {
                       setSelectedIndex(-1)
                       viewerRef.current?.setSelectedIndex?.(-1)
