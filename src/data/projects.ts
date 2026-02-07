@@ -163,7 +163,18 @@ export const machineViceManualDefaults = {
   "Part9-Druckhulse 10": { pos: [28.16, -8.11, 4.09], rot: [0, 0, 0], scale: 0.03 }
 };
 
-export const projectConfigs = {
+export type ProjectFile = string | { file: string; name?: string }
+
+export type ProjectConfig = {
+  label: string
+  basePath: string
+  type: "drone" | "simple" | "robotArm" | "suspension" | "v4Engine"
+  manualDefaults: Record<string, unknown>
+  defaultOverrides?: Record<string, number>
+  files?: ProjectFile[]
+}
+
+export const projectConfigs: Record<string, ProjectConfig> = {
   drone: {
     label: "Drone",
     basePath: "/assets/Drone",

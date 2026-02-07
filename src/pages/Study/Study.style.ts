@@ -183,6 +183,32 @@ export const ViewerToolbar = styled.div`
   z-index: 3;
 `
 
+export const ViewModeToggle = styled.div`
+  position: absolute;
+  left: 76px;
+  top: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  border-radius: 16px;
+  border: 1px solid rgba(109, 167, 117, 0.45);
+  background: #1b1b1b;
+  z-index: 3;
+`
+
+export const ViewModeButton = styled.button<{ $active?: boolean }>`
+  min-width: 110px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid ${({ $active }) => ($active ? '#6da775' : 'transparent')};
+  background: ${({ $active }) => ($active ? 'rgba(109, 167, 117, 0.2)' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#cfe0d6' : '#a3b5aa')};
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+`
+
 export const ToolbarButton = styled.button<{ $active?: boolean }>`
   width: 30px;
   height: 30px;

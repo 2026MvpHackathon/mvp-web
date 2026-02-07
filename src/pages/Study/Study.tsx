@@ -47,6 +47,10 @@ type ViewerRef = {
   getNoteScreenPosition?: (id: string) => { x: number; y: number; visible: boolean }
   deleteNote?: (id: string) => void
   setGroupSelection?: (names: string[]) => void
+  setHiddenParts?: (names: string[]) => void
+  setViewMode?: (mode: 'single' | 'assembly') => void
+  focusOnPart?: (name: string) => void
+  focusOnScene?: () => void
 }
 
 export const StudyPage = () => {
@@ -81,10 +85,8 @@ export const StudyPage = () => {
   const [explodePercent, setExplodePercent] = useState(0)
   const [, setIsAssemble] = useState(true)
   const [editMode, setEditMode] = useState(true)
-  const [transformMode, setTransformMode] = useState('translate')
   const [noteMode, setNoteMode] = useState(false)
   const [notes, setNotes] = useState<Note[]>([])
-  const [activeNoteId, setActiveNoteId] = useState<string | null>(null)
   const [noteEditor, setNoteEditor] = useState<NoteEditorState>({
     id: null,
     text: '',
@@ -94,6 +96,7 @@ export const StudyPage = () => {
   })
   const [notePanelOpen, setNotePanelOpen] = useState(true)
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
+  const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
 
   const storageKey = `assembly-layout-${projectId}`
   const defaultStorageKey = `assembly-default-layout-${projectId}`
@@ -266,12 +269,19 @@ export const StudyPage = () => {
   const handleProjectChange = (id: string) => {
     setProjectId(id)
     localStorage.setItem('assembly-last-project', id)
-    viewerRef.current?.setProject(id, { partOverrides: partOverridesByProject[id] })
+    viewerRef.current?.setProject?.(id, { partOverrides: partOverridesByProject[id] })
   }
 
   const handleSelectPart = (index: number) => {
     setSelectedIndex(index)
-    viewerRef.current?.setSelectedIndex(index)
+    viewerRef.current?.setSelectedIndex?.(index)
+    if (viewMode === 'single' && index >= 0) {
+      const name = parts[index]
+      if (name) {
+        viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== index))
+        viewerRef.current?.focusOnPart?.(name)
+      }
+    }
   }
 
   const percentToScale = (percent: number) => 0.2 + (1.8 * percent) / 100
@@ -280,44 +290,39 @@ export const StudyPage = () => {
     const nextPercent = Math.min(100, Math.max(0, percent))
     const scale = percentToScale(nextPercent)
     setExplodePercent(nextPercent)
-    viewerRef.current?.setExplodeScale(scale)
+    viewerRef.current?.setExplodeScale?.(scale)
     if (nextPercent <= 1) {
       setIsAssemble(true)
-      viewerRef.current?.setTarget(0)
+      viewerRef.current?.setTarget?.(0)
     } else {
       setIsAssemble(false)
-      viewerRef.current?.setTarget(1)
+      viewerRef.current?.setTarget?.(1)
     }
   }
 
   const handleSelectMode = () => {
+    if (viewMode === 'single') return
     setEditMode(true)
-    viewerRef.current?.setEditMode(true)
-    setTransformMode('translate')
-    viewerRef.current?.setTransformMode('translate')
+    viewerRef.current?.setEditMode?.(true)
+    viewerRef.current?.setTransformMode?.('translate')
   }
 
   const handleSwipeMode = () => {
+    if (viewMode === 'single') return
     setEditMode(false)
-    viewerRef.current?.setEditMode(false)
-  }
-
-  const handleTransformMode = (mode: string) => {
-    setTransformMode(mode)
-    viewerRef.current?.setTransformMode(mode)
+    viewerRef.current?.setEditMode?.(false)
   }
 
   const handleToggleNote = () => {
     const next = !noteMode
     setNoteMode(next)
-    viewerRef.current?.setNoteMode(next)
+    viewerRef.current?.setNoteMode?.(next)
     if (!next) {
       setNoteEditor((prev) => ({ ...prev, visible: false, id: null }))
     }
   }
 
-  const handleActiveNote = (id: string) => {
-    setActiveNoteId(id)
+  const handleActiveNote = (id: string | null) => {
     if (!id) {
       setNoteEditor((prev) => ({ ...prev, visible: false, id: null }))
       return
@@ -335,13 +340,13 @@ export const StudyPage = () => {
   const handleNoteEditorChange = (value: string) => {
     setNoteEditor((prev) => ({ ...prev, text: value }))
     if (noteEditor.id) {
-      viewerRef.current?.updateNote(noteEditor.id, value)
+      viewerRef.current?.updateNote?.(noteEditor.id, value)
     }
   }
 
   const handleNoteSubmit = () => {
     if (!noteEditor.id) return
-    viewerRef.current?.updateNote(noteEditor.id, noteEditor.text)
+    viewerRef.current?.updateNote?.(noteEditor.id, noteEditor.text)
     setNoteEditor((prev) => ({ ...prev, visible: false }))
   }
 
@@ -424,6 +429,37 @@ export const StudyPage = () => {
     return () => window.removeEventListener('resize', updateWidth)
   }, [])
 
+  useEffect(() => {
+    setViewMode('assembly')
+    setSelectedIndex(-1)
+  }, [])
+
+  useEffect(() => {
+    if (!parts.length) return
+    viewerRef.current?.setViewMode?.(viewMode)
+    if (viewMode === 'single') {
+      if (editMode) {
+        setEditMode(false)
+        viewerRef.current?.setEditMode?.(false)
+      }
+      const nextIndex = selectedIndex >= 0 ? selectedIndex : 0
+      const name = parts[nextIndex]
+      if (!name) return
+      if (selectedIndex !== nextIndex) {
+        setSelectedIndex(nextIndex)
+        viewerRef.current?.setSelectedIndex?.(nextIndex)
+      }
+      viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== nextIndex))
+      viewerRef.current?.focusOnPart?.(name)
+      return
+    }
+    viewerRef.current?.setHiddenParts?.([])
+    if (selectedIndex >= 0) {
+      viewerRef.current?.setSelectedIndex?.(selectedIndex)
+    }
+    viewerRef.current?.focusOnScene?.()
+  }, [viewMode, parts, selectedIndex])
+
   return (
       <S.PageBody>
         <S.ContentGrid>
@@ -503,12 +539,17 @@ export const StudyPage = () => {
               </S.ViewerHeader>
               <S.ViewerBody>
                 <S.ViewerToolbar>
-                  <S.ToolbarButton $active={editMode} onClick={handleSelectMode}>
+                  <S.ToolbarButton
+                    $active={editMode}
+                    onClick={handleSelectMode}
+                    disabled={viewMode === 'single'}
+                  >
                     ➤
                   </S.ToolbarButton>
                   <S.ToolbarButton
                     $active={!editMode}
                     onClick={handleSwipeMode}
+                    disabled={viewMode === 'single'}
                   >
                     ✋
                   </S.ToolbarButton>
@@ -516,6 +557,20 @@ export const StudyPage = () => {
                     💬
                   </S.ToolbarButton>
                 </S.ViewerToolbar>
+                <S.ViewModeToggle>
+                  <S.ViewModeButton
+                    $active={viewMode === 'single'}
+                    onClick={() => setViewMode('single')}
+                  >
+                    단일 부품
+                  </S.ViewModeButton>
+                  <S.ViewModeButton
+                    $active={viewMode === 'assembly'}
+                    onClick={() => setViewMode('assembly')}
+                  >
+                    조립도
+                  </S.ViewModeButton>
+                </S.ViewModeToggle>
 
                 <S.NoteToggleOutside
                   type="button"
@@ -552,7 +607,7 @@ export const StudyPage = () => {
                   projectId={projectId}
                   partOverrides={partOverrides}
                   onStatusChange={setStatus}
-                  onPartsChange={(nextParts) => {
+                  onPartsChange={(nextParts: string[]) => {
                     setParts(nextParts)
                     if (nextParts.length) {
                       setSelectedIndex(-1)
@@ -571,10 +626,10 @@ export const StudyPage = () => {
                       }
                     }
                   }}
-                  onSelectedChange={(index) => {
+                  onSelectedChange={(index: number) => {
                     setSelectedIndex(index)
                   }}
-                  onNotesChange={(nextNotes) => setNotes(nextNotes as Note[])}
+                  onNotesChange={(nextNotes: Note[]) => setNotes(nextNotes)}
                   onActiveNoteChange={handleActiveNote}
                 />
 
