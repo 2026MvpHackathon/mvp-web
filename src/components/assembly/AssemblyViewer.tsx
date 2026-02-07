@@ -118,7 +118,7 @@ class AssemblyEngine {
       current: 0,
       speed: 1.0,
       explodeScale: 1.0,
-      selectedIndex: 0
+      selectedIndex: -1
     };
     this.parts = [];
     this.notes = [];
@@ -761,7 +761,7 @@ class AssemblyEngine {
           });
           child.material.side = THREE.DoubleSide;
         } else if (
-          !["v4Engine", "leafSpring", "machineVice"].includes(this.currentProjectId) &&
+          !["v4Engine", "leafSpring"].includes(this.currentProjectId) &&
           Array.isArray(child.material)
         ) {
           child.material.forEach((mat) => {
@@ -772,7 +772,7 @@ class AssemblyEngine {
               mat.roughness = Math.max(mat.roughness ?? 0, 0.7);
             }
           });
-        } else if (!["v4Engine", "leafSpring", "machineVice"].includes(this.currentProjectId)) {
+        } else if (!["v4Engine", "leafSpring"].includes(this.currentProjectId)) {
           if ("envMapIntensity" in child.material) {
             child.material.envMapIntensity = 0.15;
           }
@@ -987,7 +987,7 @@ class AssemblyEngine {
     const config = projectConfigs[projectId];
     if (!config) return;
     this.scene.background = new THREE.Color(0x0b0e14);
-    const noEnvironmentProjects = new Set(["v4Engine", "leafSpring", "machineVice"]);
+    const noEnvironmentProjects = new Set(["v4Engine", "leafSpring"]);
     if (noEnvironmentProjects.has(projectId)) {
       this.scene.environment = null;
     } else {

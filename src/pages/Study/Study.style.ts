@@ -2,7 +2,8 @@ import styled from 'styled-components'
 
 export const PageBody = styled.div`
   flex: 1;
-  padding: 24px 32px 32px;
+  padding: 0 32px 32px;
+  margin-top: -10px;
 `
 
 export const ContentGrid = styled.div`
@@ -257,7 +258,7 @@ export const NoteToggleOutside = styled.button`
   border: 1px solid rgba(109, 167, 117, 0.5);
   background: rgba(109, 167, 117, 0.35);
   color: #cfe0d6;
-  font-size: 28px;
+  font-size: 64px;
   line-height: 1;
   display: grid;
   place-items: center;
@@ -267,12 +268,34 @@ export const NoteToggleOutside = styled.button`
 
 export const NoteToggleIcon = styled.span`
   display: inline-block;
-  transform: translateY(-10px);
+  transform: translateY(-23px);
+`
+
+export const ExpenseToggleOutside = styled.button`
+  position: absolute;
+  right: 15px;
+  top: 590px;
+  width: 39px;
+  height: 39px;
+  border-radius: 50%;
+  border: 1px solid #303030;
+  background-color: #303030;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%232b2f2b'/><path d='M14 38v12h12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M50 26v-12h-12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 72%;
+  color: transparent;
+  font-size: 0;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 4;
 `
 
 export const NoteSearch = styled.input`
-  width: 45%;
-  margin-left: 110px;
+  width: calc(45% + 60px);
+  margin-left: 50px;
   padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid #2a2f2d;
