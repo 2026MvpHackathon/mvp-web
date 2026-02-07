@@ -1,7 +1,7 @@
 import { ThemeProvider } from 'styled-components';
 import { theme } from './shared/Theme';
 import { GlobalStyle } from './shared/GlobalStyle';
-import Layout from './widgets/Layout/ui/Layout';
+import Layout from '@/shared/ui/Layout';
 
 
 function App() {
