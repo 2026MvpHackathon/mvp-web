@@ -1,4 +1,4 @@
-import { flexBetween, flexColumnStart, flexRow } from "@/shared/values/_flex";
+import { flexColumnStart, flexRow } from "@/shared/values/_flex";
 import { colors } from "@/shared/values/_foundation";
 import { typography } from "@/shared/values/typography.mixin";
 import { rgba } from 'polished' // 투명도 라이브러리
