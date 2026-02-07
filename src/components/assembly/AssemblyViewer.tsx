@@ -133,6 +133,7 @@ class AssemblyEngine {
     this.groupSelection = [];
     this.groupPivot = null;
     this.groupPivotPosition = null;
+    this.viewMode = "assembly";
     this.highlightedParts = [];
     this.dimmedParts = [];
     this.outlineColor = new THREE.Color(0x6ea8fe);
@@ -445,8 +446,8 @@ class AssemblyEngine {
     let parts = [
       { name: "Main frame", file: "Main frame.glb", explode: new THREE.Vector3(0, 0, 0) },
       { name: "Main frame MIR", file: "Main frame_MIR.glb", explode: new THREE.Vector3(0, 0, 0) },
-      { name: "Nut", file: "Nut.glb", explode: new THREE.Vector3(-80, 40, -80) },
-      { name: "Screw", file: "Screw.glb", explode: new THREE.Vector3(80, 40, -80) },
+      { name: "Nut", file: "Screw.glb", explode: new THREE.Vector3(-80, 40, -80) },
+      { name: "Screw", file: "Nut.glb", explode: new THREE.Vector3(80, 40, -80) },
       { name: "xyz", file: "xyz.glb", explode: new THREE.Vector3(0, 0, -160) }
     ];
 
@@ -511,14 +512,14 @@ class AssemblyEngine {
       );
       const nuts = hardwareOffsets.map((offset, index) => ({
         name: `Nut ${index + 1}`,
-        file: "Nut.glb",
+        file: "Screw.glb",
         baseOffset: offset,
         baseRotation: new THREE.Euler(0, 0, 0),
         explode: offset.clone().normalize().multiplyScalar(120)
       }));
       const screws = hardwareOffsets.map((offset, index) => ({
         name: `Screw ${index + 1}`,
-        file: "Screw.glb",
+        file: "Nut.glb",
         baseOffset: offset.clone().add(new THREE.Vector3(0, 6, 0)),
         baseRotation: new THREE.Euler(0, 0, 0),
         explode: offset.clone().normalize().multiplyScalar(120)
@@ -963,6 +964,9 @@ class AssemblyEngine {
       }
     }
     this.fitCameraToObject(this.group, this.camera, this.controls);
+    if (this.currentProjectId === "drone") {
+      this.setDefaultDroneCamera();
+    }
     this.updateStatus("준비 완료");
     this.emitParts();
     this.setSelectedIndex(-1);
@@ -1104,7 +1108,7 @@ class AssemblyEngine {
     object.position.sub(center.multiplyScalar(scale));
   }
 
-  fitCameraToObject(object, cameraToFit, controlsToFit) {
+  fitCameraToObject(object, cameraToFit, controlsToFit, distanceScale = 1, minDistance = 80) {
     const box = new THREE.Box3().setFromObject(object);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
@@ -1120,7 +1124,8 @@ class AssemblyEngine {
     }
     const fov = cameraToFit.fov * (Math.PI / 180);
     const cameraZ = Math.abs((maxDim / 2) / Math.tan(fov / 2)) * 1.15;
-    const safeZ = Math.min(Math.max(cameraZ, 80), 1000000);
+    const scaledZ = cameraZ * Math.max(0.2, distanceScale);
+    const safeZ = Math.min(Math.max(scaledZ, minDistance), 1000000);
 
     cameraToFit.position.set(center.x + safeZ, center.y + safeZ * 0.5, center.z + safeZ);
     cameraToFit.near = Math.max(safeZ / 1000, 0.1);
@@ -1130,6 +1135,25 @@ class AssemblyEngine {
     controlsToFit.target.copy(center);
     controlsToFit.update();
     return `bbox ${size.x.toFixed(1)}·${size.y.toFixed(1)}·${size.z.toFixed(1)}`;
+  }
+
+  setDefaultDroneCamera() {
+    if (!this.group) return;
+    const box = new THREE.Box3().setFromObject(this.group);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (!Number.isFinite(maxDim) || maxDim === 0) return;
+    const fov = this.camera.fov * (Math.PI / 180);
+    const cameraZ = Math.abs((maxDim / 2) / Math.tan(fov / 2)) * 1.15;
+    const safeZ = Math.min(Math.max(cameraZ, 120), 1000000);
+    const dir = new THREE.Vector3(-1, 0.35, -1).normalize();
+    this.camera.position.copy(center.clone().add(dir.multiplyScalar(safeZ)));
+    this.camera.near = Math.max(safeZ / 1000, 0.1);
+    this.camera.far = Math.max(safeZ * 1000, 2000);
+    this.camera.updateProjectionMatrix();
+    this.controls.target.copy(center);
+    this.controls.update();
   }
 
   updateLayout() {
@@ -1312,6 +1336,11 @@ class AssemblyEngine {
     this.state.selectedIndex = index;
     const part = this.parts[index];
     if (!part || !part.object) return;
+    if (this.viewMode === "single") {
+      this.transformControls.detach();
+      this.emitSelection(index);
+      return;
+    }
     this.transformControls.attach(part.object);
     const baseName = this.normalizeHighlightName(part.name);
     const dimTargets = this.parts.filter(
@@ -1441,6 +1470,52 @@ class AssemblyEngine {
       if (!part?.object) return;
       part.object.visible = !hidden.has(part.name);
     });
+  }
+
+  setViewMode(mode) {
+    this.viewMode = mode === "single" ? "single" : "assembly";
+    if (this.viewMode === "single") {
+      this.editMode = false;
+      this.transformControls.visible = false;
+      this.transformControls.enabled = false;
+      this.transformControls.detach();
+    }
+  }
+
+  applySinglePartRotation(part) {
+    if (!part?.object) return;
+    if (part.baseRotation) {
+      part.object.rotation.copy(part.baseRotation);
+    }
+  }
+
+  focusOnPart(name) {
+    const part = this.parts.find((item) => item.name === name);
+    if (!part?.object) return;
+    this.applySinglePartRotation(part);
+    const lower = String(name).toLowerCase();
+    const isHardware = lower.startsWith("nut") || lower.startsWith("screw");
+    const distanceScale = isHardware ? 0.35 : 1;
+    const minDistance = isHardware ? 18 : 80;
+    this.fitCameraToObject(part.object, this.camera, this.controls, distanceScale, minDistance);
+    if (this.viewMode === "single" && lower.startsWith("beater disc")) {
+      const target = this.controls.target.clone();
+      const offset = this.camera.position.clone().sub(target);
+      const rotated = new THREE.Vector3(-offset.x, offset.y, -offset.z);
+      this.camera.position.copy(target.clone().add(rotated));
+      this.camera.updateProjectionMatrix();
+      this.controls.update();
+    }
+  }
+
+  focusOnScene() {
+    if (!this.group) return;
+    this.parts.forEach((part) => this.applySinglePartRotation(part));
+    if (this.currentProjectId === "drone") {
+      this.setDefaultDroneCamera();
+      return;
+    }
+    this.fitCameraToObject(this.group, this.camera, this.controls);
   }
 
   applySelectedTransform(values) {
@@ -1627,6 +1702,7 @@ const AssemblyViewer = forwardRef(function AssemblyViewer(
     setGroupSelection: (names) => engineRef.current?.setGroupSelection(names),
     setPartVisibility: (name, visible) => engineRef.current?.setPartVisibility(name, visible),
     setHiddenParts: (names) => engineRef.current?.setHiddenParts(names),
+    setViewMode: (mode) => engineRef.current?.setViewMode(mode),
     applySelectedTransform: (values) => engineRef.current?.applySelectedTransform(values),
     setNoteMode: (value) => engineRef.current?.setNoteMode(value),
     setNoteText: (value) => engineRef.current?.setNoteText(value),
@@ -1634,7 +1710,9 @@ const AssemblyViewer = forwardRef(function AssemblyViewer(
     deleteNote: (id) => engineRef.current?.deleteNote(id),
     getNoteScreenPosition: (id) => engineRef.current?.getNoteScreenPosition(id),
     getCurrentTransforms: () => engineRef.current?.getCurrentTransforms(),
-    applyTransformsByName: (transforms) => engineRef.current?.applyTransformsByName(transforms)
+    applyTransformsByName: (transforms) => engineRef.current?.applyTransformsByName(transforms),
+    focusOnPart: (name) => engineRef.current?.focusOnPart(name),
+    focusOnScene: () => engineRef.current?.focusOnScene()
   }));
 
   return <canvas ref={canvasRef} id="canvas" />;
