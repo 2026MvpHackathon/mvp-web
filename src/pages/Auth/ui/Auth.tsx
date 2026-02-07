@@ -1,7 +1,7 @@
-import AuthInputField from '@/widgets/AuthLayout/ui/AuthInputField';
 import * as S from './Auth.style'
 import AuthGuide from '@/widgets/AuthLayout/ui/AuthGuide';
 import LoginStep from './steps/LoginStep';
+import SelectLoginOrSignupStep from './steps/SelectLoginOrSignupStep';
 
 const AuthPage = () => {
     return(
@@ -10,7 +10,7 @@ const AuthPage = () => {
                 <AuthGuide largeText={'large'} smallText={'small'}/>
             </S.auth_area>
             <S.auth_area>
-                <LoginStep/>
+                <SelectLoginOrSignupStep/>
             </S.auth_area>
         </S.auth_container>
 

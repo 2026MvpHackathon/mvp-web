@@ -12,6 +12,7 @@ export const btn_container = styled.button`
 
     opacity: 0.8;
     background: rgba(8, 9, 9, 0.10);
+    border: 1px solid #666D6A; // glass 임시
 `
 
 export const btn_text = styled.span`
