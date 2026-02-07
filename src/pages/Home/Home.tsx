@@ -1,9 +1,9 @@
-import * as S from './Home.style'
+import Recent from "../../widgets/home/recent_item/ui";
 
-export const HomePage = ( ) => {
-    return(
-        <div>
-            안녕
-        </div>
-    );
-}
+export const HomePage = () => {
+  return (
+    <>
+      <Recent />
+    </>
+  );
+};

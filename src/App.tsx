@@ -8,12 +8,10 @@ import { Outlet } from "react-router-dom";
 function App() {
   return (
     <>
+      <GlobalStyle />
       <ThemeProvider theme={theme}>
-        <GlobalStyle>
-          <Outlet />
-        </GlobalStyle>
+        <Outlet />
       </ThemeProvider>
-      
     </>
   )
 }
