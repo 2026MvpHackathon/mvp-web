@@ -1,6 +1,7 @@
-import { createBrowserRouter } from 'react-router-dom'
-import { HomePage } from './pages/Home/Home'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
+import HomePage from './pages/Home/Home'
 import App from './App' 
+import StudyPage from './pages/Study/Study';
 
 
 const router = createBrowserRouter([
@@ -10,10 +11,20 @@ const router = createBrowserRouter([
         children: [
             {
             index: true,
-            element: <HomePage />,
+            element: <Navigate to="/home"/>,
             },
+            {
+              path: "home",
+              element: <HomePage />,
+            },
+            {
+                path: "study",
+                element: <StudyPage />,
+              },
         ],
     },
+
+    { path: "*", element: <Navigate to='/home'/>  },
 ])
   
 export default router;
