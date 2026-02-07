@@ -204,9 +204,27 @@ export const ExpandedPanels = styled.div`
 
 export const ExpandedLeftPanel = styled.div`
   position: absolute;
-  left: 0;
+  left: 65px;
   top: 0;
   width: 300px;
+  pointer-events: auto;
+`
+
+export const AiCollapsedBadge = styled.button`
+  position: absolute;
+  left: 65px;
+  top: 0;
+  border: none;
+  background: #2f7f6f;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   pointer-events: auto;
 `
 
@@ -226,7 +244,7 @@ export const ViewerToolbar = styled.div`
   top: 20px;
   display: grid;
   gap: 10px;
-  background: #1b1b1b;
+  background: #090909;
   padding: 8px;
   border-radius: 12px;
   border: 1px solid rgba(109, 167, 117, 0.35);
@@ -268,10 +286,24 @@ export const ToolbarButton = styled.button<{ $active?: boolean }>`
   height: 30px;
   border-radius: 9px;
   border: 1px solid ${({ $active }) => ($active ? '#6da775' : 'transparent')};
-  background: ${({ $active }) => ($active ? 'rgba(109, 167, 117, 0.25)' : '#202020')};
+  background: ${({ $active }) => ($active ? 'rgba(109, 167, 117, 0.25)' : '#090909')};
   color: #c9d3e6;
   cursor: pointer;
   font-size: 12px;
+`
+
+export const ToolbarIcon = styled.img`
+  width: 22px;
+  height: 18px;
+  display: block;
+  transform: translateX(2px);
+`
+
+export const ToolbarDivider = styled.div`
+  width: 60%;
+  height: 1px;
+  background: rgba(109, 167, 117, 0.35);
+  margin: 6px auto;
 `
 
 export const NotePanel = styled.div<{ $shifted?: boolean }>`
