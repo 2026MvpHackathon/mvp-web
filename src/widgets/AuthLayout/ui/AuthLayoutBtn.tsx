@@ -1,4 +1,3 @@
-import { shapes } from '@/shared/values/_shape';
 import * as S from './AuthLayoutBtn.style'
 
 interface BtnRadiusResponse {

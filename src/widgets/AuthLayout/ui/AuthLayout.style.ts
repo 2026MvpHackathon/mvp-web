@@ -9,7 +9,7 @@ export const authlayout_container = styled.div`
 
     ${flexRow}
 `
-export const authlayout_guide_area = styled.div`
+export const authlayout_area = styled.div`
     width: 50%;
     height: 100%;
 
