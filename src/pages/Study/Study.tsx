@@ -85,10 +85,8 @@ export const StudyPage = () => {
   const [explodePercent, setExplodePercent] = useState(0)
   const [, setIsAssemble] = useState(true)
   const [editMode, setEditMode] = useState(true)
-  const [transformMode, setTransformMode] = useState('translate')
   const [noteMode, setNoteMode] = useState(false)
   const [notes, setNotes] = useState<Note[]>([])
-  const [activeNoteId, setActiveNoteId] = useState<string | null>(null)
   const [noteEditor, setNoteEditor] = useState<NoteEditorState>({
     id: null,
     text: '',
@@ -306,7 +304,6 @@ export const StudyPage = () => {
     if (viewMode === 'single') return
     setEditMode(true)
     viewerRef.current?.setEditMode?.(true)
-    setTransformMode('translate')
     viewerRef.current?.setTransformMode?.('translate')
   }
 
@@ -314,11 +311,6 @@ export const StudyPage = () => {
     if (viewMode === 'single') return
     setEditMode(false)
     viewerRef.current?.setEditMode?.(false)
-  }
-
-  const handleTransformMode = (mode: string) => {
-    setTransformMode(mode)
-    viewerRef.current?.setTransformMode?.(mode)
   }
 
   const handleToggleNote = () => {
@@ -331,7 +323,6 @@ export const StudyPage = () => {
   }
 
   const handleActiveNote = (id: string | null) => {
-    setActiveNoteId(id)
     if (!id) {
       setNoteEditor((prev) => ({ ...prev, visible: false, id: null }))
       return

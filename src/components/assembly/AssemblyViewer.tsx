@@ -1655,7 +1655,18 @@ class AssemblyEngine {
   }
 }
 
-const AssemblyViewer = forwardRef(function AssemblyViewer(
+type AssemblyViewerProps = {
+  projectId: string
+  partOverrides?: Record<string, number>
+  onStatusChange?: (text: string) => void
+  onPartsChange?: (parts: string[]) => void
+  onSelectedChange?: (index: number, values?: unknown) => void
+  onNotesChange?: (notes: unknown[]) => void
+  onActiveNoteChange?: (id: string | null) => void
+  onGroupTransformChange?: (values: { posX: number; posY: number; posZ: number }) => void
+}
+
+const AssemblyViewer = forwardRef<HTMLCanvasElement, AssemblyViewerProps>(function AssemblyViewer(
   {
     projectId,
     partOverrides,
