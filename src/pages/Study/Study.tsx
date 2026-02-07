@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
+import toolSelectIcon from '/src/assets/viewer-tool-select.png'
+import toolHandIcon from '/src/assets/viewer-tool-hand.png'
+import toolChatIcon from '/src/assets/viewer-tool-chat.png'
+import toolAiIcon from '/src/assets/viewer-tool-ai.png'
 import { projectConfigs } from '../../data/projects'
 import './Study.css'
 import * as S from './Study.style'
@@ -81,6 +85,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const expenseToggleOn = expanded
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
   const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
+  const [aiPanelOpen, setAiPanelOpen] = useState(true)
 
   const storageKey = `assembly-layout-${safeProjectId}`
   const defaultStorageKey = `assembly-default-layout-${safeProjectId}`
@@ -575,23 +580,55 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               </S.ViewerHeader>
               <S.ViewerBody>
                 <S.ViewerToolbar>
-                  <S.ToolbarButton
-                    $active={editMode}
-                    onClick={handleSelectMode}
-                    disabled={viewMode === 'single'}
-                  >
-                    ➤
-                  </S.ToolbarButton>
-                  <S.ToolbarButton
-                    $active={!editMode}
-                    onClick={handleSwipeMode}
-                    disabled={viewMode === 'single'}
-                  >
-                    ✋
-                  </S.ToolbarButton>
-                  <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
-                    💬
-                  </S.ToolbarButton>
+                  {expenseToggleOn ? (
+                    <>
+                      <S.ToolbarButton
+                        $active={editMode}
+                        onClick={handleSelectMode}
+                        disabled={viewMode === 'single'}
+                      >
+                        <S.ToolbarIcon src={toolSelectIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton
+                        $active={!editMode}
+                        onClick={handleSwipeMode}
+                        disabled={viewMode === 'single'}
+                      >
+                        <S.ToolbarIcon src={toolHandIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
+                        <S.ToolbarIcon src={toolChatIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarDivider />
+                      <S.ToolbarButton
+                        type="button"
+                        $active={aiPanelOpen}
+                        onClick={() => setAiPanelOpen((prev) => !prev)}
+                      >
+                        <S.ToolbarIcon src={toolAiIcon} alt="" />
+                      </S.ToolbarButton>
+                    </>
+                  ) : (
+                    <>
+                      <S.ToolbarButton
+                        $active={editMode}
+                        onClick={handleSelectMode}
+                        disabled={viewMode === 'single'}
+                      >
+                        <S.ToolbarIcon src={toolSelectIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton
+                        $active={!editMode}
+                        onClick={handleSwipeMode}
+                        disabled={viewMode === 'single'}
+                      >
+                        <S.ToolbarIcon src={toolHandIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
+                        <S.ToolbarIcon src={toolChatIcon} alt="" />
+                      </S.ToolbarButton>
+                    </>
+                  )}
                 </S.ViewerToolbar>
                 {!expenseToggleOn && (
                   <S.ViewModeToggle>
@@ -653,7 +690,13 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
 
                 {expenseToggleOn && (
                   <S.ExpandedPanels>
-                    <S.ExpandedLeftPanel>{renderAiCard(true, true, true)}</S.ExpandedLeftPanel>
+                    {aiPanelOpen ? (
+                      <S.ExpandedLeftPanel>{renderAiCard(true, true, true)}</S.ExpandedLeftPanel>
+                    ) : (
+                      <S.AiCollapsedBadge type="button" onClick={() => setAiPanelOpen(true)}>
+                        AI
+                      </S.AiCollapsedBadge>
+                    )}
                     <S.ExpandedRightPanel>
                       <S.ExpandedViewModeToggle>
                         <S.ViewModeButton
