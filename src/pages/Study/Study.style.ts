@@ -1,52 +1,5 @@
 import styled from 'styled-components'
 
-export const StudyWrapper = styled.div`
-  width: 100%;
-  min-height: 100vh;
-  background: #0b0c0b;
-  color: #e6e8ee;
-  display: flex;
-  flex-direction: column;
-`
-
-export const NavBar = styled.header`
-  height: 64px;
-  display: grid;
-  grid-template-columns: 200px 1fr 200px;
-  align-items: center;
-  padding: 0 32px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-`
-
-export const Brand = styled.div`
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  font-size: 18px;
-`
-
-export const NavMenu = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  font-size: 14px;
-  color: #aeb8cc;
-`
-
-export const NavItem = styled.div<{ $active?: boolean }>`
-  color: ${({ $active }) => ($active ? '#e6e8ee' : '#aeb8cc')};
-  font-weight: ${({ $active }) => ($active ? 600 : 400)};
-`
-
-export const LogoutButton = styled.button`
-  justify-self: end;
-  padding: 6px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(110, 168, 254, 0.2);
-  background: transparent;
-  color: #c9d3e6;
-  font-size: 12px;
-`
-
 export const PageBody = styled.div`
   flex: 1;
   padding: 24px 32px 32px;
