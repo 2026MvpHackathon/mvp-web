@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import HomePage from './pages/Home/Home'
 import App from './App' 
 import  { StudyPage } from './pages/Study/Study';
+import AuthLayout from './widgets/AuthLayout/ui/AuthLayout';
 
 
 const router = createBrowserRouter([
@@ -20,7 +21,11 @@ const router = createBrowserRouter([
             {
                 path: "study",
                 element: <StudyPage />,
-              },
+            },
+            {
+                path: "auth",
+                element: <AuthLayout />,
+            },
         ],
     },
 
