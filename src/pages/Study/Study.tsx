@@ -461,16 +461,6 @@ export const StudyPage = () => {
   }, [viewMode, parts, selectedIndex])
 
   return (
-    <S.StudyWrapper>
-      <S.NavBar>
-        <S.Brand>SIMVEX</S.Brand>
-        <S.NavMenu>
-          <S.NavItem>Home</S.NavItem>
-          <S.NavItem $active>Study</S.NavItem>
-        </S.NavMenu>
-        <S.LogoutButton>로그아웃</S.LogoutButton>
-      </S.NavBar>
-
       <S.PageBody>
         <S.ContentGrid>
           <S.LeftColumn>
@@ -712,6 +702,5 @@ export const StudyPage = () => {
           </S.CenterColumn>
         </S.ContentGrid>
       </S.PageBody>
-    </S.StudyWrapper>
   )
 }
