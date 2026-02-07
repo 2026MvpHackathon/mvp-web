@@ -1,9 +1,7 @@
-import * as S from './Home.style'
-
-export const HomePage = ( ) => {
+const HomePage = ( ) => {
     return(
-        <div>
-            안녕
-        </div>
+        <div>home</div>
     );
 }
+
+export default HomePage;

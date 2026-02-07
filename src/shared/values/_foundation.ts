@@ -4,7 +4,6 @@
  *   color: ${colors.text.black};
  *   background-color: ${colors.background.f5};
  */
-
 export const colors = {
   main: {
     normal: "#E7EFDA",
