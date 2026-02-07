@@ -16,6 +16,11 @@ export const input_btn_container = styled.div`
     gap: 5rem;
     width: 100%;
 `
+export const input_btn__wrapper = styled.div`
+    ${flexColumn}
+    gap: 2.5rem;
+
+`
 
 
 // InputFieldName
@@ -37,3 +42,5 @@ export const input_field_name_small_text = styled.p`
     ${typography("body", "md", "semibold")};
     text-align: center;
 `
+
+

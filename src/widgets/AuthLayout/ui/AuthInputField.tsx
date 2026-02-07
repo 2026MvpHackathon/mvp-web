@@ -17,9 +17,11 @@ const AuthInputField = ({main, sub, inputNames, btn}: InputFieldNameProps) => {
                 <S.input_field_name_small_text>{sub}</S.input_field_name_small_text>
             </S.input_field_name>
             <S.input_btn_container>
-                {inputNames.map((inputName, index) => (
-                    <AuthInput key={index} title={inputName} isActive={false}/>
-                ))}
+                <S.input_btn__wrapper>
+                    {inputNames.map((inputName, index) => (
+                        <AuthInput key={index} title={inputName} isActive={false}/>
+                    ))}
+                </S.input_btn__wrapper>
                 <AuthLayoutBtn radius50={false} name={btn}/>
             </S.input_btn_container>
         </S.container>
