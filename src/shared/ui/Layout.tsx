@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import Header from '../../header/ui/Header';
+import Header from '@/widgets/header/ui/Header';
 import * as S from './Layout.style'
 import { useLocation } from 'react-router-dom';
 

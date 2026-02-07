@@ -2,13 +2,14 @@ import * as S from './AuthBtn.style'
 
 interface BtnRadiusResponse {
     radius50: boolean;
+    name: string;
 }
 
-const AuthBtn = ({radius50}: BtnRadiusResponse) => {
+const AuthBtn = ({radius50, name}: BtnRadiusResponse) => {
     return(
         <S.btn_container>
             <S.btn_text style={radius50? {borderRadius:'50px'}:{borderRadius: '14px'}}>
-                Btn
+                {name}
             </S.btn_text>
         </S.btn_container>
     );

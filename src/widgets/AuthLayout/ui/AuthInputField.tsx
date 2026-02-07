@@ -5,10 +5,11 @@ import * as S from './AuthInputField.style'
 interface InputFieldNameProps {
     main: string;
     sub: string;
-    inputName: string;
+    inputNames: string[];
+    btn: string
 }
 
-const AuthInputField = ({main, sub, inputName}: InputFieldNameProps) => {
+const AuthInputField = ({main, sub, inputNames, btn}: InputFieldNameProps) => {
     return(
         <S.container>
             <S.input_field_name>
@@ -16,8 +17,10 @@ const AuthInputField = ({main, sub, inputName}: InputFieldNameProps) => {
                 <S.input_field_name_small_text>{sub}</S.input_field_name_small_text>
             </S.input_field_name>
             <S.input_btn_container>
-                <AuthInput/>
-                <AuthLayoutBtn radius50={false}/>
+                {inputNames.map((inputName, index) => (
+                    <AuthInput key={index} title={inputName} isActive={false}/>
+                ))}
+                <AuthLayoutBtn radius50={false} name={btn}/>
             </S.input_btn_container>
         </S.container>
     );
