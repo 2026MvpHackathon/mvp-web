@@ -4,7 +4,7 @@ import { rgba } from 'polished' // 투명도 라이브러리
 import { colors } from "@/shared/values/_foundation";
 import { typography } from "@/shared/values/typography.mixin";
 
-export const btn_container = styled.div`
+export const btn_container = styled.button`
     ${flexCenter}
 
     width: 100%;

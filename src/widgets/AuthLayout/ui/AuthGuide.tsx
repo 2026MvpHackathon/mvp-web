@@ -1,4 +1,4 @@
-import * as S from './AuthLayoutGuide.style'
+import * as S from './AuthGuide.style'
 
 
 interface GuideTextResponse {
@@ -6,7 +6,7 @@ interface GuideTextResponse {
     smallText: string;
 }
 
-const AuthLayoutGuide = ({largeText, smallText}: GuideTextResponse) => {
+const AuthGuide = ({largeText, smallText}: GuideTextResponse) => {
     return(
         <S.guide_wrapper>
             <S.guide_large_text>{largeText}</S.guide_large_text>
@@ -15,4 +15,4 @@ const AuthLayoutGuide = ({largeText, smallText}: GuideTextResponse) => {
     );
 }
 
-export default AuthLayoutGuide;
+export default AuthGuide;

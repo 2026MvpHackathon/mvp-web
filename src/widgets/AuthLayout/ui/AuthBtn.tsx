@@ -1,10 +1,10 @@
-import * as S from './AuthLayoutBtn.style'
+import * as S from './AuthBtn.style'
 
 interface BtnRadiusResponse {
     radius50: boolean;
 }
 
-const AuthLayoutBtn = ({radius50}: BtnRadiusResponse) => {
+const AuthBtn = ({radius50}: BtnRadiusResponse) => {
     return(
         <S.btn_container>
             <S.btn_text style={radius50? {borderRadius:'50px'}:{borderRadius: '14px'}}>
@@ -14,4 +14,4 @@ const AuthLayoutBtn = ({radius50}: BtnRadiusResponse) => {
     );
 }
 
-export default AuthLayoutBtn;
+export default AuthBtn;

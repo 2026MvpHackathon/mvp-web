@@ -1,7 +1,7 @@
 import VisibilityOff from '@/assets/icons/VisibilityOff';
-import * as S from './AuthLayoutInput.style'
+import * as S from './AuthInput.style'
 
-const AuthLayoutInput = () => {
+const AuthInput = () => {
     return(
         <S.input_container>
             <S.input_fieldname>이메일</S.input_fieldname>
@@ -15,4 +15,4 @@ const AuthLayoutInput = () => {
     );
 }
 
-export default AuthLayoutInput;
+export default AuthInput;

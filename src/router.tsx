@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import HomePage from './pages/Home/Home'
 import App from './App' 
 import  { StudyPage } from './pages/Study/Study';
-import AuthLayout from './widgets/AuthLayout/ui/AuthLayout';
+import AuthPage from './pages/Auth/ui/Auth';
 
 
 const router = createBrowserRouter([
@@ -24,12 +24,12 @@ const router = createBrowserRouter([
             },
             {
                 path: "auth",
-                element: <AuthLayout />,
+                element: <AuthPage/>,
             },
         ],
     },
 
-    { path: "*", element: <Navigate to='/home'/>  },
+    { path: "*", element: <Navigate to='/auth'/>  },
 ])
   
 export default router;
