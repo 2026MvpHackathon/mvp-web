@@ -488,11 +488,38 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
 
   const renderPartsCard = (expanded: boolean) => (
     <S.PartsCard $expanded={expanded}>
-      <S.CardHeader>Parts</S.CardHeader>
-      <S.PartsList>
+      {expanded ? (
+        <S.PartsDetailSection>
+          {(() => {
+            const selectedBase =
+              displaySelectedIndex >= 0
+                ? normalizePartName(parts[displaySelectedIndex] || '')
+                : uniqueParts[0]?.base || ''
+            const selectedPart =
+              uniqueParts.find((item) => item.base === selectedBase) || uniqueParts[0]
+            const selectedLabel = selectedPart?.base || 'Main Frame'
+            const selectedThumb =
+              partThumbnails[selectedLabel] || getPartIconSvg(selectedLabel)
+            return (
+              <S.PartsDetail>
+                <S.PartsDetailLabel>Detail</S.PartsDetailLabel>
+                <S.PartsDetailImage style={{ backgroundImage: `url(${selectedThumb})` }} />
+                <S.PartsDetailTitle>{selectedLabel}</S.PartsDetailTitle>
+                <S.PartsDetailDesc>{partDescription}</S.PartsDetailDesc>
+              </S.PartsDetail>
+            )
+          })()}
+          <S.PartsDivider />
+          <S.PartsSectionLabel>Parts</S.PartsSectionLabel>
+        </S.PartsDetailSection>
+      ) : (
+        <S.CardHeader>Parts</S.CardHeader>
+      )}
+      <S.PartsList $expanded={expanded}>
         {uniqueParts.map((part) => (
           <S.PartRow
             key={part.base}
+            $expanded={expanded}
             $active={
               displaySelectedIndex >= 0 &&
               normalizePartName(parts[displaySelectedIndex] || '') === part.base
@@ -510,15 +537,16 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
             }}
           >
             <S.PartIcon
+              $expanded={expanded}
               style={{
                 backgroundImage: `url(${
                   partThumbnails[part.base] || getPartIconSvg(part.base)
                 })`,
               }}
             />
-            <S.PartMeta>
+            <S.PartMeta $expanded={expanded}>
               <S.PartTitle>{part.base}</S.PartTitle>
-              <S.PartDesc>{partDescription}</S.PartDesc>
+              {!expanded && <S.PartDesc>{partDescription}</S.PartDesc>}
             </S.PartMeta>
           </S.PartRow>
         ))}
@@ -565,18 +593,35 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                 <span>{projectLabel}</span>
                 <S.ViewerDivider />
                 <S.ViewerDescription>{projectDescription}</S.ViewerDescription>
-                <S.ProjectSelect
-                  value={safeProjectId}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                    handleProjectChange(event.target.value)
-                  }
-                >
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.label}
-                    </option>
-                  ))}
-                </S.ProjectSelect>
+                {!expenseToggleOn ? (
+                  <S.ProjectSelect
+                    value={safeProjectId}
+                    onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                      handleProjectChange(event.target.value)
+                    }
+                  >
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.label}
+                      </option>
+                    ))}
+                  </S.ProjectSelect>
+                ) : (
+                  <S.ExpandedViewModeToggle>
+                    <S.ViewModeButton
+                      $active={viewMode === 'single'}
+                      onClick={() => setViewMode('single')}
+                    >
+                      단일 부품
+                    </S.ViewModeButton>
+                    <S.ViewModeButton
+                      $active={viewMode === 'assembly'}
+                      onClick={() => setViewMode('assembly')}
+                    >
+                      조립도
+                    </S.ViewModeButton>
+                  </S.ExpandedViewModeToggle>
+                )}
               </S.ViewerHeader>
               <S.ViewerBody>
                 <S.ViewerToolbar>
@@ -690,28 +735,10 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
 
                 {expenseToggleOn && (
                   <S.ExpandedPanels>
-                    {aiPanelOpen ? (
+                    {aiPanelOpen && (
                       <S.ExpandedLeftPanel>{renderAiCard(true, true, true)}</S.ExpandedLeftPanel>
-                    ) : (
-                      <S.AiCollapsedBadge type="button" onClick={() => setAiPanelOpen(true)}>
-                        AI
-                      </S.AiCollapsedBadge>
                     )}
                     <S.ExpandedRightPanel>
-                      <S.ExpandedViewModeToggle>
-                        <S.ViewModeButton
-                          $active={viewMode === 'single'}
-                          onClick={() => setViewMode('single')}
-                        >
-                          단일 부품
-                        </S.ViewModeButton>
-                        <S.ViewModeButton
-                          $active={viewMode === 'assembly'}
-                          onClick={() => setViewMode('assembly')}
-                        >
-                          조립도
-                        </S.ViewModeButton>
-                      </S.ExpandedViewModeToggle>
                       {renderPartsCard(true)}
                     </S.ExpandedRightPanel>
                   </S.ExpandedPanels>
