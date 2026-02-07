@@ -4,7 +4,7 @@ import * as S from './Layout.style'
 
 const Layout = () => {
     const location = useLocation();
-    const hideHeader = location.pathname.startsWith('/study/expense');
+    const hideHeader = location.pathname.includes('/study/expense');
     return(
         <S.container>
             {!hideHeader && <Header/>}
