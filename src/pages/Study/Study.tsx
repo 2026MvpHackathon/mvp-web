@@ -186,10 +186,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
 
   const getPartThumbnailCandidates = (baseName: string) => {
     if (!projectConfig?.basePath) return []
-    const basePath =
-      safeProjectId === 'leafSpring' && baseName === 'Pin'
-        ? '/assets/Robot Gripper'
-        : projectConfig.basePath
+    const isLeafSpringPin = safeProjectId === 'leafSpring' && baseName === 'Spring Pin'
+    const basePath = isLeafSpringPin ? '/assets/Robot Gripper' : projectConfig.basePath
     const candidates = new Set<string>()
     const addCandidate = (name: string) => {
       if (!name) return
@@ -201,7 +199,11 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       if (lower !== name) addCandidate(lower)
     }
     const trimmed = baseName.replace(/\s+/g, ' ').trim()
-    addCaseVariants(trimmed)
+    if (isLeafSpringPin) {
+      addCaseVariants('Pin')
+    } else {
+      addCaseVariants(trimmed)
+    }
     if (baseName.includes(' MIR')) {
       addCaseVariants(baseName.replace(' MIR', '_MIR'))
     }
@@ -615,14 +617,16 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                 >
                   <S.NoteToggleIcon>⌄</S.NoteToggleIcon>
                 </S.NoteToggleOutside>
-                <S.ExpenseToggleOutside
-                  type="button"
-                  aria-label="expense toggle"
-                  title="expense toggle"
-                  data-active={expenseToggleOn}
-                  $shifted={expenseToggleOn}
-                  onClick={handleExpenseToggle}
-                />
+                {!expenseToggleOn && (
+                  <S.ExpenseToggleOutside
+                    type="button"
+                    aria-label="expense toggle"
+                    title="expense toggle"
+                    data-active={expenseToggleOn}
+                    $shifted={expenseToggleOn}
+                    onClick={handleExpenseToggle}
+                  />
+                )}
                 {notePanelOpen && (
                   <S.NotePanel $shifted={expenseToggleOn}>
                     <S.NoteHeader>
@@ -687,7 +691,27 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                     if (raw) {
                       try {
                         const transforms = JSON.parse(raw)
-                        viewerRef.current?.applyTransformsByName?.(transforms)
+                        if (safeProjectId === 'leafSpring') {
+                          const remapped: ViewerTransforms = {}
+                          Object.entries(transforms).forEach(([name, values]) => {
+                            if (name.startsWith('Pin ')) {
+                              remapped[`Spring Pin ${name.replace('Pin ', '')}`] =
+                                values as ViewerTransforms[string]
+                            } else {
+                              remapped[name] = values as ViewerTransforms[string]
+                            }
+                          })
+                          viewerRef.current?.applyTransformsByName?.(remapped)
+                        } else if (safeProjectId === 'robotGripper') {
+                          const filtered: ViewerTransforms = {}
+                          Object.entries(transforms).forEach(([name, values]) => {
+                            if (name.startsWith('Spring Pin ')) return
+                            filtered[name] = values as ViewerTransforms[string]
+                          })
+                          viewerRef.current?.applyTransformsByName?.(filtered)
+                        } else {
+                          viewerRef.current?.applyTransformsByName?.(transforms)
+                        }
                         setStatus('로컬 저장값 적용')
                       } catch (error) {
                         console.error('레이아웃 자동 불러오기 실패', error)
@@ -770,7 +794,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                 )}
 
                 <S.ViewerFooter $expanded={expenseToggleOn}>
-                  <S.ProgressRow>
+                  <S.ProgressRow $expanded={expenseToggleOn}>
                     <S.ProgressWrap>
                       <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
                         {Math.round(explodePercent)}%
@@ -788,6 +812,16 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       />
                     </S.ProgressWrap>
                   </S.ProgressRow>
+                  {expenseToggleOn && (
+                    <S.ExpenseToggleOutside
+                      type="button"
+                      aria-label="expense toggle"
+                      title="expense toggle"
+                      data-active={expenseToggleOn}
+                      $shifted={expenseToggleOn}
+                      onClick={handleExpenseToggle}
+                    />
+                  )}
                 </S.ViewerFooter>
               </S.ViewerBody>
           </S.ViewerCard>

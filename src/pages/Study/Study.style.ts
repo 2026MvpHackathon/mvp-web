@@ -150,9 +150,11 @@ export const AiChatBubble = styled.div`
 
 export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
   position: relative;
-  height: ${({ $expanded }) => ($expanded ? '800px' : 'auto')};
-  min-height: ${({ $expanded }) => ($expanded ? '800px' : '520px')};
-  max-height: ${({ $expanded }) => ($expanded ? '800px' : 'none')};
+  width: ${({ $expanded }) => ($expanded ? 'calc(100% + 40px)' : '100%')};
+  margin: ${({ $expanded }) => ($expanded ? '0 -20px' : '0')};
+  height: ${({ $expanded }) => ($expanded ? '920px' : 'auto')};
+  min-height: ${({ $expanded }) => ($expanded ? '920px' : '520px')};
+  max-height: ${({ $expanded }) => ($expanded ? '920px' : 'none')};
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
@@ -323,9 +325,9 @@ export const NoteToggleIcon = styled.span`
 `
 
 export const ExpenseToggleOutside = styled.button<{ $shifted?: boolean }>`
-  position: absolute;
-  right: 15px;
-  top: ${({ $shifted }) => ($shifted ? '690px' : '590px')};
+  position: ${({ $shifted }) => ($shifted ? 'static' : 'absolute')};
+  right: ${({ $shifted }) => ($shifted ? 'auto' : '15px')};
+  top: ${({ $shifted }) => ($shifted ? 'auto' : '590px')};
   width: 39px;
   height: 39px;
   border-radius: 50%;
@@ -396,18 +398,24 @@ export const ViewerFooter = styled.div<{ $expanded?: boolean }>`
   position: absolute;
   left: 18px;
   right: 18px;
-  bottom: ${({ $expanded }) => ($expanded ? '90px' : '16px')};
-  display: grid;
-  gap: 6px;
+  bottom: ${({ $expanded }) => ($expanded ? '45px' : '16px')};
+  display: ${({ $expanded }) => ($expanded ? 'flex' : 'grid')};
+  align-items: ${({ $expanded }) => ($expanded ? 'center' : 'stretch')};
+  justify-content: ${({ $expanded }) => ($expanded ? 'center' : 'stretch')};
+  gap: ${({ $expanded }) => ($expanded ? '12px' : '6px')};
   font-size: 11px;
   color: #aeb8cc;
-  z-index: 3;
+  z-index: 4;
+  transform: ${({ $expanded }) => ($expanded ? 'translateX(-175px)' : 'none')};
 `
 
-export const ProgressRow = styled.div`
+export const ProgressRow = styled.div<{ $expanded?: boolean }>`
   display: flex;
   align-items: center;
   gap: 0;
+  width: ${({ $expanded }) => ($expanded ? 'calc(100% - 500px)' : '100%')};
+  min-width: ${({ $expanded }) => ($expanded ? '360px' : 'auto')};
+  margin: 0;
 `
 
 export const ProgressWrap = styled.div`

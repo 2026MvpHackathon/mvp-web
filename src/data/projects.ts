@@ -253,10 +253,10 @@ export const leafSpringManualDefaults = {
   "Support-Rubber": { pos: [169.96, 0, 30.3], rot: [90, 90, 0], scale: 0.22, scaleX: 0.22, scaleY: 0.22, scaleZ: 0.22 },
   "Support 1": { pos: [187, -15.57, 40.03], rot: [90, 0, 120], scale: 0.48, scaleX: 0.48, scaleY: 0.48, scaleZ: 0.48 },
   "Support 2": { pos: [187, 15.35, 40.03], rot: [90, 0, -60], scale: 0.48, scaleX: 0.48, scaleY: 0.48, scaleZ: 0.48 },
-  "Pin 1": { pos: [-167, 0, 14.06], rot: [0, 0, 90], scale: 0.35, scaleX: 0.35, scaleY: 0.16, scaleZ: 0.16 },
-  "Pin 2": { pos: [-12.66, 0, -26.41], rot: [0, 90, 0], scale: 0.36, scaleX: 0.36, scaleY: 0.14, scaleZ: 0.14 },
-  "Pin 3": { pos: [169.89, 0, 29.89], rot: [0, 0, 90], scale: 0.34, scaleX: 0.34, scaleY: 0.16, scaleZ: 0.16 },
-  "Pin 4": { pos: [203.94, 0, 49.79], rot: [0, 0, 90], scale: 0.45, scaleX: 0.45, scaleY: 0.16, scaleZ: 0.16 }
+  "Spring Pin 1": { pos: [-167, 0, 14.06], rot: [0, 0, 90], scale: 0.35, scaleX: 0.35, scaleY: 0.16, scaleZ: 0.16 },
+  "Spring Pin 2": { pos: [-12.66, 0, -26.41], rot: [0, 90, 0], scale: 0.36, scaleX: 0.36, scaleY: 0.14, scaleZ: 0.14 },
+  "Spring Pin 3": { pos: [169.89, 0, 29.89], rot: [0, 0, 90], scale: 0.34, scaleX: 0.34, scaleY: 0.16, scaleZ: 0.16 },
+  "Spring Pin 4": { pos: [203.94, 0, 49.79], rot: [0, 0, 90], scale: 0.45, scaleX: 0.45, scaleY: 0.16, scaleZ: 0.16 }
 };
 
 export const robotArmManualDefaults = {
@@ -373,7 +373,7 @@ export const projectConfigs: Record<string, ProjectConfig> = {
       "Support-Rubber 60mm.glb",
       "Support-Rubber.glb",
       "Support.glb",
-      "/assets/Robot Gripper/Pin.glb"
+      { file: "/assets/Robot Gripper/Pin.glb", name: "Spring Pin" }
     ]
   },
   robotArm: {
