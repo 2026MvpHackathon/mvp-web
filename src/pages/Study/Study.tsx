@@ -271,12 +271,12 @@ export const StudyPage = () => {
   const handleProjectChange = (id: string) => {
     setProjectId(id)
     localStorage.setItem('assembly-last-project', id)
-    viewerRef.current?.setProject(id, { partOverrides: partOverridesByProject[id] })
+    viewerRef.current?.setProject?.(id, { partOverrides: partOverridesByProject[id] })
   }
 
   const handleSelectPart = (index: number) => {
     setSelectedIndex(index)
-    viewerRef.current?.setSelectedIndex(index)
+    viewerRef.current?.setSelectedIndex?.(index)
     if (viewMode === 'single' && index >= 0) {
       const name = parts[index]
       if (name) {
@@ -292,45 +292,45 @@ export const StudyPage = () => {
     const nextPercent = Math.min(100, Math.max(0, percent))
     const scale = percentToScale(nextPercent)
     setExplodePercent(nextPercent)
-    viewerRef.current?.setExplodeScale(scale)
+    viewerRef.current?.setExplodeScale?.(scale)
     if (nextPercent <= 1) {
       setIsAssemble(true)
-      viewerRef.current?.setTarget(0)
+      viewerRef.current?.setTarget?.(0)
     } else {
       setIsAssemble(false)
-      viewerRef.current?.setTarget(1)
+      viewerRef.current?.setTarget?.(1)
     }
   }
 
   const handleSelectMode = () => {
     if (viewMode === 'single') return
     setEditMode(true)
-    viewerRef.current?.setEditMode(true)
+    viewerRef.current?.setEditMode?.(true)
     setTransformMode('translate')
-    viewerRef.current?.setTransformMode('translate')
+    viewerRef.current?.setTransformMode?.('translate')
   }
 
   const handleSwipeMode = () => {
     if (viewMode === 'single') return
     setEditMode(false)
-    viewerRef.current?.setEditMode(false)
+    viewerRef.current?.setEditMode?.(false)
   }
 
   const handleTransformMode = (mode: string) => {
     setTransformMode(mode)
-    viewerRef.current?.setTransformMode(mode)
+    viewerRef.current?.setTransformMode?.(mode)
   }
 
   const handleToggleNote = () => {
     const next = !noteMode
     setNoteMode(next)
-    viewerRef.current?.setNoteMode(next)
+    viewerRef.current?.setNoteMode?.(next)
     if (!next) {
       setNoteEditor((prev) => ({ ...prev, visible: false, id: null }))
     }
   }
 
-  const handleActiveNote = (id: string) => {
+  const handleActiveNote = (id: string | null) => {
     setActiveNoteId(id)
     if (!id) {
       setNoteEditor((prev) => ({ ...prev, visible: false, id: null }))
@@ -349,13 +349,13 @@ export const StudyPage = () => {
   const handleNoteEditorChange = (value: string) => {
     setNoteEditor((prev) => ({ ...prev, text: value }))
     if (noteEditor.id) {
-      viewerRef.current?.updateNote(noteEditor.id, value)
+      viewerRef.current?.updateNote?.(noteEditor.id, value)
     }
   }
 
   const handleNoteSubmit = () => {
     if (!noteEditor.id) return
-    viewerRef.current?.updateNote(noteEditor.id, noteEditor.text)
+    viewerRef.current?.updateNote?.(noteEditor.id, noteEditor.text)
     setNoteEditor((prev) => ({ ...prev, visible: false }))
   }
 
@@ -626,7 +626,7 @@ export const StudyPage = () => {
                   projectId={projectId}
                   partOverrides={partOverrides}
                   onStatusChange={setStatus}
-                  onPartsChange={(nextParts) => {
+                  onPartsChange={(nextParts: string[]) => {
                     setParts(nextParts)
                     if (nextParts.length) {
                       setSelectedIndex(-1)
@@ -645,10 +645,10 @@ export const StudyPage = () => {
                       }
                     }
                   }}
-                  onSelectedChange={(index) => {
+                  onSelectedChange={(index: number) => {
                     setSelectedIndex(index)
                   }}
-                  onNotesChange={(nextNotes) => setNotes(nextNotes as Note[])}
+                  onNotesChange={(nextNotes: Note[]) => setNotes(nextNotes)}
                   onActiveNoteChange={handleActiveNote}
                 />
 
