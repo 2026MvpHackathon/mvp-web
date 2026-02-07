@@ -10,7 +10,6 @@ export const btn_container = styled.div`
     width: 100%;
     padding: 16px 0px;
 
-    border-radius: 50px;
     opacity: 0.8;
     background: rgba(8, 9, 9, 0.10);
 `
@@ -18,5 +17,4 @@ export const btn_container = styled.div`
 export const btn_text = styled.span`
     color: ${rgba(colors.main.normal, 0.7)};
     ${typography("body", "md", "semibold")}; 
-
 `
