@@ -1,3 +1,4 @@
+import { glassEffect } from '@/shared/ui/GlassEffect';
 import { flexCenter, flexRow } from '@/shared/values/_flex';
 import styled from 'styled-components'
 
@@ -9,9 +10,13 @@ export const auth_container = styled.div`
 
     ${flexRow}
 `
-export const auth_area = styled.div`
+export const auth_area_glass_off = styled.div`
     width: 50%;
     height: 100%;
 
     ${flexCenter}
+`
+
+export const auth_area_glass = styled(auth_area_glass_off)`
+    ${glassEffect}
 `

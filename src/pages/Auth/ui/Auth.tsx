@@ -6,12 +6,12 @@ import SelectLoginOrSignupStep from './steps/SelectLoginOrSignupStep';
 const AuthPage = () => {
     return(
         <S.auth_container>
-            <S.auth_area>
+            <S.auth_area_glass_off>
                 <AuthGuide largeText={'large'} smallText={'small'}/>
-            </S.auth_area>
-            <S.auth_area>
+            </S.auth_area_glass_off>
+            <S.auth_area_glass>
                 <SelectLoginOrSignupStep/>
-            </S.auth_area>
+            </S.auth_area_glass>
         </S.auth_container>
 
     );
