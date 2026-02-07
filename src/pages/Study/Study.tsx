@@ -138,6 +138,15 @@ export const StudyPage = () => {
     { seen: new Set<string>(), items: [] as { name: string; base: string }[] },
   ).items
 
+  const displaySelectedIndex =
+    viewMode === 'single'
+      ? selectedIndex >= 0
+        ? selectedIndex
+        : parts.length > 0
+          ? 0
+          : -1
+      : selectedIndex
+
   const getPartIconSvg = (name: string) => {
     const lower = name.toLowerCase()
     let color = '#6ea8fe'
@@ -442,14 +451,21 @@ export const StudyPage = () => {
         setEditMode(false)
         viewerRef.current?.setEditMode?.(false)
       }
-      const nextIndex = selectedIndex >= 0 ? selectedIndex : 0
-      const name = parts[nextIndex]
-      if (!name) return
-      if (selectedIndex !== nextIndex) {
-        setSelectedIndex(nextIndex)
-        viewerRef.current?.setSelectedIndex?.(nextIndex)
+      if (selectedIndex < 0) {
+        const fallbackIndex = parts.length > 0 ? 0 : -1
+        const fallbackName = fallbackIndex >= 0 ? parts[fallbackIndex] : ''
+        viewerRef.current?.setSelectedIndex?.(-1)
+        if (!fallbackName) return
+        viewerRef.current?.setHiddenParts?.(
+          parts.filter((_, idx) => idx !== fallbackIndex),
+        )
+        viewerRef.current?.focusOnPart?.(fallbackName)
+        return
       }
-      viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== nextIndex))
+      const name = parts[selectedIndex]
+      if (!name) return
+      viewerRef.current?.setSelectedIndex?.(selectedIndex)
+      viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== selectedIndex))
       viewerRef.current?.focusOnPart?.(name)
       return
     }
@@ -471,8 +487,8 @@ export const StudyPage = () => {
                   <S.PartRow
                     key={part.base}
                     $active={
-                      selectedIndex >= 0 &&
-                      normalizePartName(parts[selectedIndex] || '') === part.base
+                      displaySelectedIndex >= 0 &&
+                      normalizePartName(parts[displaySelectedIndex] || '') === part.base
                     }
                     onClick={() => {
                       const nextIndex = parts.findIndex(
