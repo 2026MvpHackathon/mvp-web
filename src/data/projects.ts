@@ -6,34 +6,230 @@ export const layoutDefaults = {
 };
 
 export const droneManualDefaults = {
-  "Main frame": { pos: [0, 0, 0], rot: [0, 0, 0], scale: 1.0 },
-  "Main frame MIR": { pos: [0, 0, 13], rot: [0, 0, 0], scale: 1.0 },
-  "Leg 1": { pos: [47, -58, 1], rot: [90, -114, 0], scale: 0.3 },
-  "Leg 2": { pos: [-46, -58, 1], rot: [90, 116, 0], scale: 0.3 },
-  "Leg 3": { pos: [42, 47, 1], rot: [-90, -140, 180], scale: 0.3 },
-  "Leg 4": { pos: [-43, 48, 1], rot: [90, 38, 0], scale: 0.3 },
-  "Arm 1": { pos: [-50, 57, 12], rot: [90, 56, 180], scale: 0.11 },
-  "Arm 2": { pos: [49, 55, 12], rot: [90, 56, 180], scale: 0.11 },
-  "Arm 3": { pos: [-56, -63, 12], rot: [90, -45, 180], scale: 0.11 },
-  "Arm 4": { pos: [57, -62, 12], rot: [90, -135, 180], scale: 0.11 },
-  "Blade 1": { pos: [-50, 57, 16], rot: [90, 45, 0], scale: 0.5 },
-  "Blade 2": { pos: [49, 55, 16], rot: [90, 135, 0], scale: 0.5 },
-  "Blade 3": { pos: [-56, -63, 16], rot: [90, -45, 0], scale: 0.5 },
-  "Blade 4": { pos: [57, -62, 16], rot: [90, -135, 0], scale: 0.5 },
-  "Gearing 1": { pos: [51, -60, 5], rot: [-90, 45, 180], scale: 0.1 },
-  "Gearing 2": { pos: [-50, -60, 4], rot: [90, 135, 0], scale: 0.1 },
-  "Gearing 3": { pos: [-46, 52, 5], rot: [90, -45, 0], scale: 0.1 },
-  "Gearing 4": { pos: [44, 50, 5], rot: [90, -135, 0], scale: 0.1 },
-  "Beater disc 1": { pos: [0, 61, 7], rot: [-180, -90, 180], scale: 0.12 },
-  "Nut 1": { pos: [-35.66, 38.07, 9.75], rot: [90, 0, 0], scale: 0.03 },
-  "Nut 2": { pos: [35.6, 38.04, 10.0], rot: [90, 0, 0], scale: 0.03 },
-  "Nut 3": { pos: [35.59, -53.21, 10.0], rot: [90, 0, 0], scale: 0.03 },
-  "Nut 4": { pos: [-35.58, -53.15, 10.0], rot: [90, 0, 0], scale: 0.03 },
-  "Screw 1": { pos: [-35.57, 37.99, 1.7], rot: [-90, 0, 0], scale: 0.02 },
-  "Screw 2": { pos: [35.57, 38.11, 1.7], rot: [-90, 0, 0], scale: 0.02 },
-  "Screw 3": { pos: [35.75, -53.26, 1.7], rot: [-90, 0, 0], scale: 0.02 },
-  "Screw 4": { pos: [-35.51, -53.18, 1.7], rot: [-90, 0, 0], scale: 0.02 },
-  xyz: { pos: [0.46, 8.64, -0.3], rot: [90, 0, 0], scale: 0.15 }
+  "Main frame": {
+    pos: [0, 0, 0],
+    rot: [0, 0, 0],
+    scale: 1,
+    scaleX: 1,
+    scaleY: 1,
+    scaleZ: 1
+  },
+  "Main frame MIR": {
+    pos: [0, 0, 13],
+    rot: [0, 0, 0],
+    scale: 1,
+    scaleX: 1,
+    scaleY: 1,
+    scaleZ: 1
+  },
+  "Arm 1": {
+    pos: [-50, 57, 12],
+    rot: [90, 56, 180],
+    scale: 0.11,
+    scaleX: 0.11,
+    scaleY: 0.11,
+    scaleZ: 0.11
+  },
+  "Leg 1": {
+    pos: [47, -58, 1],
+    rot: [90, -114, 0],
+    scale: 0.3,
+    scaleX: 0.3,
+    scaleY: 0.3,
+    scaleZ: 0.3
+  },
+  "Gearing 1": {
+    pos: [51, -60, 5],
+    rot: [-90, 45, 180],
+    scale: 0.1,
+    scaleX: 0.1,
+    scaleY: 0.1,
+    scaleZ: 0.1
+  },
+  "Blade 1": {
+    pos: [-50, 57, 16],
+    rot: [90, 45, 0],
+    scale: 0.5,
+    scaleX: 0.5,
+    scaleY: 0.5,
+    scaleZ: 0.5
+  },
+  "Arm 2": {
+    pos: [49, 55, 12],
+    rot: [90, 56, 180],
+    scale: 0.11,
+    scaleX: 0.11,
+    scaleY: 0.11,
+    scaleZ: 0.11
+  },
+  "Leg 2": {
+    pos: [-46, -58, 1],
+    rot: [90, 116, 0],
+    scale: 0.3,
+    scaleX: 0.3,
+    scaleY: 0.3,
+    scaleZ: 0.3
+  },
+  "Gearing 2": {
+    pos: [-50, -60, 4],
+    rot: [90, 135, 0],
+    scale: 0.1,
+    scaleX: 0.1,
+    scaleY: 0.1,
+    scaleZ: 0.1
+  },
+  "Blade 2": {
+    pos: [49, 55, 16],
+    rot: [90, 135, 0],
+    scale: 0.5,
+    scaleX: 0.5,
+    scaleY: 0.5,
+    scaleZ: 0.5
+  },
+  "Arm 3": {
+    pos: [-56, -63, 12],
+    rot: [90, -45, 180],
+    scale: 0.11,
+    scaleX: 0.11,
+    scaleY: 0.11,
+    scaleZ: 0.11
+  },
+  "Leg 3": {
+    pos: [42, 47, 1],
+    rot: [-90, -140, 180],
+    scale: 0.3,
+    scaleX: 0.3,
+    scaleY: 0.3,
+    scaleZ: 0.3
+  },
+  "Gearing 3": {
+    pos: [-46, 52, 5],
+    rot: [90, -45, 0],
+    scale: 0.1,
+    scaleX: 0.1,
+    scaleY: 0.1,
+    scaleZ: 0.1
+  },
+  "Blade 3": {
+    pos: [-56, -63, 16],
+    rot: [90, -45, 0],
+    scale: 0.5,
+    scaleX: 0.5,
+    scaleY: 0.5,
+    scaleZ: 0.5
+  },
+  "Arm 4": {
+    pos: [57, -62, 12],
+    rot: [90, -135, 180],
+    scale: 0.11,
+    scaleX: 0.11,
+    scaleY: 0.11,
+    scaleZ: 0.11
+  },
+  "Leg 4": {
+    pos: [-43, 48, 1],
+    rot: [90, 38, 0],
+    scale: 0.3,
+    scaleX: 0.3,
+    scaleY: 0.3,
+    scaleZ: 0.3
+  },
+  "Gearing 4": {
+    pos: [44, 50, 5],
+    rot: [90, -135, 0],
+    scale: 0.1,
+    scaleX: 0.1,
+    scaleY: 0.1,
+    scaleZ: 0.1
+  },
+  "Blade 4": {
+    pos: [57, -62, 16],
+    rot: [90, -135, 0],
+    scale: 0.5,
+    scaleX: 0.5,
+    scaleY: 0.5,
+    scaleZ: 0.5
+  },
+  "Beater disc 1": {
+    pos: [0, 61, 7],
+    rot: [-180, -90, 180],
+    scale: 0.12,
+    scaleX: 0.12,
+    scaleY: 0.12,
+    scaleZ: 0.12
+  },
+  "Nut 1": {
+    pos: [-35.66, 38.07, 10.75],
+    rot: [90, 0, 0],
+    scale: 0.03,
+    scaleX: 0.03,
+    scaleY: 0.03,
+    scaleZ: 0.03
+  },
+  "Nut 2": {
+    pos: [35.6, 38.04, 11],
+    rot: [90, 0, 0],
+    scale: 0.03,
+    scaleX: 0.03,
+    scaleY: 0.03,
+    scaleZ: 0.03
+  },
+  "Nut 3": {
+    pos: [35.59, -53.21, 11],
+    rot: [90, 0, 0],
+    scale: 0.03,
+    scaleX: 0.03,
+    scaleY: 0.03,
+    scaleZ: 0.03
+  },
+  "Nut 4": {
+    pos: [-35.58, -53.15, 11],
+    rot: [90, 0, 0],
+    scale: 0.03,
+    scaleX: 0.03,
+    scaleY: 0.03,
+    scaleZ: 0.03
+  },
+  "Screw 1": {
+    pos: [-35.57, 37.99, 2.7],
+    rot: [-90, 0, 0],
+    scale: 0.02,
+    scaleX: 0.02,
+    scaleY: 0.02,
+    scaleZ: 0.02
+  },
+  "Screw 2": {
+    pos: [35.57, 38.11, 2.7],
+    rot: [-90, 0, 0],
+    scale: 0.02,
+    scaleX: 0.02,
+    scaleY: 0.02,
+    scaleZ: 0.02
+  },
+  "Screw 3": {
+    pos: [35.75, -53.26, 2.7],
+    rot: [-90, 0, 0],
+    scale: 0.02,
+    scaleX: 0.02,
+    scaleY: 0.02,
+    scaleZ: 0.02
+  },
+  "Screw 4": {
+    pos: [-35.51, -53.18, 2.7],
+    rot: [-90, 0, 0],
+    scale: 0.02,
+    scaleX: 0.02,
+    scaleY: 0.02,
+    scaleZ: 0.02
+  },
+  xyz: {
+    pos: [0.46, 8.64, -0.3],
+    rot: [90, 0, 0],
+    scale: 0.15,
+    scaleX: 0.15,
+    scaleY: 0.15,
+    scaleZ: 0.15
+  }
 };
 
 export const suspensionManualDefaults = {
@@ -138,31 +334,6 @@ export const robotGripperManualDefaults = {
   "Pin 10": { pos: [11.9, -99.96, 5.83], rot: [0, 90, 0], scale: 0.16 }
 };
 
-export const machineViceManualDefaults = {
-  "Part1 Fuhrung": { pos: [-1.2, 0, 12.89], rot: [0, 0, 0], scale: 0.76 },
-  "Part1 1": { pos: [136.84, -31.43, 9.72], rot: [180, 0, 0], scale: 0.17 },
-  "Part1 2": { pos: [195.13, 0, 72.77], rot: [0, 0, 0], scale: 1 },
-  "Part2 Feste Backe": { pos: [51.93, 0, 20.96], rot: [90, -90, 0], scale: 0.4 },
-  "Part3-lose backe": { pos: [-14.55, 0, 27.56], rot: [90, -90, 0], scale: 0.41 },
-  "Part4 spindelsockel": { pos: [-53.43, 0, 21.24], rot: [90, 90, 0], scale: 0.3 },
-  "Part5-Spannbacke 1": { pos: [45.75, 0, 32.99], rot: [90, -90, 0], scale: 0.42 },
-  "Part5-Spannbacke 2": { pos: [-0.5, 0, 33.16], rot: [90, 90, 0], scale: 0.42 },
-  "Part6-fuhrungschiene 1": { pos: [-14.63, -18.5, 14.11], rot: [0, 0, 0], scale: 0.27 },
-  "Part6-fuhrungschiene 2": { pos: [-14.63, 18.51, 14.16], rot: [0, 0, 180], scale: 0.27 },
-  "Part7-TrapezSpindel": { pos: [-71.29, 0, 31.98], rot: [0, -90, 45], scale: 0.83 },
-  "Part8-grundplatte": { pos: [0.02, 0, 6.44], rot: [0, 0, 0], scale: 1 },
-  "Part9-Druckhulse 1": { pos: [-26.25, -21.42, 10.99], rot: [0, 180, 0], scale: 0.04 },
-  "Part9-Druckhulse 2": { pos: [-2.36, -21.42, 10.99], rot: [0, 180, 0], scale: 0.04 },
-  "Part9-Druckhulse 3": { pos: [-26.25, 21.4, 10.99], rot: [0, 180, 0], scale: 0.04 },
-  "Part9-Druckhulse 4": { pos: [-2.36, 21.4, 10.99], rot: [0, 180, 0], scale: 0.04 },
-  "Part9-Druckhulse 5": { pos: [-30.53, 8.11, 4.09], rot: [0, 0, 0], scale: 0.03 },
-  "Part9-Druckhulse 6": { pos: [-30.53, -8.11, 4.09], rot: [0, 0, 0], scale: 0.03 },
-  "Part9-Druckhulse 7": { pos: [-1.23, -8.11, 4.09], rot: [0, 0, 0], scale: 0.03 },
-  "Part9-Druckhulse 8": { pos: [-1.23, 8.11, 4.09], rot: [0, 0, 0], scale: 0.03 },
-  "Part9-Druckhulse 9": { pos: [28.16, 8.11, 4.09], rot: [0, 0, 0], scale: 0.03 },
-  "Part9-Druckhulse 10": { pos: [28.16, -8.11, 4.09], rot: [0, 0, 0], scale: 0.03 }
-};
-
 export type ProjectFile = string | { file: string; name?: string }
 
 export type ProjectConfig = {
@@ -203,30 +374,6 @@ export const projectConfigs: Record<string, ProjectConfig> = {
       "Support-Rubber.glb",
       "Support.glb",
       "/assets/Robot Gripper/Pin.glb"
-    ]
-  },
-  machineVice: {
-    label: "Machine Vice",
-    basePath: "/assets/Machine Vice",
-    type: "simple",
-    manualDefaults: machineViceManualDefaults,
-    defaultOverrides: {
-      "Part1.glb": 2,
-      "Part5-Spannbacke.glb": 2,
-      "Part6-fuhrungschiene.glb": 2,
-      "Part9-Druckhulse.glb": 10
-    },
-    files: [
-      "Part1 Fuhrung.glb",
-      "Part1.glb",
-      "Part2 Feste Backe.glb",
-      "Part3-lose backe.glb",
-      "Part4 spindelsockel.glb",
-      "Part5-Spannbacke.glb",
-      "Part6-fuhrungschiene.glb",
-      "Part7-TrapezSpindel.glb",
-      "Part8-grundplatte.glb",
-      "Part9-Druckhulse.glb"
     ]
   },
   robotArm: {

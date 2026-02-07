@@ -95,6 +95,7 @@ export const StudyPage = () => {
     visible: false,
   })
   const [notePanelOpen, setNotePanelOpen] = useState(true)
+  const [expenseToggleOn, setExpenseToggleOn] = useState(false)
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
   const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
 
@@ -594,6 +595,13 @@ export const StudyPage = () => {
                 >
                   <S.NoteToggleIcon>⌄</S.NoteToggleIcon>
                 </S.NoteToggleOutside>
+                <S.ExpenseToggleOutside
+                  type="button"
+                  aria-label="expense toggle"
+                  title="expense toggle"
+                  data-active={expenseToggleOn}
+                  onClick={() => setExpenseToggleOn((prev) => !prev)}
+                />
                 {notePanelOpen && (
                   <S.NotePanel>
                     <S.NoteHeader>
@@ -639,6 +647,28 @@ export const StudyPage = () => {
                         setStatus('로컬 저장값 적용')
                       } catch (error) {
                         console.error('레이아웃 자동 불러오기 실패', error)
+                      }
+                    }
+                    if (projectId === 'drone') {
+                      const manualDefaults = projectConfig?.manualDefaults as
+                        | Record<string, { pos?: number[]; rot?: number[]; scale?: number; scaleX?: number; scaleY?: number; scaleZ?: number }>
+                        | undefined
+                      if (manualDefaults) {
+                        const hardwareOverrides: ViewerTransforms = {}
+                        Object.entries(manualDefaults).forEach(([name, values]) => {
+                          if (!name.startsWith('Nut ') && !name.startsWith('Screw ')) return
+                          hardwareOverrides[name] = {
+                            pos: values.pos,
+                            rot: values.rot,
+                            scale: values.scale,
+                            scaleX: values.scaleX,
+                            scaleY: values.scaleY,
+                            scaleZ: values.scaleZ,
+                          }
+                        })
+                        if (Object.keys(hardwareOverrides).length > 0) {
+                          viewerRef.current?.applyTransformsByName?.(hardwareOverrides)
+                        }
                       }
                     }
                   }}
@@ -712,7 +742,6 @@ export const StudyPage = () => {
 
             <S.BottomChat>
               <S.ChatPlaceholder>무엇이 궁금한가요?</S.ChatPlaceholder>
-              <S.ChatTag>{projectLabel}</S.ChatTag>
               <S.ChatSend>↗</S.ChatSend>
             </S.BottomChat>
           </S.CenterColumn>
