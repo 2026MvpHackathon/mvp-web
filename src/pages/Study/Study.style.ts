@@ -6,9 +6,10 @@ export const PageBody = styled.div`
   margin-top: -10px;
 `
 
-export const ContentGrid = styled.div`
+export const ContentGrid = styled.div<{ $expanded?: boolean }>`
   display: grid;
-  grid-template-columns: 400px minmax(0, 1fr);
+  grid-template-columns: ${({ $expanded }) =>
+    $expanded ? 'minmax(0, 1fr)' : '400px minmax(0, 1fr)'};
   gap: 18px;
 `
 
@@ -39,8 +40,8 @@ export const CardHeader = styled.div`
   gap: 8px;
 `
 
-export const PartsCard = styled(Card)`
-  height: 400px;
+export const PartsCard = styled(Card)<{ $expanded?: boolean }>`
+  height: ${({ $expanded }) => ($expanded ? '400px' : '400px')};
   display: grid;
   grid-template-rows: auto 1fr;
 `
@@ -95,11 +96,12 @@ export const PartDesc = styled.div`
   color: #9ca3af;
 `
 
-export const AiCard = styled(Card)`
-  height: 400px;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  padding-bottom: 16px;
+export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
+  height: ${({ $compact, $expanded }) =>
+    $compact ? '410px' : $expanded ? '360px' : '400px'};
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
 `
 
 export const AiHeader = styled(CardHeader)`
@@ -117,6 +119,24 @@ export const AiBody = styled.div`
   gap: 10px;
   font-size: 12px;
   overflow-y: auto;
+  flex: 1;
+`
+
+export const AiPromptBar = styled.div`
+  margin: auto 16px 15px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(109, 167, 117, 0.4);
+  background: #1b1b1b;
+`
+
+export const AiPromptPlaceholder = styled.div`
+  color: #7b849a;
+  font-size: 12px;
 `
 
 export const AiChatBubble = styled.div`
@@ -128,9 +148,11 @@ export const AiChatBubble = styled.div`
   line-height: 1.4;
 `
 
-export const ViewerCard = styled(Card)`
+export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
   position: relative;
-  min-height: 520px;
+  height: ${({ $expanded }) => ($expanded ? '800px' : 'auto')};
+  min-height: ${({ $expanded }) => ($expanded ? '800px' : '520px')};
+  max-height: ${({ $expanded }) => ($expanded ? '800px' : 'none')};
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
@@ -171,6 +193,31 @@ export const ViewerBody = styled.div`
   height: 100%;
 `
 
+export const ExpandedPanels = styled.div`
+  position: absolute;
+  inset: 20px 18px 20px 18px;
+  pointer-events: none;
+  z-index: 3;
+`
+
+export const ExpandedLeftPanel = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  pointer-events: auto;
+`
+
+export const ExpandedRightPanel = styled.div`
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 320px;
+  display: grid;
+  gap: 12px;
+  pointer-events: auto;
+`
+
 export const ViewerToolbar = styled.div`
   position: absolute;
   left: 18px;
@@ -198,6 +245,10 @@ export const ViewModeToggle = styled.div`
   z-index: 3;
 `
 
+export const ExpandedViewModeToggle = styled(ViewModeToggle)`
+  position: static;
+`
+
 export const ViewModeButton = styled.button<{ $active?: boolean }>`
   min-width: 110px;
   padding: 8px 14px;
@@ -221,9 +272,9 @@ export const ToolbarButton = styled.button<{ $active?: boolean }>`
   font-size: 12px;
 `
 
-export const NotePanel = styled.div`
+export const NotePanel = styled.div<{ $shifted?: boolean }>`
   position: absolute;
-  right: 64px;
+  right: ${({ $shifted }) => ($shifted ? '409px' : '64px')};
   top: 26px;
   width: 280px;
   min-height: 260px;
@@ -248,10 +299,10 @@ export const NoteHeader = styled.div`
   margin-top: 0;
 `
 
-export const NoteToggleOutside = styled.button`
+export const NoteToggleOutside = styled.button<{ $shifted?: boolean }>`
   position: absolute;
-  right: 5px;
-  top: 30px;
+  right: ${({ $shifted }) => ($shifted ? '350px' : '5px')};
+  top: ${({ $shifted }) => ($shifted ? '30px' : '30px')};
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -271,19 +322,22 @@ export const NoteToggleIcon = styled.span`
   transform: translateY(-23px);
 `
 
-export const ExpenseToggleOutside = styled.button`
+export const ExpenseToggleOutside = styled.button<{ $shifted?: boolean }>`
   position: absolute;
   right: 15px;
-  top: 590px;
+  top: ${({ $shifted }) => ($shifted ? '690px' : '590px')};
   width: 39px;
   height: 39px;
   border-radius: 50%;
   border: 1px solid #303030;
   background-color: #303030;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%232b2f2b'/><path d='M14 38v12h12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M50 26v-12h-12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>");
+  background-image: ${({ $shifted }) =>
+    $shifted
+      ? "url(\"/src/assets/expense-toggle-expand.png\")"
+      : "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%232b2f2b'/><path d='M14 38v12h12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M50 26v-12h-12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>\")"};
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 72%;
+  background-size: 100%;
   color: transparent;
   font-size: 0;
   line-height: 1;
@@ -338,11 +392,11 @@ export const NoteBody = styled.div`
   color: #d9e4d6;
 `
 
-export const ViewerFooter = styled.div`
+export const ViewerFooter = styled.div<{ $expanded?: boolean }>`
   position: absolute;
   left: 18px;
   right: 18px;
-  bottom: 16px;
+  bottom: ${({ $expanded }) => ($expanded ? '90px' : '16px')};
   display: grid;
   gap: 6px;
   font-size: 11px;
