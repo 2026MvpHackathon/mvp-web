@@ -677,9 +677,12 @@ class AssemblyEngine {
           expanded.push(file);
           return;
         }
-        const baseName = (typeof file === "object" && file.name)
+        let baseName = (typeof file === "object" && file.name)
           ? file.name
           : baseFile.replace(/\.glb$/i, "");
+        if (this.currentProjectId === "leafSpring" && baseFile === "Pin.glb") {
+          baseName = "Spring Pin";
+        }
         for (let idx = 1; idx <= count; idx += 1) {
           expanded.push({ file: filePath, name: `${baseName} ${idx}` });
         }
