@@ -1,8 +1,8 @@
-import DuringQuizAccuracyRate from "@/widgets/quiz/ui/DuringQuizAccuracyRate";
+import QuizBtn from "@/widgets/quiz/ui/QuizBtn";
 
 const QuizPage = ( ) => {
     return(
-        <DuringQuizAccuracyRate/>
+        <QuizBtn V1={false} text="임시"/>
     );
 }
 
