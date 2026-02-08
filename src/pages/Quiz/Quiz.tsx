@@ -3,7 +3,7 @@ import QuizBtn from "@/widgets/quiz/ui/QuizBtn";
 
 const QuizPage = ( ) => {
     return(
-        <DuringQuizChoiceItem text={"dd"} state={"correct"}/>
+        <DuringQuizChoiceItem text={"dd"} state={"select"}/>
     );
 }
 

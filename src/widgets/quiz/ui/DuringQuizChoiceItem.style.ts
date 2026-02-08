@@ -17,14 +17,16 @@ export const container = styled.div<State>`
     border: 1px solid 
     ${props => 
         (props.$state === "disable"? colors.main.assistive:
-            (props.$state === "correct"? colors.state.success: colors.state.error)
+            (props.$state === "select"? colors.secondary.alternative:
+            (props.$state === "correct"? colors.state.success: colors.state.error))
         )
     };
 
     background-color:
     ${props => 
         (props.$state === "disable"? colors.background.Dark:
-            (props.$state === "correct"? "#EDFAF0": "#FDE8EF")
+            (props.$state === "select"? colors.secondary.alternative:
+            (props.$state === "correct"? "#EDFAF0": "#FDE8EF"))
         )
     };
 
@@ -35,7 +37,8 @@ export const text = styled.text<State>`
     color:
     ${props => 
         (props.$state === "disable"? colors.secondary.alternative:
-            (props.$state === "correct"? colors.state.success: colors.state.error)
+            (props.$state === "select"? colors.main.alternative:
+            (props.$state === "correct"? colors.state.success: colors.state.error))
         )
     };
     ${typography('body','lg','medium')};
