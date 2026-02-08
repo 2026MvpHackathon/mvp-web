@@ -2,15 +2,20 @@ import AuthLayoutBtn from './AuthBtn';
 import AuthInput from './AuthInput';
 import * as S from './AuthInputField.style'
 
+interface InputConfig {
+    name: string;
+    placeholder: string;
+}
+
 interface InputFieldNameProps {
     main: string;
     sub: string;
-    inputNames: string[];
-    btn: string
+    inputs: InputConfig[];  // 객체 배열
+    btn: string;
     onClick: () => void;
 }
 
-const AuthInputField = ({main, sub, inputNames, btn, onClick}: InputFieldNameProps) => {
+const AuthInputField = ({main, sub, inputs, btn, onClick}: InputFieldNameProps) => {
     return(
         <S.container>
             <S.input_field_name>
@@ -19,8 +24,8 @@ const AuthInputField = ({main, sub, inputNames, btn, onClick}: InputFieldNamePro
             </S.input_field_name>
             <S.input_btn_container>
                 <S.input_btn__wrapper>
-                    {inputNames.map((inputName, index) => (
-                        <AuthInput key={index} title={inputName} isActive={false}/>
+                    {inputs.map((item, index) => (
+                        <AuthInput key={index} title={item.name} isActive={false} placeholder={item.placeholder}/>
                     ))}
                 </S.input_btn__wrapper>
                 <AuthLayoutBtn radius50={false} name={btn} onClick={onClick}/>
