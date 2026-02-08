@@ -36,7 +36,8 @@ const Header = () => {
             <Image path={Logo} size={'104px'} alt={'Logo'}/>
             <S.header_menu_wrapper>
                 <Link path={'/home'} menu={'Home'} active={location.pathname === '/home'}/>
-                <Link path={'/study'} menu={'Study'} active={location.pathname === '/study'}/>                        
+                <Link path={'/study'} menu={'Study'} active={location.pathname === '/study'}/>
+                <Link path={'/quiz'} menu={'Quiz'} active={location.pathname === '/quiz'}/>                                                
             </S.header_menu_wrapper>
             <S.header_btn>로그아웃</S.header_btn>
         </S.header_container>

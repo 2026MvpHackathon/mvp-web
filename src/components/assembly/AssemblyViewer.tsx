@@ -677,9 +677,12 @@ class AssemblyEngine {
           expanded.push(file);
           return;
         }
-        const baseName = (typeof file === "object" && file.name)
+        let baseName = (typeof file === "object" && file.name)
           ? file.name
           : baseFile.replace(/\.glb$/i, "");
+        if (this.currentProjectId === "leafSpring" && baseFile === "Pin.glb") {
+          baseName = "Spring Pin";
+        }
         for (let idx = 1; idx <= count; idx += 1) {
           expanded.push({ file: filePath, name: `${baseName} ${idx}` });
         }
@@ -1666,7 +1669,31 @@ type AssemblyViewerProps = {
   onGroupTransformChange?: (values: { posX: number; posY: number; posZ: number }) => void
 }
 
-const AssemblyViewer = forwardRef<HTMLCanvasElement, AssemblyViewerProps>(function AssemblyViewer(
+export type AssemblyViewerHandle = {
+  setProject?: (id: string, options?: { partOverrides?: Record<string, number> }) => void
+  setTarget?: (value: number) => void
+  setExplodeScale?: (value: number) => void
+  setSpeed?: (value: number) => void
+  setEditMode?: (value: boolean) => void
+  setTransformMode?: (mode: string) => void
+  setSelectedIndex?: (index: number) => void
+  setGroupSelection?: (names: string[]) => void
+  setPartVisibility?: (name: string, visible: boolean) => void
+  setHiddenParts?: (names: string[]) => void
+  setViewMode?: (mode: "single" | "assembly") => void
+  applySelectedTransform?: (values: unknown) => void
+  setNoteMode?: (value: boolean) => void
+  setNoteText?: (value: string) => void
+  updateNote?: (id: string, text: string) => void
+  deleteNote?: (id: string) => void
+  getNoteScreenPosition?: (id: string) => { x: number; y: number; visible: boolean } | null
+  getCurrentTransforms?: () => unknown
+  applyTransformsByName?: (transforms: Record<string, unknown>) => void
+  focusOnPart?: (name: string) => void
+  focusOnScene?: () => void
+}
+
+const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(function AssemblyViewer(
   {
     projectId,
     partOverrides,
