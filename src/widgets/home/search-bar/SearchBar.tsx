@@ -11,26 +11,33 @@ const Search = ({ onSearch }: SearchProps) => {
   const { input, onChange, cancelSearch } = useSearch();
 
   const handleSearch = () => {
-    if (onSearch) onSearch(input);
+    onSearch?.(input);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
   };
 
   const handleCancel = () => {
     cancelSearch();
-    if (onSearch) onSearch("");
+    onSearch?.("");
   };
 
   return (
     <S.SearchInputWrapper>
-      <S.SearchInput 
+      <S.SearchInput
         value={input}
         onChange={onChange}
-        placeholder='제목을 영어로 입력하세요.'
+        placeholder="제목 또는 설명을 입력하세요."
+        onKeyDown={handleKeyPress}
       />
 
       <S.IconContainer>
         {input && (
           <S.IconButton onClick={handleCancel}>
-            <S.CancelIcon src={SearchCancelIcon} />
+            <S.Icon src={SearchCancelIcon} />
           </S.IconButton>
         )}
         <S.IconButton onClick={handleSearch}>
@@ -38,8 +45,8 @@ const Search = ({ onSearch }: SearchProps) => {
         </S.IconButton>
       </S.IconContainer>
     </S.SearchInputWrapper>
-  )
-}
+  );
+};
 
 
 export default Search;
