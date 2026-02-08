@@ -7,9 +7,10 @@ interface InputFieldNameProps {
     sub: string;
     inputNames: string[];
     btn: string
+    onClick: () => void;
 }
 
-const AuthInputField = ({main, sub, inputNames, btn}: InputFieldNameProps) => {
+const AuthInputField = ({main, sub, inputNames, btn, onClick}: InputFieldNameProps) => {
     return(
         <S.container>
             <S.input_field_name>
@@ -22,7 +23,7 @@ const AuthInputField = ({main, sub, inputNames, btn}: InputFieldNameProps) => {
                         <AuthInput key={index} title={inputName} isActive={false}/>
                     ))}
                 </S.input_btn__wrapper>
-                <AuthLayoutBtn radius50={false} name={btn}/>
+                <AuthLayoutBtn radius50={false} name={btn} onClick={onClick}/>
             </S.input_btn_container>
         </S.container>
     );

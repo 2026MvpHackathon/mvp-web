@@ -1,4 +1,4 @@
-import { flexColumnCenter, flexColumn, flexCenter, flexBetween } from "@/shared/values/_flex";
+import { flexColumnCenter, flexColumn, flexBetween } from "@/shared/values/_flex";
 import { colors, typography } from "@/shared/values/token";
 import styled from "styled-components";
 
