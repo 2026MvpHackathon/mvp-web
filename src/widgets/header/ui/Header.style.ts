@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { flexBetween } from '@/shared/values/_flex';
+import { flexBetween, flexRow } from '@/shared/values/_flex';
 import { typography } from '@/shared/values/typography.mixin';
 import { colors } from '@/shared/values/_foundation';
 import { shapes } from '@/shared/values/_shape';
@@ -16,8 +16,8 @@ export const header_container = styled.div`
 `
 
 export const header_menu_wrapper = styled.div` 
-    ${flexBetween};
-    width: 8.5625rem;
+    ${flexRow};
+    gap: 6.25rem;
 `
 
 export const header_menu = styled.span<{ $active?: boolean }>`

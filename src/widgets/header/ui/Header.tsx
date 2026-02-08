@@ -30,14 +30,14 @@ const Link = ({path, menu, active}: LinkResponse) => {
 
 const Header = () => {
     const location = useLocation();
-    const isStudyActive = location.pathname.startsWith('/study');
 
     return(
         <S.header_container>
             <Image path={Logo} size={'104px'} alt={'Logo'}/>
             <S.header_menu_wrapper>
                 <Link path={'/home'} menu={'Home'} active={location.pathname === '/home'}/>
-                <Link path={'/study'} menu={'Study'} active={isStudyActive}/>                        
+                <Link path={'/study'} menu={'Study'} active={location.pathname === '/study'}/>
+                <Link path={'/quiz'} menu={'Quiz'} active={location.pathname === '/quiz'}/>                                                
             </S.header_menu_wrapper>
             <S.header_btn>로그아웃</S.header_btn>
         </S.header_container>
