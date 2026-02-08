@@ -34,6 +34,7 @@ export const input_field_name_large_text = styled.p`
     color: ${colors.main.normal};
     ${typography("heading", "xxl", "semibold")};
     text-align: center;
+    margin: 0px;
     
 `
 
@@ -41,6 +42,8 @@ export const input_field_name_small_text = styled.p`
     color: ${colors.secondary.assistive};
     ${typography("body", "md", "semibold")};
     text-align: center;
+    margin: 0px;
+
 `
 
 

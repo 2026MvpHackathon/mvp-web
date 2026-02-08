@@ -8,10 +8,12 @@ export const guide_wrapper = styled.div`
     height: auto;
 
     ${flexColumn}
+    gap: 4px;
 `
 export const guide_large_text = styled.p`
     width: 100%;
     height: auto;
+    margin: 0px;
 
     color: ${colors.main.normal};
     
@@ -20,6 +22,8 @@ export const guide_large_text = styled.p`
     font-style: normal;
     font-weight: 400;
     line-height: normal;
+
+    white-space: pre-line;
 `
 export const guide_small_text = styled.div`
     width: 100%;

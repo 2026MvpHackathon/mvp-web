@@ -10,7 +10,7 @@ export const input_container = styled.div`
     height: auto;
     gap: 1.875rem;
 `
-export const input_fieldname = styled.p`
+export const input_fieldname = styled.span`
     width: 100%;
     
     color: ${colors.main.normal};

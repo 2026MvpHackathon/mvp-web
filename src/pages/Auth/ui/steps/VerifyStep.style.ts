@@ -7,7 +7,7 @@ export const container = styled.div`
     gap: 4rem;
 `
 
-export const verify_title = styled.p`
+export const verify_title = styled.span`
     color: ${colors.main.normal};
     ${typography("heading", "xxl", "semibold")}; 
 
