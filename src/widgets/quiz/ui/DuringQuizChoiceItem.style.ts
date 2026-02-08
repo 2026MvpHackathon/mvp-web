@@ -5,7 +5,7 @@ import { typography } from "@/shared/values/typography.mixin";
 import styled from "styled-components";
 
 interface State {
-    $state: "correct" | "different" | "disable";
+    $state: "correct" | "different" | "disable" | "select";
 }
 
 export const container = styled.div<State>`

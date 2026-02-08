@@ -17,7 +17,7 @@ const Image = ({path, size, alt}: ImageResponse) => {
 
 interface ChoiceItem {
     text: string;
-    state: "correct" | "different" | "disable";
+    state: "correct" | "different" | "disable" | "select";
 }
 
 const DuringQuizChoiceItem = ({text, state}: ChoiceItem) => {
