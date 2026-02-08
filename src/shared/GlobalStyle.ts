@@ -10,7 +10,9 @@ export const GlobalStyle = createGlobalStyle`
 
   html, body, #root {
     width: 100%;
-    height: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   body {
@@ -21,17 +23,9 @@ export const GlobalStyle = createGlobalStyle`
 
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-
-    /* 드래그 방지 */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    -webkit-user-drag: none;
   }
 
   img {
-    /* 드래그 방지 */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -62,7 +56,6 @@ export const GlobalStyle = createGlobalStyle`
 
   input, textarea, select {
     font-family: inherit;
-    /* 입력창은 드래그 가능해야 함 */
     -webkit-user-select: text;
     user-select: text;
   }

@@ -2,7 +2,7 @@ import styled from "styled-components";
 import * as token from "@/shared/values/token"
 
 export const container = styled.div`
-  width: 21.875rem;
+  width: 21.53rem;
   height: 12.4375rem;
   padding: 1rem 1.25rem;
   background-color: ${token.colors.fill.alternative3};
@@ -54,7 +54,7 @@ export const img = styled.img`
 
 export const openButtonContainer = styled.div`
   width: 8.5rem;
-  height: 4rem;
+  height: 5.5rem;
   ${token.flexRow}
   align-items: flex-end;
 `

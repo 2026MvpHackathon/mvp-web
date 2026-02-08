@@ -13,7 +13,7 @@ export const SearchInput = styled.input`
   background-color: ${token.colors.fill.alternative2};
   color: ${token.colors.text.normal};
   border: none;
-  padding: 0.5rem 4rem 0.5rem 0.5rem;
+  padding: 0.5rem 4rem 0.5rem 1rem;
   ${token.typography("caption", "md", "regular")}
 
   &:focus {
