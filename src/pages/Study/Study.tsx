@@ -19,6 +19,7 @@ import {
   getStudyNotes,
   getStudyHomeAll,
   getStudySessionParts,
+  registerQuiz,
   updateStudyNote,
   deleteStudyNote,
   saveStudySession,
@@ -45,6 +46,9 @@ type AiMessage = {
   id: string
   role: 'user' | 'assistant'
   text: string
+  materialId?: number
+  modelId?: number
+  userQuestion?: string
 }
 type PartOverridesByProject = Record<string, Record<string, number>>
 
@@ -119,6 +123,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       text: '무엇이 궁금한가요? 편하게 질문해 주세요.',
     },
   ])
+  const [quizSubmittingId, setQuizSubmittingId] = useState<string | null>(null)
+  const [quizAddedIds, setQuizAddedIds] = useState<Set<string>>(new Set())
   const [aiPromptInput, setAiPromptInput] = useState('')
   const [bottomPromptInput, setBottomPromptInput] = useState('')
   const [studySession, setStudySession] = useState<StudySession | null>(null)
@@ -182,6 +188,28 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       sessionPartsByBase[base.toLowerCase()]?.sessionPartId ||
       null
     )
+  }
+
+  const resolveSelectedModelId = () => {
+    const selectedPartName = parts[selectedIndex] || ''
+    const selectedBase = selectedPartName ? resolveBaseName(selectedPartName) : ''
+    if (!selectedBase) return undefined
+    return (
+      sessionPartsByBase[selectedBase]?.modelId || materialPartsByBase[selectedBase]?.modelId
+    )
+  }
+
+  const resolveFallbackModelId = () => {
+    const direct = resolveSelectedModelId()
+    if (Number.isFinite(direct)) return direct
+    const sessionCandidate = Object.values(sessionPartsByBase).find((part) =>
+      Number.isFinite(part.modelId),
+    )?.modelId
+    if (Number.isFinite(sessionCandidate)) return sessionCandidate
+    const materialCandidate = Object.values(materialPartsByBase).find((part) =>
+      Number.isFinite(part.modelId),
+    )?.modelId
+    return materialCandidate
   }
 
   const toRole = (messageType?: string) =>
@@ -532,6 +560,44 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }
 
+  const resolveQuizQuestion = (messageIndex: number) => {
+    const direct = aiMessages[messageIndex]?.userQuestion
+    if (direct) return direct
+    for (let i = messageIndex - 1; i >= 0; i -= 1) {
+      if (aiMessages[i]?.role === 'user') {
+        return aiMessages[i].text
+      }
+    }
+    return ''
+  }
+
+  const handleRegisterQuiz = async (messageIndex: number) => {
+    const message = aiMessages[messageIndex]
+    if (!message || message.role !== 'assistant') return
+    const userQuestion = resolveQuizQuestion(messageIndex)
+    const aiAnswer = message.text
+    const materialIdForQuiz = message.materialId ?? activeMaterialId
+    const resolvedModelId = message.modelId ?? resolveFallbackModelId()
+    const modelIdForQuiz = Number.isFinite(resolvedModelId) ? resolvedModelId : null
+    if (!materialIdForQuiz || !userQuestion || !aiAnswer || !modelIdForQuiz) return
+    if (quizSubmittingId === message.id) return
+    try {
+      setQuizSubmittingId(message.id)
+      await registerQuiz({
+        materialId: materialIdForQuiz,
+        modelId: modelIdForQuiz,
+        userQuestion,
+        aiAnswer,
+        isFavorite: false,
+      })
+      setQuizAddedIds((prev) => new Set(prev).add(message.id))
+    } catch (error) {
+      console.error('퀴즈 등록 실패', error)
+    } finally {
+      setQuizSubmittingId(null)
+    }
+  }
+
   const handleNotesChange = async (nextNotes: Note[]) => {
     setNotes(nextNotes)
     if (isHydratingNotesRef.current) {
@@ -605,11 +671,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       setAiMessages((prev) => [...prev, fallbackMessage])
       return
     }
-    const selectedPartName = parts[selectedIndex] || ''
-    const selectedBase = selectedPartName ? resolveBaseName(selectedPartName) : ''
-    const selectedModelId =
-      (selectedBase && sessionPartsByBase[selectedBase]?.modelId) ||
-      (selectedBase && materialPartsByBase[selectedBase]?.modelId)
+    const selectedModelId = resolveSelectedModelId()
     try {
       const response = await askChat({
         studySessionId,
@@ -621,6 +683,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         id: `assistant-${response.data.messageId}`,
         role: toRole(response.data.messageType),
         text: response.data.messageContent,
+        materialId: activeMaterialId,
+        modelId: selectedModelId,
+        userQuestion: text,
       }
       setAiMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
@@ -1046,9 +1111,24 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         {aiMessages.length === 0 ? (
           <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
         ) : (
-          aiMessages.map((message) =>
+          aiMessages.map((message, index) =>
             message.role === 'assistant' ? (
-              <S.AiChatBubble key={message.id}>{message.text}</S.AiChatBubble>
+              <S.AiChatBlock key={message.id}>
+                <S.AiChatBubble>
+                  <S.AiChatText>{message.text}</S.AiChatText>
+                </S.AiChatBubble>
+                <S.AiQuizAction
+                  type="button"
+                  disabled={quizSubmittingId === message.id || quizAddedIds.has(message.id)}
+                  onClick={() => handleRegisterQuiz(index)}
+                >
+                  {quizSubmittingId === message.id
+                    ? '추가 중...'
+                    : quizAddedIds.has(message.id)
+                      ? '추가됨'
+                      : '퀴즈에 추가하기'}
+                </S.AiQuizAction>
+              </S.AiChatBlock>
             ) : (
               <S.AiUserBubble key={message.id}>{message.text}</S.AiUserBubble>
             ),
