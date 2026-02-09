@@ -8,7 +8,7 @@ const Layout = () => {
     return(
         <S.container>
             {!hideHeader && <Header/>}
-            <S.body>
+            <S.body style={location.pathname.includes('/auth')? {padding: '0px'}:{}}>
                 <Outlet/>
             </S.body>
         </S.container>
