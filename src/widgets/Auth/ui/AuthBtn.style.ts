@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { rgba } from 'polished' // 투명도 라이브러리
 import { colors } from "@/shared/values/_foundation";
 import { typography } from "@/shared/values/typography.mixin";
+import { glassEffect } from "@/shared/ui/GlassEffect";
 
 export const btn_container = styled.button`
     ${flexCenter}
@@ -11,8 +12,8 @@ export const btn_container = styled.button`
     padding: 16px 0px;
 
     opacity: 0.8;
-    background: rgba(8, 9, 9, 0.10);
-    border: 1px solid #666D6A; // glass 임시
+    ${glassEffect}
+    background: rgba(0, 0, 0, 0.25);
 `
 
 export const btn_text = styled.span`
