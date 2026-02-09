@@ -13,7 +13,9 @@ export const container = styled.div<ButtonProps>`
     border-radius: ${shapes.small};
 
     background: ${props => (props.$V1? colors.main.alternative : colors.background.Dark )};
-    border: 1px solid ${colors.main.alternative}
+    border: 1px solid ${colors.main.alternative};
+
+    cursor: pointer;
 `
 
 export const text = styled.div`

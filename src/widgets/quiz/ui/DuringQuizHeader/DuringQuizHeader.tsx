@@ -8,16 +8,18 @@ import QuizFavoritesOff from '@/assets/icons/Quiz/QuizFavoritesOff';
 interface QuizHeader {
     type: "AI" | "DB";
     rangeText: string;
-    isActive?: boolean;
+    isFavorite: boolean; // isActive 대신 isFavorite 사용
+    onToggleFavorite: () => void; // 즐겨찾기 토글 함수
     title: string;
-    currentQuestionText: string; // currentQuestion과 totalQuestions 대신 텍스트로 받음
-    progressPercent: number; // 진행률 (0-100)을 직접 받음
+    currentQuestionText: string;
+    progressPercent: number;
 }
 
 const DuringQuizHeader = ({
     type, 
     rangeText, 
-    isActive, 
+    isFavorite, 
+    onToggleFavorite, 
     title,
     currentQuestionText,
     progressPercent
@@ -31,7 +33,9 @@ const DuringQuizHeader = ({
                         <QuizDB color={colors.text.strong}/>}
                     <S.header_top_range_text>{rangeText}</S.header_top_range_text>
                 </S.header_top_front_wrapper>
-                {isActive? <QuizFavoritesOn/>: <QuizFavoritesOff/>}
+                    <div onClick={onToggleFavorite}>
+                        {isFavorite ? <QuizFavoritesOn /> : <QuizFavoritesOff />}
+                    </div>
             </S.header_top_container>
 
             <S.header_Quiz_title>{title}</S.header_Quiz_title>

@@ -13,7 +13,8 @@ export const container = styled.div<State>`
     align-items: center;
     padding: 16px 24px;
     border-radius: ${shapes.xsmall};
-
+    cursor: pointer;
+    
     border: 1px solid 
     ${props => 
         (props.$state === "disabled"? colors.main.assistive:
@@ -30,7 +31,7 @@ export const container = styled.div<State>`
         )
     };
 
-
+    
 `
 
 export const text = styled.text<State>`

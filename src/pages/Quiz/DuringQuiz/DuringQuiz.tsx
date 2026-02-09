@@ -15,6 +15,7 @@ import type { QuizItem, QuizOption } from '@/entities/quiz/types/createQuiz'; //
 type LocalQuizItem = Omit<QuizItem, 'options'> & {
   options: QuizOption[];
   isSubmitted: boolean;
+  isFavorite: boolean; // 즐겨찾기 상태 추가
 };
 
 const DuringQuizPage = () => {
@@ -49,6 +50,7 @@ const DuringQuizPage = () => {
           state: 'disabled',
         })),
         isSubmitted: false,
+        isFavorite: false, // 즐겨찾기 상태 초기화
       }));
       setQuizItems(initializedQuizItems);
       setCurrentQuizIndex(0);
@@ -140,7 +142,7 @@ const DuringQuizPage = () => {
       const submissionPayload = {
         quizQuestionId: currentQuiz.quizQuestionId,
         isCorrect: isCorrect,
-        isFavorite: false,
+        isFavorite: currentQuiz.isFavorite, // 즐겨찾기 상태 반영
       };
       const submitRes = await submitQuizResult(submissionPayload);
       console.log('Quiz Submission Response:', submitRes);
@@ -171,6 +173,26 @@ const DuringQuizPage = () => {
     console.log("handleSubmitAnswer 완료. setQuizItems 호출됨."); // 추가
     setShowCommentary(true); // 해설 표시
     console.log("해설 표시 상태 (예상):", true); // showCommentary는 비동기로 업데이트되므로, 예상값을 찍음 // 추가
+  };
+
+  // 즐겨찾기 토글 함수
+  const handleToggleFavorite = () => {
+    if (!currentQuiz) return;
+    
+
+    const nextIsFavorite = !currentQuiz.isFavorite; // 토글될 값 미리 계산
+
+    setQuizItems(prevQuizItems =>
+      prevQuizItems.map((item, idx) =>
+        idx === currentQuizIndex
+          ? {
+              ...item,
+              isFavorite: nextIsFavorite,
+            }
+          : item
+      )
+    );
+    console.log(`퀴즈 ${currentQuizIndex + 1}번 즐겨찾기 상태 변경: ${currentQuiz.isFavorite} -> ${nextIsFavorite}`); // 추가
   };
 
   // 이전 퀴즈로 이동
@@ -243,6 +265,8 @@ const DuringQuizPage = () => {
           title={`0${currentQuizIndex+1}. 다음 문제에 대한 옳은 답을 사지선다형 보기 중에서 고르시오.`}
           currentQuestionText={currentQuestionText} // 추가
           progressPercent={progressPercent} // 추가
+          isFavorite={currentQuiz.isFavorite} // 즐겨찾기 상태 전달
+          onToggleFavorite={handleToggleFavorite} // 즐겨찾기 토글 함수 전달
         />
 
         <S.main_content_container>
