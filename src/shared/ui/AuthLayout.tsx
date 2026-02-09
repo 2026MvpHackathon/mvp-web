@@ -1,10 +1,6 @@
 import * as S from './AuthLayout.style'
 import AuthGuide from '@/widgets/Auth/ui/AuthGuide/AuthGuide';
 import { Outlet, useLocation } from 'react-router-dom';
-import { theme } from '@/shared/Theme';
-import { ThemeProvider } from 'styled-components';
-import { GlobalStyle } from '@/shared/GlobalStyle';
-import Header from '@/widgets/header/ui/Header';
 import { useMemo } from 'react';
 
 const AuthPage = () => {
@@ -30,9 +26,7 @@ const AuthPage = () => {
     }, [location.pathname]);
 
     return(
-        <ThemeProvider theme={theme}>
-            <GlobalStyle />
-            <Header/>
+        <S.container>
             <S.auth_container>
                 <S.auth_area_glass_off>
                     <AuthGuide largeText={currentText.large} smallText={currentText.small}/>
@@ -41,7 +35,7 @@ const AuthPage = () => {
                     <Outlet /> 
                 </S.auth_area_glass>
             </S.auth_container>
-        </ThemeProvider>
+        </S.container>
     );
 }
 

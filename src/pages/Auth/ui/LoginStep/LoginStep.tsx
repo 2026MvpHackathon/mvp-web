@@ -7,7 +7,7 @@ import { setAccessToken, setEmail, setRefreshToken, setUserId } from '@/features
 import { publicInstance } from '@/features/Auth/axiosInstance';
 import type { InputConfig } from '@/widgets/Auth/ui/AuthInputField/AuthInputField'; 
 
-const SERVER_URL = import.meta.env.VITE_BASE_URL;
+const SERVER_URL = import.meta.env.VITE_API_URL;
 
 export type LoginInputs = {
   email: string,
@@ -31,16 +31,16 @@ const LoginStep = () => {
     const [generalError, setGeneralError] = useState("");
 
     const onSubmit:SubmitHandler<LoginInputs> = (data) => {
-      publicInstance.post(`${SERVER_URL}/auth/signin`, {
+      publicInstance.post(`${SERVER_URL}/api/auth/login`, { 
         email: data.email,
         password: data.password
       })
       .then(function (response) {
-        setAccessToken(response.data.accessToken);
-        setRefreshToken(response.data.refreshToken);
-        setEmail(response.data.email);
-        setUserId(response.data.userId)
-        navigate("/");
+        setAccessToken(response.data.data.accessToken); 
+        setRefreshToken(response.data.data.refreshToken); 
+        setEmail(response.data.data.email); 
+        setUserId(response.data.data.userId)
+        navigate("/home");
       })
       .catch(function (error) {
         if (error.response && error.response.status) {
@@ -69,13 +69,23 @@ const LoginStep = () => {
 
 
     const INPUT_LOGIN: InputConfig[] = [
-        {name: '이메일', placeholder: '이메일 주소를 입력해 주세요', fieldName: 'email', type: 'text'},
-        {name: '비밀번호', placeholder: '비밀번호를 입력해 주세요', fieldName: 'password', type: 'password'},
+        {
+          name: '이메일', 
+          placeholder: '이메일 주소를 입력해 주세요', 
+          fieldName: 'email', 
+          type: 'text'
+        },
+        {
+          name: '비밀번호', 
+          placeholder: '비밀번호를 입력해 주세요', 
+          fieldName: 'password', 
+          type: 'password'
+        },
     ]
 
     return(
         <form onSubmit={handleSubmit(onSubmit)}>
-            <AuthInputField 
+            <AuthInputField<LoginInputs> 
                 main={'로그인'} 
                 sub={'로그인 정보를 입력해주세요'} 
                 inputs={INPUT_LOGIN}
@@ -84,9 +94,11 @@ const LoginStep = () => {
                 errors={errors}
                 generalError={generalError}
             />
+
         </form>
     );
 }
 
 export default LoginStep;
+
 

@@ -1,15 +1,20 @@
-import { deleteCookie, getCookie, setAccessToken } from "./cookies";
+import { deleteCookie, getCookie, setAccessToken, setRefreshToken } from "./cookies"; 
 import { publicInstance } from "./axiosInstance";
 
-export const tokenRefresh = async (token: string, userId: string) => { //refreshToken으로 accessToken 재발급
+export const tokenRefresh = async (token: string, userId: string) => {
   try {
-    const response = await publicInstance.post(`/auth/refresh`, {
+    const response = await publicInstance.post(`/api/auth/refresh`, { 
       userId: userId,
       refreshToken: token
     })
 
-    const newToken = response.data.accessToken;
+    const newToken = response.data.data.accessToken; // 수정된 경로
     setAccessToken(newToken);
+
+    // 백엔드가 새로운 refreshToken을 보낼 경우 업데이트
+    if (response.data.data.refreshToken) { // 수정된 경로
+      setRefreshToken(response.data.data.refreshToken); // 수정된 경로
+    }
 
     return newToken
   }

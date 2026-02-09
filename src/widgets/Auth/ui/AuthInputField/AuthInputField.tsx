@@ -1,29 +1,29 @@
 import AuthBtn from '../AuthBtn/AuthBtn';
 import AuthInput from '../AuthInput/AuthInput';
 import * as S from './AuthInputField.style'
-import type { FieldErrors, UseFormRegister } from 'react-hook-form';
+import type { FieldErrors, UseFormRegister, FieldError } from 'react-hook-form';
 
 export interface InputConfig {
     name: string;
     placeholder: string;
-    fieldName?: 'email' | 'password' | 'code' | 'passwordConfirm';
+    fieldName: string; 
     type?: 'text' | 'password' | 'email' | 'number'; 
-    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
     value?: string;
 }
 
-interface InputFieldNameProps {
+interface InputFieldNameProps<TFieldValues extends Record<string, any>> {
     main: string;
     sub: string;
     inputs: InputConfig[];  
     btn: string;
-    register?: UseFormRegister<any>; 
-    errors?: FieldErrors<any>; 
+    register?: UseFormRegister<TFieldValues>; 
+    errors?: FieldErrors<TFieldValues>; 
     generalError?: string;
     onClick?: () => void;
 }
 
-const AuthInputField = ({main, sub, inputs, btn, register, errors, generalError, onClick}: InputFieldNameProps) => {
+const AuthInputField = <TFieldValues extends Record<string, any>>({main, sub, inputs, btn, register, errors, generalError, onClick}: InputFieldNameProps<TFieldValues>) => {
     return(
         <S.container>
             <S.input_field_name>
@@ -33,16 +33,13 @@ const AuthInputField = ({main, sub, inputs, btn, register, errors, generalError,
             <S.input_btn_container>
                 <S.input_btn__wrapper>
                     {inputs.map((item, index) => (
-                        <AuthInput 
+                        <
+                            AuthInput 
                             key={index} 
                             title={item.name} 
                             placeholder={item.placeholder} 
-                            name={item.fieldName}
                             type={item.type}
-                            register={register}
-                            error={item.fieldName && errors ? errors[item.fieldName] : undefined} // Conditionally pass error
-                            onChange={item.onChange}
-                            value={item.value}
+                            {...(register && item.fieldName ? { register, name: item.fieldName as any, error: errors ? (errors[item.fieldName] as FieldError | undefined) : undefined } : { onChange: item.onChange, value: item.value })}
                         />
                     ))}
                 </S.input_btn__wrapper>

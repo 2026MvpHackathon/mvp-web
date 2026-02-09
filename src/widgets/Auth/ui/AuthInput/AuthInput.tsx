@@ -1,33 +1,48 @@
 import VisibilityOff from '@/assets/icons/VisibilityOff';
 import * as S from './AuthInput.style'
-import type { FieldError, UseFormRegister } from 'react-hook-form';
+import type { FieldError, UseFormRegister } from 'react-hook-form'; 
 
-interface AuthInputProps {
-    title: string;
-    placeholder: string;
-    name?: 'email' | 'password' | 'code' | 'passwordConfirm'; 
-    type?: 'text' | 'password' | 'email' | 'number';
-    register?: UseFormRegister<any>;
-    error?: FieldError;
-    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    value?: string;
-}
+type AuthInputProps = 
+  | {
+      title: string;
+      placeholder: string;
+      type?: 'text' | 'password' | 'email' | 'number';
+      register: UseFormRegister<any>;
+      name: string; 
+      error?: FieldError;
+      onChange?: never; 
+      value?: never; 
+    }
+  | {
+      title: string;
+      placeholder: string;
+      type?: 'text' | 'password' | 'email' | 'number';
+      onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
+      value?: string; 
+      register?: never; 
+      name?: never; 
+      error?: never; 
+    };
 
-const AuthInput = ({title, placeholder, name, type = 'text', register, error, onChange, value}: AuthInputProps) => {
+const AuthInput = ({title, placeholder, type = 'text', ...props}: AuthInputProps) => {
+    const inputProps = props.register && props.name
+        ? props.register(props.name)
+        : { onChange: props.onChange, value: props.value };
+
     return(
         <S.input_container>
             <S.input_fieldname>{title}</S.input_fieldname>
-            <S.input_field $isError={!!error}>
+            <S.input_field $isError={!!props.error}>
                 <S.input_wrapper>
                     <S.input_input 
                         placeholder={placeholder} 
                         type={type} 
-                        {...(register && name ? register(name) : { onChange, value })} // Conditionally apply register or onChange/value
+                        {...inputProps}
                     />
                     {type === 'password' && <VisibilityOff size={'23px'}/>}
                 </S.input_wrapper>
             </S.input_field>
-            {error && <S.ErrorText>{error.message}</S.ErrorText>}
+            {props.error && <S.ErrorText>{props.error.message}</S.ErrorText>}
         </S.input_container>
     );
 }

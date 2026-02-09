@@ -10,7 +10,7 @@ const Layout = () => {
     return(
         <S.container>
             <Header/>
-            <S.body style={location.pathname==='/auth'? {padding: '0px'}:{}}>
+            <S.body style={location.pathname.startsWith('/auth/') ? {padding: '0px'} : {}}>
                 <Outlet/>
             </S.body>
         </S.container>

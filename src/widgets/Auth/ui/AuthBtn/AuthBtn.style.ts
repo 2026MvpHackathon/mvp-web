@@ -14,6 +14,8 @@ export const btn_container = styled.button`
     opacity: 0.8;
     ${glassEffect}
     background: rgba(0, 0, 0, 0.25);
+
+    cursor: pointer;
 `
 
 export const btn_text = styled.span`

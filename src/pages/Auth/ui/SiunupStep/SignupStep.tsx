@@ -2,12 +2,15 @@ import AuthInputField from '@/widgets/Auth/ui/AuthInputField/AuthInputField';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { InputConfig } from '@/widgets/Auth/ui/AuthInputField/AuthInputField';
+import { publicInstance } from '@/features/Auth/axiosInstance'; // publicInstance 임포트
+
+const SERVER_URL = import.meta.env.VITE_API_URL; // SERVER_URL 정의
 
 const SignupStep = () => {
     const navigate = useNavigate();
 
     const [next, setNext] = useState(false);
-    const [passwordStep, setPasswordStep] = useState(false); // Renamed from 'password' to avoid conflict
+    const [passwordStep, setPasswordStep] = useState(false);
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
     const [password, setPassword] = useState('');
@@ -30,33 +33,54 @@ const SignupStep = () => {
         setPasswordConfirm(e.target.value);
     }
 
-    function checkEmailHandler() {
+    async function checkEmailHandler() {
+        setGeneralError(''); // 에러 메시지 초기화
+
         if (!next) {
-            // Logic to check email (e.g., API call)
-            if (email) { // Simple check for now
-                setNext(true);
-                setGeneralError('');
-            } else {
-                setGeneralError('이메일을 입력해 주세요.');
+            // 이메일 발송 단계
+            if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
+                setGeneralError('유효한 이메일 주소를 입력해 주세요.');
+                return;
+            }
+            try {
+                await publicInstance.post(`${SERVER_URL}/api/auth/email/send`, { email });
+                setNext(true); // 인증코드 입력 단계로 이동
+            } catch (error: any) {
+                setGeneralError(error.response?.data?.message || '이메일 발송에 실패했습니다.');
             }
         } else {
-            // Logic to verify code (e.g., API call)
-            if (code) { // Simple check for now
-                setPasswordStep(true);
-                setGeneralError('');
-            } else {
-                setGeneralError('인증코드를 입력해 주세요.');
+            // 인증 코드 확인 단계
+            if (!code || code.length !== 6) {
+                setGeneralError('6자리 인증코드를 입력해 주세요.');
+                return;
+            }
+            try {
+                await publicInstance.post(`${SERVER_URL}/api/auth/email/verify`, { email, code });
+                setPasswordStep(true); // 비밀번호 설정 단계로 이동
+            } catch (error: any) {
+                setGeneralError(error.response?.data?.message || '인증코드 확인에 실패했습니다.');
             }
         }
     }
 
-    function checkPasswordHandler() {
-        // Logic to check password and confirm (e.g., API call)
-        if (password && password === passwordConfirm) { // Simple check for now
-            navigate('/auth/verify');
-            setGeneralError('');
-        } else {
+    async function checkPasswordHandler() {
+        setGeneralError(''); // 에러 메시지 초기화
+
+        if (!password || password.length < 4) {
+            setGeneralError('비밀번호는 4자 이상이어야 합니다.');
+            return;
+        }
+        if (password !== passwordConfirm) {
             setGeneralError('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+            return;
+        }
+
+        try {
+            // 회원가입 API 호출
+            await publicInstance.post(`${SERVER_URL}/api/auth/signup`, { email, password });
+            navigate('/auth/verify'); // 회원가입 성공 후 이동
+        } catch (error: any) {
+            setGeneralError(error.response?.data?.message || '회원가입에 실패했습니다.');
         }
     }
 
@@ -73,7 +97,7 @@ const SignupStep = () => {
     return(
         <>
             {passwordStep ?
-                <AuthInputField 
+                <AuthInputField<Record<string, any>> 
                     main={'회원가입'} 
                     sub={'회원가입 정보를 입력해주세요'} 
                     inputs={INPUT_PASSWORD}
@@ -82,7 +106,7 @@ const SignupStep = () => {
                     generalError={generalError}
                 />
             :
-                <AuthInputField 
+                <AuthInputField<Record<string, any>> 
                     main={'회원가입'} 
                     sub={'회원가입 정보를 입력해주세요'} 
                     inputs={next? INPUT_EMAIL : [INPUT_EMAIL[0]]} 

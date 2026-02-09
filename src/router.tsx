@@ -16,7 +16,7 @@ const router = createBrowserRouter([
         children: [
             {
             index: true,
-            element: <Navigate to="/home"/>,
+            element: <Navigate to="/auth/select"/>,
             },
             {
               path: "home",
@@ -26,29 +26,30 @@ const router = createBrowserRouter([
                 path: "study",
                 element: <StudyPage />,
             },
+            {
+                path: "/auth",
+                element: <AuthPage/>,
+                children: [
+                    {
+                        path: "login",
+                        element: <LoginStep/>
+                    },
+                    {
+                        path: "signup",
+                        element: <SignupStep/>
+                    },
+                    {
+                        path: "verify",
+                        element: <VerifyStep/>
+                    },
+                    {
+                        path: "select",
+                        element: <SelectLoginOrSignupStep/>
+                    },
+                ]
+            },
+        
         ],
-    },
-    {
-        path: "/auth",
-        element: <AuthPage/>,
-        children: [
-            {
-                path: "login",
-                element: <LoginStep/>
-            },
-            {
-                path: "signup",
-                element: <SignupStep/>
-            },
-            {
-                path: "verify",
-                element: <VerifyStep/>
-            },
-            {
-                path: "select",
-                element: <SelectLoginOrSignupStep/>
-            },
-        ]
     },
 
     

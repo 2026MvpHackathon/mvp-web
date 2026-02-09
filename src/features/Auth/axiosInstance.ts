@@ -4,7 +4,7 @@ import { logout, tokenRefresh } from "./authApi";
 
 
 export const publicInstance = axios.create({ //로그인 등 토큰 필요 없는 경우
-  baseURL: import.meta.env.VITE_BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -12,7 +12,7 @@ export const publicInstance = axios.create({ //로그인 등 토큰 필요 없�
 });
 
 const axiosInstance = axios.create({ //axios 인스턴스 생성
-  baseURL: import.meta.env.VITE_BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true, 
   headers: {
     "Content-Type": "application/json",
