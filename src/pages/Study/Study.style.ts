@@ -181,14 +181,15 @@ export const AiBadge = styled.span`
 
 export const AiBody = styled.div`
   padding: 0 16px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   font-size: 12px;
   overflow-y: auto;
   flex: 1;
 `
 
-export const AiPromptBar = styled.div`
+export const AiPromptBar = styled.form`
   margin: auto 16px 15px;
   padding: 10px 12px;
   display: flex;
@@ -205,6 +206,18 @@ export const AiPromptPlaceholder = styled.div`
   font-size: 12px;
 `
 
+export const AiPromptInput = styled.input`
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #e6e8ee;
+  font-size: 12px;
+
+  &::placeholder {
+    color: #7b849a;
+  }
+`
 export const AiChatBubble = styled.div`
   background: #cfe0d6;
   color: #1b1f1b;
@@ -212,6 +225,17 @@ export const AiChatBubble = styled.div`
   border-radius: 10px;
   font-size: 11px;
   line-height: 1.4;
+  align-self: flex-start;
+`
+
+export const AiUserBubble = styled.div`
+  background: rgba(109, 167, 117, 0.18);
+  color: #e6e8ee;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  align-self: flex-end;
 `
 
 export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
@@ -419,7 +443,7 @@ export const ExpenseToggleOutside = styled.button<{ $shifted?: boolean }>`
   background-color: #303030;
   background-image: ${({ $shifted }) =>
     $shifted
-      ? "url(\"/src/assets/expense-toggle-expand.png\")"
+      ? "url(\"/src/assets/Study/expense-toggle-expand.png\")"
       : "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%232b2f2b'/><path d='M14 38v12h12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M50 26v-12h-12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>\")"};
   background-repeat: no-repeat;
   background-position: center;
@@ -557,7 +581,11 @@ export const ProgressBar = styled.input`
   }
 `
 
-export const BottomChat = styled(Card)`
+export const BottomChat = styled.form`
+  background: #202020;
+  border-radius: 18px;
+  border: none;
+  box-shadow: none;
   padding: 14px 18px;
   display: flex;
   align-items: center;
@@ -570,6 +598,18 @@ export const ChatPlaceholder = styled.div`
   font-size: 12px;
 `
 
+export const ChatInput = styled.input`
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #e6e8ee;
+  font-size: 12px;
+
+  &::placeholder {
+    color: #7b849a;
+  }
+`
 export const ChatTag = styled.span`
   padding: 4px 10px;
   border-radius: 999px;
@@ -589,4 +629,9 @@ export const ChatSend = styled.button`
   place-items: center;
   font-size: 12px;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 `
