@@ -7,14 +7,20 @@ import toolSelectIcon from '/src/assets/Study/viewer-tool-select.png'
 import toolHandIcon from '/src/assets/Study/viewer-tool-hand.png'
 import toolChatIcon from '/src/assets/Study/viewer-tool-chat.png'
 import toolAiIcon from '/src/assets/Study/viewer-tool-ai.png'
+import noteEditIcon from '/src/assets/Study/note-edit.png'
+import noteDeleteIcon from '/src/assets/Study/note-delete.png'
 import { projectConfigs } from '../../data/projects'
 import {
   askChat,
   createStudySession,
+  createStudyNote,
   getChatHistory,
   getMaterialParts,
+  getStudyNotes,
   getStudyHomeAll,
   getStudySessionParts,
+  updateStudyNote,
+  deleteStudyNote,
   saveStudySession,
 } from '../../entities/study/api/studyApi'
 import type { MaterialPart, StudySession, StudySessionPart } from '../../entities/study/types'
@@ -22,13 +28,13 @@ import './Study.css'
 import * as S from './Study.style'
 
 type Note = {
-  id: string
+  id: string | number
   text: string
   parentName?: string | null
 }
 
 type NoteEditorState = {
-  id: string | null
+  id: string | number | null
   text: string
   x: number
   y: number
@@ -98,6 +104,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     y: 0,
     visible: false,
   })
+  const noteIdMapRef = useRef<Record<number, number>>({})
+  const prevNotesRef = useRef<Note[]>([])
+  const isHydratingNotesRef = useRef(false)
   const [notePanelOpen, setNotePanelOpen] = useState(true)
   const expenseToggleOn = expanded
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
@@ -118,6 +127,15 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const [sessionPartsByBase, setSessionPartsByBase] = useState<
     Record<string, StudySessionPart>
   >({})
+  const sessionPartNameById = useMemo(() => {
+    const map = new Map<number, string>()
+    Object.values(sessionPartsByBase).forEach((part) => {
+      if (!map.has(part.sessionPartId)) {
+        map.set(part.sessionPartId, part.name)
+      }
+    })
+    return map
+  }, [sessionPartsByBase])
   const latestCameraRef = useRef<{
     position: [number, number, number]
     quaternion: [number, number, number, number]
@@ -153,6 +171,18 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const activeMaterialId = studySession?.materialId ?? materialId
 
   const resolveBaseName = (name: string) => normalizePartName(name)
+
+  const resolveSessionPartId = (parentName?: string | null) => {
+    if (!parentName) return null
+    const base = resolveBaseName(parentName)
+    return (
+      sessionPartsByBase[parentName]?.sessionPartId ||
+      sessionPartsByBase[base]?.sessionPartId ||
+      sessionPartsByBase[parentName.toLowerCase()]?.sessionPartId ||
+      sessionPartsByBase[base.toLowerCase()]?.sessionPartId ||
+      null
+    )
+  }
 
   const toRole = (messageType?: string) =>
     messageType?.toLowerCase().includes('user') ? 'user' : 'assistant'
@@ -418,7 +448,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }
 
-  const handleActiveNote = (id: string | null) => {
+  const handleActiveNote = (id: string | number | null) => {
     if (!id) {
       setNoteEditor((prev) => ({ ...prev, visible: false, id: null }))
       return
@@ -433,6 +463,30 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }))
   }
 
+  const handleEditNote = (id: string | number) => {
+    if (!noteMode) {
+      setNoteMode(true)
+      viewerRef.current?.setNoteMode?.(true)
+    }
+    handleActiveNote(id)
+  }
+
+  const handleDeleteNote = async (id: string | number) => {
+    viewerRef.current?.deleteNote?.(id)
+    if (noteEditor.id === id) {
+      setNoteEditor((prev) => ({ ...prev, visible: false, id: null }))
+    }
+    const localId = Number(id)
+    const serverId = noteIdMapRef.current[localId]
+    if (!studySessionId || !Number.isFinite(localId) || !serverId) return
+    try {
+      await deleteStudyNote(studySessionId, serverId)
+      delete noteIdMapRef.current[localId]
+    } catch (error) {
+      console.error('노트 삭제 실패', error)
+    }
+  }
+
   const handleNoteEditorChange = (value: string) => {
     setNoteEditor((prev) => ({ ...prev, text: value }))
     if (noteEditor.id) {
@@ -440,10 +494,82 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }
 
-  const handleNoteSubmit = () => {
+  const handleNoteSubmit = async () => {
     if (!noteEditor.id) return
     viewerRef.current?.updateNote?.(noteEditor.id, noteEditor.text)
     setNoteEditor((prev) => ({ ...prev, visible: false }))
+    const localId = Number(noteEditor.id)
+    const mappedId = noteIdMapRef.current[localId]
+    if (!studySessionId || !Number.isFinite(localId)) return
+    if (!mappedId) {
+      const note = notes.find((item) => item.id === noteEditor.id)
+      const sessionPartId = resolveSessionPartId(note?.parentName)
+      const position = viewerRef.current?.getNoteWorldPosition?.(localId)
+      if (!sessionPartId || !position) return
+      try {
+        const response = await createStudyNote(studySessionId, {
+          sessionPartId,
+          x: position[0],
+          y: position[1],
+          z: position[2],
+          text: noteEditor.text || '',
+        })
+        const serverId = response.data.noteId
+        noteIdMapRef.current[localId] = serverId
+        isHydratingNotesRef.current = true
+        viewerRef.current?.replaceNoteId?.(localId, serverId)
+      } catch (error) {
+        console.error('노트 생성 실패', error)
+      } finally {
+        isHydratingNotesRef.current = false
+      }
+      return
+    }
+    try {
+      await updateStudyNote(studySessionId, mappedId, noteEditor.text)
+    } catch (error) {
+      console.error('노트 수정 실패', error)
+    }
+  }
+
+  const handleNotesChange = async (nextNotes: Note[]) => {
+    setNotes(nextNotes)
+    if (isHydratingNotesRef.current) {
+      prevNotesRef.current = nextNotes
+      return
+    }
+    const prevIds = new Set(prevNotesRef.current.map((note) => note.id))
+    const addedNotes = nextNotes.filter((note) => !prevIds.has(note.id))
+    prevNotesRef.current = nextNotes
+    if (!addedNotes.length) return
+    if (!studySessionId) return
+    for (const note of addedNotes) {
+      const localId = Number(note.id)
+      if (!Number.isFinite(localId)) continue
+      const sessionPartId = resolveSessionPartId(note.parentName)
+      const position = viewerRef.current?.getNoteWorldPosition?.(localId)
+      if (!sessionPartId || !position) continue
+      try {
+        const response = await createStudyNote(studySessionId, {
+          sessionPartId,
+          x: position[0],
+          y: position[1],
+          z: position[2],
+          text: note.text || '',
+        })
+        const serverId = response.data.noteId
+        noteIdMapRef.current[localId] = serverId
+        isHydratingNotesRef.current = true
+        viewerRef.current?.replaceNoteId?.(localId, serverId)
+        if (noteEditor.id === note.id) {
+          setNoteEditor((prev) => ({ ...prev, id: serverId }))
+        }
+      } catch (error) {
+        console.error('노트 생성 실패', error)
+      } finally {
+        isHydratingNotesRef.current = false
+      }
+    }
   }
 
   const handleCameraChange = (state: {
@@ -722,6 +848,37 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       cancelled = true
     }
   }, [studySessionId])
+
+  useEffect(() => {
+    let cancelled = false
+    const fetchNotes = async () => {
+      if (!studySessionId) return
+      try {
+        const response = await getStudyNotes(studySessionId)
+        if (cancelled) return
+        const mappedNotes = response.data.map((note) => ({
+          id: note.noteId,
+          text: note.text,
+          position: note.position,
+          parentName: sessionPartNameById.get(note.sessionPartId) ?? null,
+        }))
+        isHydratingNotesRef.current = true
+        viewerRef.current?.setNotesFromServer?.(mappedNotes)
+        noteIdMapRef.current = response.data.reduce<Record<number, number>>((acc, note) => {
+          acc[note.noteId] = note.noteId
+          return acc
+        }, {})
+      } catch (error) {
+        console.error('노트 목록 조회 실패', error)
+      } finally {
+        isHydratingNotesRef.current = false
+      }
+    }
+    fetchNotes()
+    return () => {
+      cancelled = true
+    }
+  }, [studySessionId, sessionPartNameById])
 
   useEffect(() => {
     if (!studySession || !viewerRef.current?.setCameraState) return
@@ -1056,15 +1213,43 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       <span>note</span>
                       <S.NoteSearch placeholder="검색" />
                     </S.NoteHeader>
+                    {noteEditor.visible && noteMode && (
+                      <S.NoteEditorPanel>
+                        <S.NoteEditorInput
+                          placeholder="메모 입력"
+                          value={noteEditor.text}
+                          onChange={(event) => handleNoteEditorChange(event.target.value)}
+                        />
+                        <S.NoteEditorActions>
+                          <S.NoteEditorButton type="button" onClick={handleNoteSubmit}>
+                            저장
+                          </S.NoteEditorButton>
+                        </S.NoteEditorActions>
+                      </S.NoteEditorPanel>
+                    )}
                     <S.NoteList>
                     {notes.slice(0, 4).map((note) => (
-                        <S.NoteItem key={note.id}>
+                      <S.NoteItem key={note.id}>
                         <S.NoteMeta>
                           <span>{note.parentName || '알 수 없는 부품'}</span>
+                          <S.NoteActions>
+                            <S.NoteActionButton
+                              type="button"
+                              aria-label="note edit"
+                              $icon={noteEditIcon}
+                              onClick={() => handleEditNote(note.id)}
+                            />
+                            <S.NoteActionButton
+                              type="button"
+                              aria-label="note delete"
+                              $icon={noteDeleteIcon}
+                              onClick={() => handleDeleteNote(note.id)}
+                            />
+                          </S.NoteActions>
                         </S.NoteMeta>
-                          <S.NoteBody>{note.text || '메모 show 메모 show 메모 show'}</S.NoteBody>
-                        </S.NoteItem>
-                      ))}
+                        <S.NoteBody>{note.text ? note.text : '메모가 없습니다.'}</S.NoteBody>
+                      </S.NoteItem>
+                    ))}
                     {!notes.length && (
                       <S.NoteEmpty>
                         <S.NoteBody>메모가 없습니다.</S.NoteBody>
@@ -1165,47 +1350,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                   onSelectedChange={(index: number) => {
                     setSelectedIndex(index)
                   }}
-                  onNotesChange={(nextNotes: unknown[]) => setNotes(nextNotes as Note[])}
+                  onNotesChange={(nextNotes: unknown[]) => handleNotesChange(nextNotes as Note[])}
                   onActiveNoteChange={handleActiveNote}
                 />
-
-                {noteEditor.visible && noteMode && (
-                  <div
-                    className="note-editor"
-                    style={{ left: `${noteEditor.x}px`, top: `${noteEditor.y}px` }}
-                    onMouseDown={(event) => event.stopPropagation()}
-                  >
-                    <div className="note-editor__avatar" />
-                    <div className="note-editor__bubble">
-                      <textarea
-                        className="note-editor__input"
-                        placeholder="메모 생성"
-                        rows={1}
-                        value={noteEditor.text}
-                        onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                          handleNoteEditorChange(event.target.value)
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' && !event.shiftKey) {
-                            event.preventDefault()
-                            handleNoteSubmit()
-                          }
-                          if (event.key === 'Escape') {
-                            event.preventDefault()
-                            setNoteEditor((prev) => ({ ...prev, visible: false }))
-                          }
-                        }}
-                      />
-                      <button
-                        className="note-editor__send"
-                        type="button"
-                        onClick={handleNoteSubmit}
-                      >
-                        ↗
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 <S.ViewerFooter $expanded={expenseToggleOn}>
                   <S.ProgressRow $expanded={expenseToggleOn}>
