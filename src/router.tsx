@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import HomePage from './pages/Home/Home'
 import App from './App' 
-import AuthPage from './shared/ui/AuthLayout';
+import AuthPage from './shared/ui/AuthLayout/AuthLayout';
 import LoginStep from './pages/Auth/ui/LoginStep/LoginStep';
 import SignupStep from './pages/Auth/ui/SiunupStep/SignupStep';
 import VerifyStep from './pages/Auth/ui/VerifyStep/VerifyStep';
