@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { formatTime } from "@/entities/recent/lib/formatRecentTime";
-import { RECENT_MOCK_DATA } from "@/entities/recent/mock/recent.mock";
+import { getRecentList } from "@/entities/recent/api/recentApi";
+import type { RecentItem } from "@/entities/recent/types";
 
 export interface RecentCardItem {
   id: number;
@@ -12,18 +13,34 @@ export interface RecentCardItem {
 
 export const useRecentList = () => {
   const [items, setItems] = useState<RecentCardItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
-    setItems(
-      RECENT_MOCK_DATA.map(item => ({
-        id: item.id,
-        title: item.title,
-        detail: item.detail,
-        time: formatTime(item.time),
-        image: item.image,
-      }))
-    );
+    const fetchRecentItems = async () => {
+      try {
+        setIsLoading(true);
+        setIsError(false);
+        const data: RecentItem[] = await getRecentList();
+        setItems(
+          data.map(item => ({
+            id: item.id,
+            title: item.title,
+            detail: item.detail,
+            time: formatTime(item.time),
+            image: item.image,
+          }))
+        );
+      } catch (error) {
+        console.error("Failed to fetch recent items:", error);
+        setIsError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecentItems();
   }, []);
 
-  return { items };
+  return { items, isLoading, isError };
 };

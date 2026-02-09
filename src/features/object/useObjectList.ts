@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { OBJECT_MOCK_DATA } from "@/entities/object/mock/object.mock";
+import { getObjectList } from "@/entities/object/api/objectApi";
+import type { ObjectItem } from "@/entities/object/types";
 
 export interface ObjectCardItem {
   id: number;
@@ -10,17 +11,33 @@ export interface ObjectCardItem {
 
 export const useObjectList = () => {
   const [items, setItems] = useState<ObjectCardItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
-    setItems(
-      OBJECT_MOCK_DATA.map(item => ({
-        id: item.id,
-        title: item.title,
-        detail: item.detail,
-        image: item.imageUrl,
-      }))
-    );
+    const fetchObjectItems = async () => {
+      try {
+        setIsLoading(true);
+        setIsError(false);
+        const data: ObjectItem[] = await getObjectList();
+        setItems(
+          data.map(item => ({
+            id: item.id,
+            title: item.title,
+            detail: item.detail,
+            image: item.imageUrl,
+          }))
+        );
+      } catch (error) {
+        console.error("Failed to fetch object items:", error);
+        setIsError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchObjectItems();
   }, []);
 
-  return { items };
+  return { items, isLoading, isError };
 };

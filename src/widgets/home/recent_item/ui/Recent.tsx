@@ -4,8 +4,16 @@ import { useOpenObject } from "@/features/open-object/model/useOpenObject";
 import * as S from "./Recent.style";
 
 const Recent = () => {
-  const { items } = useRecentList();
+  const { items, isLoading, isError } = useRecentList();
   const open = useOpenObject();
+
+  if (isLoading) {
+    return <S.container>Loading recent items...</S.container>;
+  }
+
+  if (isError) {
+    return <S.container>Error loading recent items.</S.container>;
+  }
 
   return (
     <S.container>

@@ -8,8 +8,16 @@ interface Props {
 }
 
 const ObjectItem = ({ keyword }: Props) => {
-  const { items } = useObjectList();
+  const { items, isLoading, isError } = useObjectList();
   const open = useOpenObject();
+
+  if (isLoading) {
+    return <S.container>Loading object items...</S.container>;
+  }
+
+  if (isError) {
+    return <S.container>Error loading object items.</S.container>;
+  }
 
   // keyword가 바뀔 때만 필터링
   const filteredItems = items.filter(item =>
