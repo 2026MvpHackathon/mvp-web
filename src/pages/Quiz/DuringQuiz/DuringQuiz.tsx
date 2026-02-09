@@ -8,7 +8,7 @@ import DuringQuizChoiceItem from '@/widgets/quiz/ui/DuringQuizChoiceItem/DuringQ
 import QuizBtn from '@/widgets/quiz/ui/QuizBtn/QuizBtn';
 
 import * as S from './DuringQuiz.style';
-import { createQuiz } from '@/entities/quiz/api/quiz';
+import { createQuiz, submitQuizResult } from '@/entities/quiz/api/quiz';
 import type { QuizItem } from '@/entities/quiz/types/createQuiz';
 
 export type OptionState =
@@ -26,6 +26,7 @@ export interface QuizOption {
 const DuringQuizPage = () => {
   const [quizItems, setQuizItems] = useState<QuizItem[]>([]);
   const [options, setOptions] = useState<QuizOption[]>([]);
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
   const currentQuiz = quizItems[0];
 
@@ -64,6 +65,8 @@ const DuringQuizPage = () => {
 
   // 선택 
   const handleSelectOption = (optionId: number) => {
+    if (isSubmitted) return;
+
     setOptions(prev =>
       prev.map(opt => ({
         ...opt,
@@ -73,18 +76,33 @@ const DuringQuizPage = () => {
   };
 
   // 정답
-  const revealAnswer = () => {
-    if (!currentQuiz) return;
+  const handleSubmitAnswer = async () => {
+    if (!currentQuiz || isSubmitted) return;
+
+    setIsSubmitted(true);
 
     const answerIndex = currentQuiz.correctAnswerIndex; 
     const selectedOption = options.find(opt => opt.state === 'selected');
+    const isCorrect = selectedOption?.id === answerIndex;
+
+    try {
+        const submissionPayload = {
+            quizQuestionId: currentQuiz.quizQuestionId,
+            isCorrect: isCorrect,
+            isFavorite: false,
+        };
+        const submitRes = await submitQuizResult(submissionPayload);
+        console.log('Quiz Submission Response:', submitRes);
+    } catch (error) {
+        console.error('Error submitting quiz result:', error);
+    }
 
     setOptions(prev =>
       prev.map(opt => {
         if (opt.id === answerIndex) {
           return { ...opt, state: 'correct' };
         }
-        if (selectedOption && opt.id === selectedOption.id) {
+        if (selectedOption && opt.id === selectedOption.id && !isCorrect) {
           return { ...opt, state: 'different' };
         }
         return { ...opt, state: 'disabled' };
@@ -100,7 +118,7 @@ const DuringQuizPage = () => {
       <S.aside_container>
         <DuringQuizAccuracyRate />
         <S.aside_order_wrapper>
-          <DuringQuizOrderItem state="disable" order="1" />
+          <DuringQuizOrderItem state="disabled" order="1" />
         </S.aside_order_wrapper>
       </S.aside_container>
 
@@ -132,9 +150,9 @@ const DuringQuizPage = () => {
 
           <S.main_content_btn_wrapper>
             <QuizBtn
-              text="정답 확인"
+              text="완료"
               V1={true}
-              onClick={revealAnswer}
+              onClick={handleSubmitAnswer} 
             />
           </S.main_content_btn_wrapper>
         </S.main_content_container>

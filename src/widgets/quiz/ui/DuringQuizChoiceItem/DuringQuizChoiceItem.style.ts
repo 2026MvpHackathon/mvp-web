@@ -5,7 +5,7 @@ import { typography } from "@/shared/values/typography.mixin";
 import styled from "styled-components";
 
 interface State {
-    $state: "correct" | "different" | "disable" | "select";
+    $state: "correct" | "different" | "disabled" | "selected";
 }
 
 export const container = styled.div<State>`
@@ -16,16 +16,16 @@ export const container = styled.div<State>`
 
     border: 1px solid 
     ${props => 
-        (props.$state === "disable"? colors.main.assistive:
-            (props.$state === "select"? colors.secondary.alternative:
+        (props.$state === "disabled"? colors.main.assistive:
+            (props.$state === "selected"? colors.secondary.alternative:
             (props.$state === "correct"? colors.state.success: colors.state.error))
         )
     };
 
     background-color:
     ${props => 
-        (props.$state === "disable"? colors.background.Dark:
-            (props.$state === "select"? colors.secondary.alternative:
+        (props.$state === "disabled"? colors.background.Dark:
+            (props.$state === "selected"? colors.secondary.alternative:
             (props.$state === "correct"? "#EDFAF0": "#FDE8EF"))
         )
     };
@@ -36,8 +36,8 @@ export const container = styled.div<State>`
 export const text = styled.text<State>`
     color:
     ${props => 
-        (props.$state === "disable"? colors.secondary.alternative:
-            (props.$state === "select"? colors.main.alternative:
+        (props.$state === "disabled"? colors.secondary.alternative:
+            (props.$state === "selected"? colors.main.alternative:
             (props.$state === "correct"? colors.state.success: colors.state.error))
         )
     };

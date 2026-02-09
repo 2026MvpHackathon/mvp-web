@@ -7,10 +7,15 @@ export interface QuizRequest {
     numberOfQuestions: number;
 }  
 
+export interface SubmitResultRequest {
+    quizQuestionId: number;
+    isCorrect: boolean;
+    isFavorite: boolean;
+}
 
 // response
 export interface QuizItem {
-    quizQuestionId: string; 
+    quizQuestionId: number; 
     question: string;
     options: string[];
     correctAnswerIndex: number;
@@ -23,5 +28,14 @@ export interface QuizResponse {
     data: QuizItem[];
 }
 
-
-  
+export interface SubmitResultResponse {
+    status: number;
+    message: string;
+    data: {
+        createdAt: string;
+        updatedAt: string;
+        id: number;
+        favorite: boolean;
+        incorrect: boolean;
+    };
+}

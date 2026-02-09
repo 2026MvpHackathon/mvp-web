@@ -17,12 +17,13 @@ const Image = ({path, size, alt}: ImageResponse) => {
 
 interface ChoiceItem {
     text: string;
-    state: "correct" | "different" | "disable" | "select";
+    state: "correct" | "different" | "disabled" | "selected";
+    onClick: () => void;
 }
 
-const DuringQuizChoiceItem = ({text, state}: ChoiceItem) => {
+const DuringQuizChoiceItem = ({text, state, onClick}: ChoiceItem) => {
     return(
-        <S.container $state={state}>
+        <S.container $state={state} onClick={onClick}>
             <S.text $state={state}>{text}</S.text>
     
             {(state === "correct")?
