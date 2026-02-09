@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import * as THREE from 'three'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
 import toolSelectIcon from '/src/assets/Study/viewer-tool-select.png'
 import toolHandIcon from '/src/assets/Study/viewer-tool-hand.png'
 import toolChatIcon from '/src/assets/Study/viewer-tool-chat.png'
 import toolAiIcon from '/src/assets/Study/viewer-tool-ai.png'
 import { projectConfigs } from '../../data/projects'
+import {
+  askChat,
+  createStudySession,
+  getChatHistory,
+  getMaterialParts,
+  getStudyHomeAll,
+  getStudySessionParts,
+  saveStudySession,
+} from '../../entities/study/api/studyApi'
+import type { MaterialPart, StudySession, StudySessionPart } from '../../entities/study/types'
 import './Study.css'
 import * as S from './Study.style'
 
@@ -100,6 +112,19 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   ])
   const [aiPromptInput, setAiPromptInput] = useState('')
   const [bottomPromptInput, setBottomPromptInput] = useState('')
+  const [studySession, setStudySession] = useState<StudySession | null>(null)
+  const [studySessionId, setStudySessionId] = useState<number | null>(null)
+  const [materialPartsByBase, setMaterialPartsByBase] = useState<Record<string, MaterialPart>>({})
+  const [sessionPartsByBase, setSessionPartsByBase] = useState<
+    Record<string, StudySessionPart>
+  >({})
+  const latestCameraRef = useRef<{
+    position: [number, number, number]
+    quaternion: [number, number, number, number]
+    target: [number, number, number]
+    zoom: number
+  } | null>(null)
+  const saveTimerRef = useRef<number | null>(null)
 
   const storageKey = `assembly-layout-${safeProjectId}`
   const defaultStorageKey = `assembly-default-layout-${safeProjectId}`
@@ -122,6 +147,59 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       if (name.toLowerCase().startsWith('gear link')) return name
     }
     return name.replace(/\s*\d+$/, '').trim()
+  }
+
+  const materialId = projectConfig?.materialId
+  const activeMaterialId = studySession?.materialId ?? materialId
+
+  const resolveBaseName = (name: string) => normalizePartName(name)
+
+  const toRole = (messageType?: string) =>
+    messageType?.toLowerCase().includes('user') ? 'user' : 'assistant'
+
+  const quaternionToEulerDegrees = (rotation: [number, number, number, number]) => {
+    const [x, y, z, w] = rotation
+    const quaternion = new THREE.Quaternion(x, y, z, w)
+    const euler = new THREE.Euler().setFromQuaternion(quaternion, 'XYZ')
+    return [
+      Math.round(THREE.MathUtils.radToDeg(euler.x)),
+      Math.round(THREE.MathUtils.radToDeg(euler.y)),
+      Math.round(THREE.MathUtils.radToDeg(euler.z)),
+    ] as [number, number, number]
+  }
+
+  const resolveRotationDegrees = (rotation: number[]) => {
+    if (rotation.length === 4) {
+      const maxAbs = Math.max(...rotation.map((value) => Math.abs(value)))
+      if (maxAbs > 1.1) {
+        return [rotation[0], rotation[1], rotation[2]] as [number, number, number]
+      }
+      return quaternionToEulerDegrees(rotation as [number, number, number, number])
+    }
+    if (rotation.length === 3) {
+      return [rotation[0], rotation[1], rotation[2]] as [number, number, number]
+    }
+    return [0, 0, 0] as [number, number, number]
+  }
+
+  const queueSaveSession = () => {
+    if (!studySessionId || !latestCameraRef.current) return
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = window.setTimeout(async () => {
+      const cameraState = latestCameraRef.current
+      if (!cameraState) return
+      try {
+        await saveStudySession(studySessionId, {
+          view: viewMode === 'single' ? 'SINGLE_VIEW' : 'ASSEMBLY_VIEW',
+          position: cameraState.position,
+          quaternion: cameraState.quaternion,
+          target: cameraState.target,
+          zoom: cameraState.zoom,
+        })
+      } catch (error) {
+        console.error('학습 세션 저장 실패', error)
+      }
+    }, 600)
   }
 
   const uniqueParts = parts.reduce(
@@ -318,17 +396,17 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }
 
+  const handleSwipeMode = () => {
+    if (viewMode === 'single') return
+    setEditMode(false)
+    viewerRef.current?.setEditMode?.(false)
+  }
+
   const handleSelectMode = () => {
     if (viewMode === 'single') return
     setEditMode(true)
     viewerRef.current?.setEditMode?.(true)
     viewerRef.current?.setTransformMode?.('translate')
-  }
-
-  const handleSwipeMode = () => {
-    if (viewMode === 'single') return
-    setEditMode(false)
-    viewerRef.current?.setEditMode?.(false)
   }
 
   const handleToggleNote = () => {
@@ -368,14 +446,17 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     setNoteEditor((prev) => ({ ...prev, visible: false }))
   }
 
-  const buildAiResponse = (question: string) => {
-    if (question.includes('드론')) {
-      return '드론은 무인 항공기로, 원격 제어나 자율 비행으로 다양한 작업을 수행합니다.'
-    }
-    return '현재 데모 모드라 간단 응답만 제공해요. 다른 질문도 해볼까요?'
+  const handleCameraChange = (state: {
+    position: [number, number, number]
+    quaternion: [number, number, number, number]
+    target: [number, number, number]
+    zoom: number
+  }) => {
+    latestCameraRef.current = state
+    queueSaveSession()
   }
 
-  const handleSendAiMessage = (rawText: string, source: 'ai' | 'bottom') => {
+  const handleSendAiMessage = async (rawText: string, source: 'ai' | 'bottom') => {
     const text = rawText.trim()
     if (!text) return
     const userMessage: AiMessage = {
@@ -383,16 +464,47 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       role: 'user',
       text,
     }
-    const assistantMessage: AiMessage = {
-      id: `assistant-${Date.now() + 1}`,
-      role: 'assistant',
-      text: buildAiResponse(text),
-    }
-    setAiMessages((prev) => [...prev, userMessage, assistantMessage])
+    setAiMessages((prev) => [...prev, userMessage])
     if (source === 'ai') {
       setAiPromptInput('')
     } else {
       setBottomPromptInput('')
+    }
+    if (!studySessionId || !activeMaterialId) {
+      const fallbackMessage: AiMessage = {
+        id: `assistant-${Date.now() + 1}`,
+        role: 'assistant',
+        text: '세션 정보가 아직 준비되지 않았어요. 잠시 후 다시 시도해 주세요.',
+      }
+      setAiMessages((prev) => [...prev, fallbackMessage])
+      return
+    }
+    const selectedPartName = parts[selectedIndex] || ''
+    const selectedBase = selectedPartName ? resolveBaseName(selectedPartName) : ''
+    const selectedModelId =
+      (selectedBase && sessionPartsByBase[selectedBase]?.modelId) ||
+      (selectedBase && materialPartsByBase[selectedBase]?.modelId)
+    try {
+      const response = await askChat({
+        studySessionId,
+        question: text,
+        materialId: activeMaterialId,
+        modelId: selectedModelId,
+      })
+      const assistantMessage: AiMessage = {
+        id: `assistant-${response.data.messageId}`,
+        role: toRole(response.data.messageType),
+        text: response.data.messageContent,
+      }
+      setAiMessages((prev) => [...prev, assistantMessage])
+    } catch (error) {
+      console.error('AI 질문 실패', error)
+      const fallbackMessage: AiMessage = {
+        id: `assistant-${Date.now() + 1}`,
+        role: 'assistant',
+        text: '지금은 답변을 가져올 수 없어요. 잠시 후 다시 시도해 주세요.',
+      }
+      setAiMessages((prev) => [...prev, fallbackMessage])
     }
   }
   useEffect(() => {
@@ -496,6 +608,167 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   }, [projectId, safeProjectId])
 
   useEffect(() => {
+    let cancelled = false
+    const createSession = async () => {
+      if (!materialId) {
+        console.warn('materialId가 없어 학습 세션을 생성하지 않습니다.')
+        setStudySession(null)
+        setStudySessionId(null)
+        return
+      }
+      try {
+        const response = await createStudySession(materialId)
+        if (cancelled) return
+        setStudySession(response.data)
+        setStudySessionId(response.data.sessionId)
+      } catch (error) {
+        if (cancelled) return
+        if (axios.isAxiosError(error)) {
+          const responseData = error.response?.data
+          const candidate = (responseData?.data ?? responseData) as StudySession | undefined
+          if (candidate && typeof candidate === 'object' && 'sessionId' in candidate) {
+            setStudySession(candidate)
+            setStudySessionId(candidate.sessionId)
+            return
+          }
+          if (error.response?.status === 409) {
+            try {
+              const homeResponse = await getStudyHomeAll()
+              const match = homeResponse.data.find((item) => item.materialId === materialId)
+              if (match) {
+                setStudySessionId(match.sessionId)
+              } else {
+                console.warn('세션이 이미 존재하지만 sessionId를 찾지 못했습니다.', responseData)
+              }
+            } catch (homeError) {
+              console.warn('세션이 이미 존재하지만 sessionId를 조회하지 못했습니다.', homeError)
+            }
+            return
+          }
+        }
+        console.error('학습 세션 생성 실패', error)
+      } finally {
+        // no-op
+      }
+    }
+    createSession()
+    return () => {
+      cancelled = true
+    }
+  }, [materialId])
+
+  useEffect(() => {
+    let cancelled = false
+    const fetchMaterialParts = async () => {
+      if (!activeMaterialId) {
+        setMaterialPartsByBase({})
+        return
+      }
+      try {
+        const response = await getMaterialParts(activeMaterialId)
+        if (cancelled) return
+        const next: Record<string, MaterialPart> = {}
+        response.data.forEach((part) => {
+          next[resolveBaseName(part.name)] = part
+        })
+        setMaterialPartsByBase(next)
+      } catch (error) {
+        console.error('부품 목록 조회 실패', error)
+      }
+    }
+    fetchMaterialParts()
+    return () => {
+      cancelled = true
+    }
+  }, [activeMaterialId])
+
+  useEffect(() => {
+    let cancelled = false
+    const fetchSessionData = async () => {
+      if (!studySessionId) return
+      try {
+        const [partsResponse, chatResponse] = await Promise.all([
+          getStudySessionParts(studySessionId),
+          getChatHistory(studySessionId),
+        ])
+        if (cancelled) return
+        const nextParts: Record<string, StudySessionPart> = {}
+        partsResponse.data.forEach((part) => {
+          const base = resolveBaseName(part.name)
+          const lower = part.name.toLowerCase()
+          const baseLower = base.toLowerCase()
+          nextParts[part.name] = part
+          nextParts[base] = part
+          nextParts[lower] = part
+          nextParts[baseLower] = part
+          nextParts[part.name.replace(/\s+/g, '').toLowerCase()] = part
+          nextParts[base.replace(/\s+/g, '').toLowerCase()] = part
+        })
+        setSessionPartsByBase(nextParts)
+        if (chatResponse.data.length > 0) {
+          const nextMessages: AiMessage[] = chatResponse.data.map((message) => ({
+            id: `${message.messageId}`,
+            role: toRole(message.messageType),
+            text: message.messageContent,
+          }))
+          setAiMessages(nextMessages)
+        }
+      } catch (error) {
+        console.error('세션 데이터 조회 실패', error)
+      }
+    }
+    fetchSessionData()
+    return () => {
+      cancelled = true
+    }
+  }, [studySessionId])
+
+  useEffect(() => {
+    if (!studySession || !viewerRef.current?.setCameraState) return
+    viewerRef.current.setCameraState({
+      position: studySession.position,
+      quaternion: studySession.quaternion,
+      target: studySession.target,
+      zoom: studySession.zoom,
+    })
+  }, [studySession])
+
+  useEffect(() => {
+    if (!parts.length || Object.keys(sessionPartsByBase).length === 0) return
+    const transforms: ViewerTransforms = {}
+    const hiddenParts: string[] = []
+    parts.forEach((partName) => {
+      const base = resolveBaseName(partName)
+      const keyCandidates = [
+        partName,
+        base,
+        partName.toLowerCase(),
+        base.toLowerCase(),
+        partName.replace(/\s+/g, '').toLowerCase(),
+        base.replace(/\s+/g, '').toLowerCase(),
+      ]
+      const sessionPart = keyCandidates
+        .map((key) => sessionPartsByBase[key])
+        .find((value) => value)
+      if (!sessionPart) return
+      const rot = resolveRotationDegrees(sessionPart.rotation as unknown as number[])
+      const scale = Array.isArray(sessionPart.scale) ? sessionPart.scale : []
+      transforms[partName] = {
+        pos: sessionPart.position,
+        rot,
+        scaleX: scale[0],
+        scaleY: scale[1],
+        scaleZ: scale[2],
+      }
+      if (!sessionPart.isVisible) hiddenParts.push(partName)
+    })
+    viewerRef.current?.applyTransformsByName?.(transforms)
+    if (hiddenParts.length) {
+      viewerRef.current?.setHiddenParts?.(hiddenParts)
+    }
+  }, [parts, sessionPartsByBase])
+
+  useEffect(() => {
     if (!parts.length) return
     viewerRef.current?.setViewMode?.(viewMode)
     if (viewMode === 'single') {
@@ -539,14 +812,19 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
             const selectedPart =
               uniqueParts.find((item) => item.base === selectedBase) || uniqueParts[0]
             const selectedLabel = selectedPart?.base || 'Main Frame'
+            const selectedMeta = materialPartsByBase[selectedLabel]
             const selectedThumb =
-              partThumbnails[selectedLabel] || getPartIconSvg(selectedLabel)
+              selectedMeta?.imageUrl ||
+              partThumbnails[selectedLabel] ||
+              getPartIconSvg(selectedLabel)
+            const selectedDesc =
+              selectedMeta?.detail || selectedMeta?.description || partDescription
             return (
               <S.PartsDetail>
                 <S.PartsDetailLabel>Detail</S.PartsDetailLabel>
                 <S.PartsDetailImage style={{ backgroundImage: `url(${selectedThumb})` }} />
                 <S.PartsDetailTitle>{selectedLabel}</S.PartsDetailTitle>
-                <S.PartsDetailDesc>{partDescription}</S.PartsDetailDesc>
+                <S.PartsDetailDesc>{selectedDesc}</S.PartsDetailDesc>
               </S.PartsDetail>
             )
           })()}
@@ -581,13 +859,19 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               $expanded={expanded}
               style={{
                 backgroundImage: `url(${
-                  partThumbnails[part.base] || getPartIconSvg(part.base)
+                  materialPartsByBase[part.base]?.imageUrl ||
+                  partThumbnails[part.base] ||
+                  getPartIconSvg(part.base)
                 })`,
               }}
             />
             <S.PartMeta $expanded={expanded}>
               <S.PartTitle>{part.base}</S.PartTitle>
-              {!expanded && <S.PartDesc>{partDescription}</S.PartDesc>}
+              {!expanded && (
+                <S.PartDesc>
+                  {materialPartsByBase[part.base]?.description || partDescription}
+                </S.PartDesc>
+              )}
             </S.PartMeta>
           </S.PartRow>
         ))}
@@ -806,42 +1090,45 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                   projectId={safeProjectId}
                   partOverrides={partOverrides}
                   onStatusChange={setStatus}
+                  onCameraChange={handleCameraChange}
                   onPartsChange={(nextParts: string[]) => {
                     setParts(nextParts)
                     if (nextParts.length) {
                       setSelectedIndex(-1)
                       viewerRef.current?.setSelectedIndex?.(-1)
                     }
-                    const raw =
-                      localStorage.getItem(storageKey) ||
-                      localStorage.getItem(defaultStorageKey)
-                    if (raw) {
-                      try {
-                        const transforms = JSON.parse(raw)
-                        if (safeProjectId === 'leafSpring') {
-                          const remapped: ViewerTransforms = {}
-                          Object.entries(transforms).forEach(([name, values]) => {
-                            if (name.startsWith('Pin ')) {
-                              remapped[`Spring Pin ${name.replace('Pin ', '')}`] =
-                                values as ViewerTransforms[string]
-                            } else {
-                              remapped[name] = values as ViewerTransforms[string]
-                            }
-                          })
-                          viewerRef.current?.applyTransformsByName?.(remapped)
-                        } else if (safeProjectId === 'robotGripper') {
-                          const filtered: ViewerTransforms = {}
-                          Object.entries(transforms).forEach(([name, values]) => {
-                            if (name.startsWith('Spring Pin ')) return
-                            filtered[name] = values as ViewerTransforms[string]
-                          })
-                          viewerRef.current?.applyTransformsByName?.(filtered)
-                        } else {
-                          viewerRef.current?.applyTransformsByName?.(transforms)
+                    if (Object.keys(sessionPartsByBase).length === 0) {
+                      const raw =
+                        localStorage.getItem(storageKey) ||
+                        localStorage.getItem(defaultStorageKey)
+                      if (raw) {
+                        try {
+                          const transforms = JSON.parse(raw)
+                          if (safeProjectId === 'leafSpring') {
+                            const remapped: ViewerTransforms = {}
+                            Object.entries(transforms).forEach(([name, values]) => {
+                              if (name.startsWith('Pin ')) {
+                                remapped[`Spring Pin ${name.replace('Pin ', '')}`] =
+                                  values as ViewerTransforms[string]
+                              } else {
+                                remapped[name] = values as ViewerTransforms[string]
+                              }
+                            })
+                            viewerRef.current?.applyTransformsByName?.(remapped)
+                          } else if (safeProjectId === 'robotGripper') {
+                            const filtered: ViewerTransforms = {}
+                            Object.entries(transforms).forEach(([name, values]) => {
+                              if (name.startsWith('Spring Pin ')) return
+                              filtered[name] = values as ViewerTransforms[string]
+                            })
+                            viewerRef.current?.applyTransformsByName?.(filtered)
+                          } else {
+                            viewerRef.current?.applyTransformsByName?.(transforms)
+                          }
+                          setStatus('로컬 저장값 적용')
+                        } catch (error) {
+                          console.error('레이아웃 자동 불러오기 실패', error)
                         }
-                        setStatus('로컬 저장값 적용')
-                      } catch (error) {
-                        console.error('레이아웃 자동 불러오기 실패', error)
                       }
                     }
                     if (safeProjectId === 'drone') {
