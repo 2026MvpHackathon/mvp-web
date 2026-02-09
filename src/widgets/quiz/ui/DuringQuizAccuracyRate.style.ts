@@ -1,11 +1,15 @@
-import { flexColumn, colors, typography } from "@/shared/values/token";
+import { colors, typography, shapes, flexColumnCenter } from "@/shared/values/token";
 import styled from "styled-components";
 
 export const container = styled.div`
-    ${flexColumn}
-    padding: 2.5rem 3.3125rem;
+    ${flexColumnCenter}
+    width: 13.125rem;
     gap: 10px;
-    display: inline-flex;
+    padding: 2.5rem 0;
+
+    border-radius: ${shapes.small};
+    border: 1px solid ${colors.fill.alternative3};
+    background: #0D0D0D;
 `
 
 export const accuracy_rate = styled.span`

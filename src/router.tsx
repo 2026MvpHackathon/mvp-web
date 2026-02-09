@@ -3,6 +3,7 @@ import HomePage from './pages/Home/Home'
 import App from './App' 
 import { StudyExpensePage, StudyPage } from './pages/Study/Study';
 import QuizPage from './pages/Quiz/Quiz';
+import DuringQuizPage from './pages/Quiz/DuringQuiz';
 
 
 const router = createBrowserRouter([
@@ -28,7 +29,7 @@ const router = createBrowserRouter([
             },
             {
               path: "quiz",
-              element: <QuizPage />,
+              element: <DuringQuizPage />,
             },
         ],
     },
