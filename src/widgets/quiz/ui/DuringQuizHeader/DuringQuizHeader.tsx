@@ -10,8 +10,8 @@ interface QuizHeader {
     rangeText: string;
     isActive?: boolean;
     title: string;
-    currentQuestion?: number; 
-    totalQuestions?: number; 
+    currentQuestionText: string; // currentQuestion과 totalQuestions 대신 텍스트로 받음
+    progressPercent: number; // 진행률 (0-100)을 직접 받음
 }
 
 const DuringQuizHeader = ({
@@ -19,11 +19,9 @@ const DuringQuizHeader = ({
     rangeText, 
     isActive, 
     title,
-    currentQuestion = 8,  // test
-    totalQuestions = 10   // 기본값
+    currentQuestionText,
+    progressPercent
 }: QuizHeader) => {
-    const progress = Math.round((currentQuestion / totalQuestions) * 100);
-
     return(
         <S.header_container>
             <S.header_top_container>
@@ -41,10 +39,11 @@ const DuringQuizHeader = ({
             <S.header_bottom_container>
                 <S.ProgressBarWrapper>
                     <S.ProgressBarBackground />
-                    <S.ProgressBarFill progress={progress} />
+                    <S.ProgressBarFill progress={progressPercent} />
                 </S.ProgressBarWrapper>
                 <S.header_bottom_progress_percent_wrapper>
-                    <S.header_bottom_progress_percent_numb>{progress}</S.header_bottom_progress_percent_numb>
+                    <S.header_bottom_question_status>{currentQuestionText}</S.header_bottom_question_status>
+                    <S.header_bottom_progress_percent_numb>{progressPercent}</S.header_bottom_progress_percent_numb>
                     <S.header_bottom_progress_percent>%</S.header_bottom_progress_percent>
                 </S.header_bottom_progress_percent_wrapper>
             </S.header_bottom_container>

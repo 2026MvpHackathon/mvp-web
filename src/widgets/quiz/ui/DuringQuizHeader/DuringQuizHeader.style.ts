@@ -76,6 +76,14 @@ export const ProgressBarFill = styled.div<{ progress: number }>`
 export const header_bottom_progress_percent_wrapper = styled.div`
     width: auto;
     white-space: nowrap;
+    ${flexRow}; // 진행 텍스트와 퍼센트가 한 줄에 오도록
+    align-items: center;
+    gap: 4px; // 요소들 사이 간격
+`
+export const header_bottom_question_status = styled.span`
+    color: ${colors.text.normal};
+    ${typography("heading",'sm','medium')};
+    margin-right: 8px; // 퍼센트와 구분
 `
 export const header_bottom_progress_percent_numb = styled.span`
     color: ${colors.text.normal};

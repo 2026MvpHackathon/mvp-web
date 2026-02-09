@@ -21,6 +21,11 @@ const DuringQuizPage = () => {
   const [quizItems, setQuizItems] = useState<LocalQuizItem[]>([]); // 타입 변경
   const [currentQuizIndex, setCurrentQuizIndex] = useState<number>(0);
   const [showCommentary, setShowCommentary] = useState<boolean>(false);
+  
+  // 정답률 계산을 위한 상태
+  const [totalCorrectAnswers, setTotalCorrectAnswers] = useState<number>(0);
+  const [displayAccuracyRate, setDisplayAccuracyRate] = useState<string>("0%");
+  const [displayText, setDisplayText] = useState<string>("0 문제 중 0 문제 맞췄어요!");
 
   const currentQuiz: LocalQuizItem | undefined = quizItems[currentQuizIndex]; // 타입 명시
 
@@ -67,6 +72,38 @@ const DuringQuizPage = () => {
     }
   }, [currentQuizIndex, currentQuiz]); // currentQuiz가 변경될 때도 useEffect가 실행되도록 의존성 추가
 
+  // quizItems가 변경될 때마다 정답률 재계산
+  useEffect(() => {
+    if (quizItems.length === 0) {
+      setTotalCorrectAnswers(0);
+      setDisplayAccuracyRate("0%");
+      setDisplayText("0 문제 중 0 문제 맞췄어요!");
+      return;
+    }
+
+    const totalQuestions = quizItems.length;
+    let correctlyAnsweredCount = 0;
+
+    quizItems.forEach(item => {
+      if (item.isSubmitted) {
+        // 맞힌 문제로 간주하려면, 'correct' 상태인 옵션이 유일하게 존재해야 함
+        const hasCorrect = item.options.some(opt => opt.state === 'correct');
+        const hasDifferent = item.options.some(opt => opt.state === 'different');
+
+        if (hasCorrect && !hasDifferent) { // 정답을 맞힌 경우
+          correctlyAnsweredCount++;
+        }
+      }
+    });
+
+    const currentAccuracyRate = totalQuestions > 0 ? (correctlyAnsweredCount / totalQuestions * 100).toFixed(1) : "0";
+    
+    setTotalCorrectAnswers(correctlyAnsweredCount);
+    setDisplayAccuracyRate(`${currentAccuracyRate}%`);
+    setDisplayText(`${totalQuestions} 문제 중 ${correctlyAnsweredCount} 문제 맞췄어요!`);
+
+  }, [quizItems]); // quizItems 배열이 변경될 때마다 실행
+
   // 선택지 선택
   const handleSelectOption = (optionId: number) => {
     if (!currentQuiz || currentQuiz.isSubmitted) return;
@@ -89,6 +126,8 @@ const DuringQuizPage = () => {
   // 정답 제출 및 해설 표시
   const handleSubmitAnswer = async () => {
     if (!currentQuiz || currentQuiz.isSubmitted) return;
+
+    console.log("handleSubmitAnswer 시작. 현재 퀴즈 상태 (제출 전):", currentQuiz); // 추가
 
     const answerIndex = currentQuiz.correctAnswerIndex;
     const selectedOption = currentQuiz.options.find(
@@ -129,7 +168,9 @@ const DuringQuizPage = () => {
           : item
       )
     );
+    console.log("handleSubmitAnswer 완료. setQuizItems 호출됨."); // 추가
     setShowCommentary(true); // 해설 표시
+    console.log("해설 표시 상태 (예상):", true); // showCommentary는 비동기로 업데이트되므로, 예상값을 찍음 // 추가
   };
 
   // 이전 퀴즈로 이동
@@ -150,13 +191,47 @@ const DuringQuizPage = () => {
 
   if (!currentQuiz) return null;
 
+  // currentQuestionText는 그대로 유지
+  const totalQuizCount = quizItems.length;
+  const currentQuestionNumber = currentQuizIndex + 1;
+  const currentQuestionText = `${currentQuestionNumber}/${totalQuizCount}`;
+
+  // 제출된 문제 수를 기반으로 progressPercent 계산
+  const submittedQuestionsCount = quizItems.filter(item => item.isSubmitted).length;
+  const progressPercent = totalQuizCount > 0 ? Math.round((submittedQuestionsCount / totalQuizCount) * 100) : 0;
+
   return (
     <S.container>
       {/* aside */}
       <S.aside_container>
-        <DuringQuizAccuracyRate />
+        <DuringQuizAccuracyRate accuracyRate={displayAccuracyRate} smallText={displayText} />
         <S.aside_order_wrapper>
-          <DuringQuizOrderItem state="disabled" order="1" />
+          {quizItems.map((quizItem, index) => {
+            let itemState: "disabled" | "correct" | "different" | "selected" = "disabled";
+
+            if (quizItem.isSubmitted) { // 제출된 퀴즈라면 정답/오답 상태를 우선적으로 적용
+              const hasCorrect = quizItem.options.some(opt => opt.state === "correct");
+              const hasDifferent = quizItem.options.some(opt => opt.state === "different");
+
+              if (hasCorrect && !hasDifferent) { // 정답을 맞힌 경우
+                itemState = "correct";
+              } else if (hasDifferent) { // 정답을 틀린 경우
+                itemState = "different";
+              }
+            } else if (index === currentQuizIndex) { // 제출되지 않았고 현재 보고 있는 퀴즈라면 selected
+              itemState = "selected";
+            } else { // 제출되지 않았고 현재 보고 있는 퀴즈도 아님
+              itemState = "disabled";
+            }
+            
+            return (
+              <DuringQuizOrderItem
+                key={index}
+                state={itemState}
+                order={`${index + 1}`}
+              />
+            );
+          })}
         </S.aside_order_wrapper>
       </S.aside_container>
 
@@ -166,6 +241,8 @@ const DuringQuizPage = () => {
           type="AI"
           rangeText="범위"
           title={`0${currentQuizIndex+1}. 다음 문제에 대한 옳은 답을 사지선다형 보기 중에서 고르시오.`}
+          currentQuestionText={currentQuestionText} // 추가
+          progressPercent={progressPercent} // 추가
         />
 
         <S.main_content_container>
