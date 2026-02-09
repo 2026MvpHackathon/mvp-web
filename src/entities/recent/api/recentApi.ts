@@ -1,7 +1,7 @@
-import axios from "axios";
-import type { RecentItem } from "../types";
+import type { RecentItem, RecentApiResponse } from "../types";
+import axiosInstance from "@/features/Auth/axiosInstance";
 
 export const getRecentList = async (): Promise<RecentItem[]> => {
-  const res = await axios.get("/api/recent");
-  return res.data;
+  const res = await axiosInstance.get<RecentApiResponse>("/api/study/home/find/recent");
+  return res.data.data;
 };

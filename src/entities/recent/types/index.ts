@@ -1,7 +1,14 @@
 export interface RecentItem {
-  id: number;
   title: string;
-  detail: string;
-  time: string;
-  image: string;
+  description: string;
+  thumbnailUrl: string;
+  materialId: number;
+  sessionId: number;
+  lastAccessAt: string;
+}
+
+export interface RecentApiResponse {
+  status: number;
+  message: string;
+  data: RecentItem[];
 }

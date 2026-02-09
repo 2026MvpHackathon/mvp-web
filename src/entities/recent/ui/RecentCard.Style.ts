@@ -3,15 +3,17 @@ import * as token from "@/shared/values/token"
 
 export const container = styled.div`
   width: 21.53rem;
-  height: 12.4375rem;
   padding: 1rem 1.25rem;
   background-color: ${token.colors.fill.alternative3};
   border-radius: ${token.shapes.small};
 `;
 
 export const item = styled.div`
-  ${token.flexColumn}
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-items: stretch;
+  justify-content: space-between;
   gap: 1rem;
 `;
 
@@ -19,6 +21,7 @@ export const infoContainer = styled.div`
   width: 100%;
   ${token.flexColumn}
   gap: 0.3125rem;
+  flex-grow: 1;
 `;
 
 export const titleTimeContainer = styled.div`
