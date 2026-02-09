@@ -536,6 +536,44 @@ export const NoteSearch = styled.input`
   font-size: 13px;
 `
 
+export const NoteEditorPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #2a2f2d;
+  background: #232323;
+`
+
+export const NoteEditorInput = styled.textarea`
+  width: 100%;
+  min-height: 64px;
+  border: none;
+  background: transparent;
+  color: #e6e8ee;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: vertical;
+  outline: none;
+`
+
+export const NoteEditorActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`
+
+export const NoteEditorButton = styled.button`
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(109, 167, 117, 0.6);
+  background: rgba(109, 167, 117, 0.2);
+  color: #d9e4d6;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+`
+
 export const NoteList = styled.div`
   display: flex;
   flex-direction: column;
@@ -559,9 +597,38 @@ export const NoteEmpty = styled.div`
 
 export const NoteMeta = styled.div`
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 16px;
   color: #8b8f94;
+
+  span {
+    flex: 1;
+    min-width: 0;
+  }
+`
+
+export const NoteActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`
+
+export const NoteActionButton = styled.button<{ $icon: string }>`
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  background-image: url(${({ $icon }) => $icon});
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
 `
 
 export const NoteBody = styled.div`
