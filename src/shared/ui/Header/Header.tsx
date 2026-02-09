@@ -1,5 +1,5 @@
 import * as S from './Header.style';
-import Logo from '/src/assets/Logo.png'
+import Logo from '/src/assets/Logo/Logo.png'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getCookie, deleteCookie } from '@/features/Auth/cookies';
 import axiosInstance from '@/features/Auth/axiosInstance'; // publicInstance를 axiosInstance로 변경
@@ -82,7 +82,8 @@ const Header = () => {
             <Image path={Logo} size={'104px'} alt={'Logo'}/>
             <S.header_menu_wrapper>
                 <Link path={'/home'} menu={'Home'} active={location.pathname === '/home'}/>
-                <Link path={'/study'} menu={'Study'} active={location.pathname === '/study'}/>                        
+                <Link path={'/study'} menu={'Study'} active={location.pathname === '/study'}/>
+                <Link path={'/quiz'} menu={'Quiz'} active={location.pathname === '/quiz'}/>                                                
             </S.header_menu_wrapper>
             <S.header_btn onClick={isLoggedIn ? handleLogout : handleLoginClick}>
                 {isLoggedIn ? '로그아웃' : '로그인'}

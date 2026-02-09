@@ -118,7 +118,7 @@ class AssemblyEngine {
       current: 0,
       speed: 1.0,
       explodeScale: 1.0,
-      selectedIndex: 0
+      selectedIndex: -1
     };
     this.parts = [];
     this.notes = [];
@@ -677,9 +677,12 @@ class AssemblyEngine {
           expanded.push(file);
           return;
         }
-        const baseName = (typeof file === "object" && file.name)
+        let baseName = (typeof file === "object" && file.name)
           ? file.name
           : baseFile.replace(/\.glb$/i, "");
+        if (this.currentProjectId === "leafSpring" && baseFile === "Pin.glb") {
+          baseName = "Spring Pin";
+        }
         for (let idx = 1; idx <= count; idx += 1) {
           expanded.push({ file: filePath, name: `${baseName} ${idx}` });
         }
@@ -761,7 +764,7 @@ class AssemblyEngine {
           });
           child.material.side = THREE.DoubleSide;
         } else if (
-          !["v4Engine", "leafSpring", "machineVice"].includes(this.currentProjectId) &&
+          !["v4Engine", "leafSpring"].includes(this.currentProjectId) &&
           Array.isArray(child.material)
         ) {
           child.material.forEach((mat) => {
@@ -772,7 +775,7 @@ class AssemblyEngine {
               mat.roughness = Math.max(mat.roughness ?? 0, 0.7);
             }
           });
-        } else if (!["v4Engine", "leafSpring", "machineVice"].includes(this.currentProjectId)) {
+        } else if (!["v4Engine", "leafSpring"].includes(this.currentProjectId)) {
           if ("envMapIntensity" in child.material) {
             child.material.envMapIntensity = 0.15;
           }
@@ -987,7 +990,7 @@ class AssemblyEngine {
     const config = projectConfigs[projectId];
     if (!config) return;
     this.scene.background = new THREE.Color(0x0b0e14);
-    const noEnvironmentProjects = new Set(["v4Engine", "leafSpring", "machineVice"]);
+    const noEnvironmentProjects = new Set(["v4Engine", "leafSpring"]);
     if (noEnvironmentProjects.has(projectId)) {
       this.scene.environment = null;
     } else {
@@ -1666,7 +1669,31 @@ type AssemblyViewerProps = {
   onGroupTransformChange?: (values: { posX: number; posY: number; posZ: number }) => void
 }
 
-const AssemblyViewer = forwardRef<HTMLCanvasElement, AssemblyViewerProps>(function AssemblyViewer(
+export type AssemblyViewerHandle = {
+  setProject?: (id: string, options?: { partOverrides?: Record<string, number> }) => void
+  setTarget?: (value: number) => void
+  setExplodeScale?: (value: number) => void
+  setSpeed?: (value: number) => void
+  setEditMode?: (value: boolean) => void
+  setTransformMode?: (mode: string) => void
+  setSelectedIndex?: (index: number) => void
+  setGroupSelection?: (names: string[]) => void
+  setPartVisibility?: (name: string, visible: boolean) => void
+  setHiddenParts?: (names: string[]) => void
+  setViewMode?: (mode: "single" | "assembly") => void
+  applySelectedTransform?: (values: unknown) => void
+  setNoteMode?: (value: boolean) => void
+  setNoteText?: (value: string) => void
+  updateNote?: (id: string, text: string) => void
+  deleteNote?: (id: string) => void
+  getNoteScreenPosition?: (id: string) => { x: number; y: number; visible: boolean } | null
+  getCurrentTransforms?: () => unknown
+  applyTransformsByName?: (transforms: Record<string, unknown>) => void
+  focusOnPart?: (name: string) => void
+  focusOnScene?: () => void
+}
+
+const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(function AssemblyViewer(
   {
     projectId,
     partOverrides,

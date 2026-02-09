@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
-import AssemblyViewer from '../../components/assembly/AssemblyViewer'
+import { useNavigate } from 'react-router-dom'
+import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
+import toolSelectIcon from '/src/assets/Study/viewer-tool-select.png'
+import toolHandIcon from '/src/assets/Study/viewer-tool-hand.png'
+import toolChatIcon from '/src/assets/Study/viewer-tool-chat.png'
+import toolAiIcon from '/src/assets/Study/viewer-tool-ai.png'
 import { projectConfigs } from '../../data/projects'
 import './Study.css'
 import * as S from './Study.style'
@@ -18,6 +23,11 @@ type NoteEditorState = {
   visible: boolean
 }
 
+type AiMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  text: string
+}
 type PartOverridesByProject = Record<string, Record<string, number>>
 
 type ViewerTransforms = Record<
@@ -32,29 +42,9 @@ type ViewerTransforms = Record<
   }
 >
 
-type ViewerRef = {
-  setProject?: (id: string, options?: { partOverrides?: Record<string, number> }) => void
-  getCurrentTransforms?: () => ViewerTransforms
-  applyTransformsByName?: (transforms: ViewerTransforms) => void
-  setSelectedIndex?: (index: number) => void
-  setExplodeScale?: (value: number) => void
-  setSpeed?: (value: number) => void
-  setTarget?: (value: number) => void
-  setEditMode?: (value: boolean) => void
-  setTransformMode?: (mode: string) => void
-  setNoteMode?: (value: boolean) => void
-  updateNote?: (id: string, text: string) => void
-  getNoteScreenPosition?: (id: string) => { x: number; y: number; visible: boolean }
-  deleteNote?: (id: string) => void
-  setGroupSelection?: (names: string[]) => void
-  setHiddenParts?: (names: string[]) => void
-  setViewMode?: (mode: 'single' | 'assembly') => void
-  focusOnPart?: (name: string) => void
-  focusOnScene?: () => void
-}
-
-export const StudyPage = () => {
-  const viewerRef = useRef<ViewerRef | null>(null)
+const StudyLayout = ({ expanded }: { expanded: boolean }) => {
+  const navigate = useNavigate()
+  const viewerRef = useRef<AssemblyViewerHandle | null>(null)
   const progressRef = useRef<HTMLInputElement | null>(null)
   const [progressWidth, setProgressWidth] = useState(0)
   const projects = useMemo(
@@ -69,8 +59,10 @@ export const StudyPage = () => {
   const [projectId, setProjectId] = useState(
     () => localStorage.getItem('assembly-last-project') || 'drone',
   )
-  const [partOverridesByProject, setPartOverridesByProject] =
-    useState<PartOverridesByProject>(() => {
+  const safeProjectId = Object.prototype.hasOwnProperty.call(projectConfigs, projectId)
+    ? projectId
+    : 'drone'
+  const [partOverridesByProject] = useState<PartOverridesByProject>(() => {
     const raw = localStorage.getItem('assembly-part-overrides')
     if (!raw) return {}
     try {
@@ -95,27 +87,38 @@ export const StudyPage = () => {
     visible: false,
   })
   const [notePanelOpen, setNotePanelOpen] = useState(true)
+  const expenseToggleOn = expanded
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
   const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
+  const [aiPanelOpen, setAiPanelOpen] = useState(true)
+  const [aiMessages, setAiMessages] = useState<AiMessage[]>([
+    {
+      id: 'ai-1',
+      role: 'assistant',
+      text: '무엇이 궁금한가요? 편하게 질문해 주세요.',
+    },
+  ])
+  const [aiPromptInput, setAiPromptInput] = useState('')
+  const [bottomPromptInput, setBottomPromptInput] = useState('')
 
-  const storageKey = `assembly-layout-${projectId}`
-  const defaultStorageKey = `assembly-default-layout-${projectId}`
-  const projectConfig = projectConfigs[projectId as keyof typeof projectConfigs]
-  const projectLabel = projectConfig?.label ?? projectId
+  const storageKey = `assembly-layout-${safeProjectId}`
+  const defaultStorageKey = `assembly-default-layout-${safeProjectId}`
+  const projectConfig = projectConfigs[safeProjectId as keyof typeof projectConfigs]
+  const projectLabel = projectConfig?.label ?? safeProjectId
   const projectDescriptions: Record<string, string> = {
     drone:
       '드론(Drone)은 조종사가 탑승하지 않고 무선전파 유도를 통해 원격 제어하거나 자율 비행하는 무인 항공기(UAV) 또는 무인 항공 시스템(UAS)을 의미합니다. 초기엔 군사용으로 개발되었으나 현재는 촬영, 방제, 물류 배송, 취미용 등 다양한 분야에 활용되는 4차 산업 핵심 기기입니다.',
   }
   const projectDescription =
-    projectDescriptions[projectId] ?? '프로젝트 설명이 준비 중입니다.'
+    projectDescriptions[safeProjectId] ?? '프로젝트 설명이 준비 중입니다.'
   const partDescription = '드론의 주요 부품으로 기능 설명이 제공됩니다.'
 
   const normalizePartName = (name: string) => {
-    if (projectId === 'robotArm') {
+    if (safeProjectId === 'robotArm') {
       if (name.startsWith('Part8')) return 'Part8'
       return name
     }
-    if (projectId === 'robotGripper') {
+    if (safeProjectId === 'robotGripper') {
       if (name.toLowerCase().startsWith('gear link')) return name
     }
     return name.replace(/\s*\d+$/, '').trim()
@@ -123,7 +126,7 @@ export const StudyPage = () => {
 
   const uniqueParts = parts.reduce(
     (acc, name) => {
-      const isRobotArm = projectId === 'robotArm'
+      const isRobotArm = safeProjectId === 'robotArm'
       const base = isRobotArm
         ? name.startsWith('Part8') || name === 'Part8'
           ? 'Part8'
@@ -137,6 +140,15 @@ export const StudyPage = () => {
     },
     { seen: new Set<string>(), items: [] as { name: string; base: string }[] },
   ).items
+
+  const displaySelectedIndex =
+    viewMode === 'single'
+      ? selectedIndex >= 0
+        ? selectedIndex
+        : parts.length > 0
+          ? 0
+          : -1
+      : selectedIndex
 
   const getPartIconSvg = (name: string) => {
     const lower = name.toLowerCase()
@@ -193,10 +205,8 @@ export const StudyPage = () => {
 
   const getPartThumbnailCandidates = (baseName: string) => {
     if (!projectConfig?.basePath) return []
-    const basePath =
-      projectId === 'leafSpring' && baseName === 'Pin'
-        ? '/assets/Robot Gripper'
-        : projectConfig.basePath
+    const isLeafSpringPin = safeProjectId === 'leafSpring' && baseName === 'Spring Pin'
+    const basePath = isLeafSpringPin ? '/assets/Robot Gripper' : projectConfig.basePath
     const candidates = new Set<string>()
     const addCandidate = (name: string) => {
       if (!name) return
@@ -208,11 +218,15 @@ export const StudyPage = () => {
       if (lower !== name) addCandidate(lower)
     }
     const trimmed = baseName.replace(/\s+/g, ' ').trim()
-    addCaseVariants(trimmed)
+    if (isLeafSpringPin) {
+      addCaseVariants('Pin')
+    } else {
+      addCaseVariants(trimmed)
+    }
     if (baseName.includes(' MIR')) {
       addCaseVariants(baseName.replace(' MIR', '_MIR'))
     }
-    if (projectId === 'drone') {
+    if (safeProjectId === 'drone') {
       const droneAliases: Record<string, string> = {
         Arm: 'Arm gear',
         Blade: 'Impellar Blade',
@@ -232,7 +246,7 @@ export const StudyPage = () => {
       }
       if (baseName === 'Beater disc') addCaseVariants('bester disc')
     }
-    if (projectId === 'v4Engine') {
+    if (safeProjectId === 'v4Engine') {
       if (baseName === 'Piston Pin') addCaseVariants('poston pin')
     }
     return Array.from(candidates)
@@ -264,7 +278,11 @@ export const StudyPage = () => {
   const progressLeft = progressWidth
     ? ((progressWidth - thumbWidth) * explodePercent) / 100 + thumbWidth / 2
     : explodePercent
-  const partOverrides = partOverridesByProject[projectId] ?? projectConfig?.defaultOverrides
+  const partOverrides = partOverridesByProject[safeProjectId] ?? projectConfig?.defaultOverrides
+
+  const handleExpenseToggle = () => {
+    navigate(expanded ? '/study' : '/study/expense')
+  }
 
   const handleProjectChange = (id: string) => {
     setProjectId(id)
@@ -350,11 +368,39 @@ export const StudyPage = () => {
     setNoteEditor((prev) => ({ ...prev, visible: false }))
   }
 
+  const buildAiResponse = (question: string) => {
+    if (question.includes('드론')) {
+      return '드론은 무인 항공기로, 원격 제어나 자율 비행으로 다양한 작업을 수행합니다.'
+    }
+    return '현재 데모 모드라 간단 응답만 제공해요. 다른 질문도 해볼까요?'
+  }
+
+  const handleSendAiMessage = (rawText: string, source: 'ai' | 'bottom') => {
+    const text = rawText.trim()
+    if (!text) return
+    const userMessage: AiMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text,
+    }
+    const assistantMessage: AiMessage = {
+      id: `assistant-${Date.now() + 1}`,
+      role: 'assistant',
+      text: buildAiResponse(text),
+    }
+    setAiMessages((prev) => [...prev, userMessage, assistantMessage])
+    if (source === 'ai') {
+      setAiPromptInput('')
+    } else {
+      setBottomPromptInput('')
+    }
+  }
   useEffect(() => {
     if (!noteEditor.visible || !noteEditor.id) return
+    const noteId = noteEditor.id
     let frameId: number
     const tick = () => {
-      const pos = viewerRef.current?.getNoteScreenPosition(noteEditor.id)
+      const pos = viewerRef.current?.getNoteScreenPosition?.(noteId)
       if (pos && pos.visible) {
         setNoteEditor((prev) => {
           if (!prev.visible) return prev
@@ -379,7 +425,7 @@ export const StudyPage = () => {
       }
       const unique = parts.reduce(
         (acc, name) => {
-          const isRobotArm = projectId === 'robotArm'
+          const isRobotArm = safeProjectId === 'robotArm'
           const base = isRobotArm
             ? name.startsWith('Part8') || name === 'Part8'
               ? 'Part8'
@@ -434,6 +480,21 @@ export const StudyPage = () => {
     setSelectedIndex(-1)
   }, [])
 
+  const prevViewModeRef = useRef<'single' | 'assembly'>('assembly')
+  useEffect(() => {
+    if (viewMode === 'assembly' && prevViewModeRef.current === 'single') {
+      viewerRef.current?.focusOnScene?.()
+    }
+    prevViewModeRef.current = viewMode
+  }, [viewMode])
+
+  useEffect(() => {
+    if (safeProjectId !== projectId) {
+      setProjectId(safeProjectId)
+      localStorage.setItem('assembly-last-project', safeProjectId)
+    }
+  }, [projectId, safeProjectId])
+
   useEffect(() => {
     if (!parts.length) return
     viewerRef.current?.setViewMode?.(viewMode)
@@ -442,14 +503,21 @@ export const StudyPage = () => {
         setEditMode(false)
         viewerRef.current?.setEditMode?.(false)
       }
-      const nextIndex = selectedIndex >= 0 ? selectedIndex : 0
-      const name = parts[nextIndex]
-      if (!name) return
-      if (selectedIndex !== nextIndex) {
-        setSelectedIndex(nextIndex)
-        viewerRef.current?.setSelectedIndex?.(nextIndex)
+      if (selectedIndex < 0) {
+        const fallbackIndex = parts.length > 0 ? 0 : -1
+        const fallbackName = fallbackIndex >= 0 ? parts[fallbackIndex] : ''
+        viewerRef.current?.setSelectedIndex?.(-1)
+        if (!fallbackName) return
+        viewerRef.current?.setHiddenParts?.(
+          parts.filter((_, idx) => idx !== fallbackIndex),
+        )
+        viewerRef.current?.focusOnPart?.(fallbackName)
+        return
       }
-      viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== nextIndex))
+      const name = parts[selectedIndex]
+      if (!name) return
+      viewerRef.current?.setSelectedIndex?.(selectedIndex)
+      viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== selectedIndex))
       viewerRef.current?.focusOnPart?.(name)
       return
     }
@@ -457,129 +525,249 @@ export const StudyPage = () => {
     if (selectedIndex >= 0) {
       viewerRef.current?.setSelectedIndex?.(selectedIndex)
     }
-    viewerRef.current?.focusOnScene?.()
   }, [viewMode, parts, selectedIndex])
 
+  const renderPartsCard = (expanded: boolean) => (
+    <S.PartsCard $expanded={expanded}>
+      {expanded ? (
+        <S.PartsDetailSection>
+          {(() => {
+            const selectedBase =
+              displaySelectedIndex >= 0
+                ? normalizePartName(parts[displaySelectedIndex] || '')
+                : uniqueParts[0]?.base || ''
+            const selectedPart =
+              uniqueParts.find((item) => item.base === selectedBase) || uniqueParts[0]
+            const selectedLabel = selectedPart?.base || 'Main Frame'
+            const selectedThumb =
+              partThumbnails[selectedLabel] || getPartIconSvg(selectedLabel)
+            return (
+              <S.PartsDetail>
+                <S.PartsDetailLabel>Detail</S.PartsDetailLabel>
+                <S.PartsDetailImage style={{ backgroundImage: `url(${selectedThumb})` }} />
+                <S.PartsDetailTitle>{selectedLabel}</S.PartsDetailTitle>
+                <S.PartsDetailDesc>{partDescription}</S.PartsDetailDesc>
+              </S.PartsDetail>
+            )
+          })()}
+          <S.PartsDivider />
+          <S.PartsSectionLabel>Parts</S.PartsSectionLabel>
+        </S.PartsDetailSection>
+      ) : (
+        <S.CardHeader>Parts</S.CardHeader>
+      )}
+      <S.PartsList $expanded={expanded}>
+        {uniqueParts.map((part) => (
+          <S.PartRow
+            key={part.base}
+            $expanded={expanded}
+            $active={
+              displaySelectedIndex >= 0 &&
+              normalizePartName(parts[displaySelectedIndex] || '') === part.base
+            }
+            onClick={() => {
+              const nextIndex = parts.findIndex(
+                (item) => normalizePartName(item) === part.base,
+              )
+              if (selectedIndex === nextIndex) {
+                setSelectedIndex(-1)
+                viewerRef.current?.setSelectedIndex?.(-1)
+                return
+              }
+              handleSelectPart(nextIndex)
+            }}
+          >
+            <S.PartIcon
+              $expanded={expanded}
+              style={{
+                backgroundImage: `url(${
+                  partThumbnails[part.base] || getPartIconSvg(part.base)
+                })`,
+              }}
+            />
+            <S.PartMeta $expanded={expanded}>
+              <S.PartTitle>{part.base}</S.PartTitle>
+              {!expanded && <S.PartDesc>{partDescription}</S.PartDesc>}
+            </S.PartMeta>
+          </S.PartRow>
+        ))}
+      </S.PartsList>
+    </S.PartsCard>
+  )
+
+  const renderAiCard = (expanded: boolean, compact = false, showPrompt = false) => (
+    <S.AiCard $expanded={expanded} $compact={compact}>
+      <S.AiHeader>
+        <span>AI Assistant</span>
+        <S.AiBadge>AI</S.AiBadge>
+      </S.AiHeader>
+      <S.AiBody>
+        {aiMessages.length === 0 ? (
+          <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
+        ) : (
+          aiMessages.map((message) =>
+            message.role === 'assistant' ? (
+              <S.AiChatBubble key={message.id}>{message.text}</S.AiChatBubble>
+            ) : (
+              <S.AiUserBubble key={message.id}>{message.text}</S.AiUserBubble>
+            ),
+          )
+        )}
+      </S.AiBody>
+      {showPrompt && (
+        <S.AiPromptBar
+          onSubmit={(event) => {
+            event.preventDefault()
+            handleSendAiMessage(aiPromptInput, 'ai')
+          }}
+        >
+          <S.AiPromptInput
+            value={aiPromptInput}
+            placeholder="무엇이 궁금한가요?"
+            onChange={(event) => setAiPromptInput(event.target.value)}
+          />
+          <S.ChatSend type="submit" disabled={!aiPromptInput.trim()}>
+            ↗
+          </S.ChatSend>
+        </S.AiPromptBar>
+      )}
+    </S.AiCard>
+  )
+
   return (
-      <S.PageBody>
-        <S.ContentGrid>
+    <S.PageBody>
+      <S.ContentGrid $expanded={expenseToggleOn}>
+        {!expenseToggleOn && (
           <S.LeftColumn>
-            <S.PartsCard>
-              <S.CardHeader>Parts</S.CardHeader>
-              <S.PartsList>
-                {uniqueParts.map((part) => (
-                  <S.PartRow
-                    key={part.base}
-                    $active={
-                      selectedIndex >= 0 &&
-                      normalizePartName(parts[selectedIndex] || '') === part.base
-                    }
-                    onClick={() => {
-                      const nextIndex = parts.findIndex(
-                        (item) => normalizePartName(item) === part.base,
-                      )
-                      if (selectedIndex === nextIndex) {
-                        setSelectedIndex(-1)
-                        viewerRef.current?.setSelectedIndex?.(-1)
-                        return
-                      }
-                      handleSelectPart(nextIndex)
-                    }}
-                  >
-                    <S.PartIcon
-                      style={{
-                        backgroundImage: `url(${
-                          partThumbnails[part.base] || getPartIconSvg(part.base)
-                        })`,
-                      }}
-                    />
-                    <S.PartMeta>
-                      <S.PartTitle>{part.base}</S.PartTitle>
-                    <S.PartDesc>{partDescription}</S.PartDesc>
-                    </S.PartMeta>
-                  </S.PartRow>
-                ))}
-              </S.PartsList>
-            </S.PartsCard>
-
-            <S.AiCard>
-              <S.AiHeader>
-                <span>AI Assistant</span>
-                <S.AiBadge>AI</S.AiBadge>
-              </S.AiHeader>
-              <S.AiBody>
-                <S.PartDesc>드론 정의가 뭐야?</S.PartDesc>
-                <S.AiChatBubble>
-                  RTH(Return To Home)는 드론이 자동으로 홈 포인트로 복귀하는 기능입니다. GPS
-                  신호가 안정적으로 확보된 후에 복귀하도록 설정합니다.
-                </S.AiChatBubble>
-                <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
-              </S.AiBody>
-            </S.AiCard>
+            {renderPartsCard(false)}
+            {renderAiCard(false)}
           </S.LeftColumn>
+        )}
 
-          <S.CenterColumn>
-            <S.ViewerCard>
+        <S.CenterColumn>
+          <S.ViewerCard $expanded={expenseToggleOn}>
               <S.ViewerHeader>
                 <span>{projectLabel}</span>
                 <S.ViewerDivider />
                 <S.ViewerDescription>{projectDescription}</S.ViewerDescription>
-                <S.ProjectSelect
-                  value={projectId}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                    handleProjectChange(event.target.value)
-                  }
-                >
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.label}
-                    </option>
-                  ))}
-                </S.ProjectSelect>
+                {!expenseToggleOn ? (
+                  <S.ProjectSelect
+                    value={safeProjectId}
+                    onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                      handleProjectChange(event.target.value)
+                    }
+                  >
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.label}
+                      </option>
+                    ))}
+                  </S.ProjectSelect>
+                ) : (
+                  <S.ExpandedViewModeToggle>
+                    <S.ViewModeButton
+                      $active={viewMode === 'single'}
+                      onClick={() => setViewMode('single')}
+                    >
+                      단일 부품
+                    </S.ViewModeButton>
+                    <S.ViewModeButton
+                      $active={viewMode === 'assembly'}
+                      onClick={() => setViewMode('assembly')}
+                    >
+                      조립도
+                    </S.ViewModeButton>
+                  </S.ExpandedViewModeToggle>
+                )}
               </S.ViewerHeader>
               <S.ViewerBody>
                 <S.ViewerToolbar>
-                  <S.ToolbarButton
-                    $active={editMode}
-                    onClick={handleSelectMode}
-                    disabled={viewMode === 'single'}
-                  >
-                    ➤
-                  </S.ToolbarButton>
-                  <S.ToolbarButton
-                    $active={!editMode}
-                    onClick={handleSwipeMode}
-                    disabled={viewMode === 'single'}
-                  >
-                    ✋
-                  </S.ToolbarButton>
-                  <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
-                    💬
-                  </S.ToolbarButton>
+                  {expenseToggleOn ? (
+                    <>
+                      <S.ToolbarButton
+                        $active={editMode}
+                        onClick={handleSelectMode}
+                        disabled={viewMode === 'single'}
+                      >
+                        <S.ToolbarIcon src={toolSelectIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton
+                        $active={!editMode}
+                        onClick={handleSwipeMode}
+                        disabled={viewMode === 'single'}
+                      >
+                        <S.ToolbarIcon src={toolHandIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
+                        <S.ToolbarIcon src={toolChatIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarDivider />
+                      <S.ToolbarButton
+                        type="button"
+                        $active={aiPanelOpen}
+                        onClick={() => setAiPanelOpen((prev) => !prev)}
+                      >
+                        <S.ToolbarIcon src={toolAiIcon} alt="" />
+                      </S.ToolbarButton>
+                    </>
+                  ) : (
+                    <>
+                      <S.ToolbarButton
+                        $active={editMode}
+                        onClick={handleSelectMode}
+                        disabled={viewMode === 'single'}
+                      >
+                        <S.ToolbarIcon src={toolSelectIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton
+                        $active={!editMode}
+                        onClick={handleSwipeMode}
+                        disabled={viewMode === 'single'}
+                      >
+                        <S.ToolbarIcon src={toolHandIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
+                        <S.ToolbarIcon src={toolChatIcon} alt="" />
+                      </S.ToolbarButton>
+                    </>
+                  )}
                 </S.ViewerToolbar>
-                <S.ViewModeToggle>
-                  <S.ViewModeButton
-                    $active={viewMode === 'single'}
-                    onClick={() => setViewMode('single')}
-                  >
-                    단일 부품
-                  </S.ViewModeButton>
-                  <S.ViewModeButton
-                    $active={viewMode === 'assembly'}
-                    onClick={() => setViewMode('assembly')}
-                  >
-                    조립도
-                  </S.ViewModeButton>
-                </S.ViewModeToggle>
+                {!expenseToggleOn && (
+                  <S.ViewModeToggle>
+                    <S.ViewModeButton
+                      $active={viewMode === 'single'}
+                      onClick={() => setViewMode('single')}
+                    >
+                      단일 부품
+                    </S.ViewModeButton>
+                    <S.ViewModeButton
+                      $active={viewMode === 'assembly'}
+                      onClick={() => setViewMode('assembly')}
+                    >
+                      조립도
+                    </S.ViewModeButton>
+                  </S.ViewModeToggle>
+                )}
 
                 <S.NoteToggleOutside
                   type="button"
+                  $shifted={expenseToggleOn}
                   onClick={() => setNotePanelOpen((prev) => !prev)}
                 >
                   <S.NoteToggleIcon>⌄</S.NoteToggleIcon>
                 </S.NoteToggleOutside>
+                {!expenseToggleOn && (
+                  <S.ExpenseToggleOutside
+                    type="button"
+                    aria-label="expense toggle"
+                    title="expense toggle"
+                    data-active={expenseToggleOn}
+                    $shifted={expenseToggleOn}
+                    onClick={handleExpenseToggle}
+                  />
+                )}
                 {notePanelOpen && (
-                  <S.NotePanel>
+                  <S.NotePanel $shifted={expenseToggleOn}>
                     <S.NoteHeader>
                       <span>note</span>
                       <S.NoteSearch placeholder="검색" />
@@ -602,9 +790,20 @@ export const StudyPage = () => {
                   </S.NotePanel>
                 )}
 
+                {expenseToggleOn && (
+                  <S.ExpandedPanels>
+                    {aiPanelOpen && (
+                      <S.ExpandedLeftPanel>{renderAiCard(true, true, true)}</S.ExpandedLeftPanel>
+                    )}
+                    <S.ExpandedRightPanel>
+                      {renderPartsCard(true)}
+                    </S.ExpandedRightPanel>
+                  </S.ExpandedPanels>
+                )}
+
                 <AssemblyViewer
                   ref={viewerRef}
-                  projectId={projectId}
+                  projectId={safeProjectId}
                   partOverrides={partOverrides}
                   onStatusChange={setStatus}
                   onPartsChange={(nextParts: string[]) => {
@@ -619,17 +818,67 @@ export const StudyPage = () => {
                     if (raw) {
                       try {
                         const transforms = JSON.parse(raw)
-                        viewerRef.current?.applyTransformsByName?.(transforms)
+                        if (safeProjectId === 'leafSpring') {
+                          const remapped: ViewerTransforms = {}
+                          Object.entries(transforms).forEach(([name, values]) => {
+                            if (name.startsWith('Pin ')) {
+                              remapped[`Spring Pin ${name.replace('Pin ', '')}`] =
+                                values as ViewerTransforms[string]
+                            } else {
+                              remapped[name] = values as ViewerTransforms[string]
+                            }
+                          })
+                          viewerRef.current?.applyTransformsByName?.(remapped)
+                        } else if (safeProjectId === 'robotGripper') {
+                          const filtered: ViewerTransforms = {}
+                          Object.entries(transforms).forEach(([name, values]) => {
+                            if (name.startsWith('Spring Pin ')) return
+                            filtered[name] = values as ViewerTransforms[string]
+                          })
+                          viewerRef.current?.applyTransformsByName?.(filtered)
+                        } else {
+                          viewerRef.current?.applyTransformsByName?.(transforms)
+                        }
                         setStatus('로컬 저장값 적용')
                       } catch (error) {
                         console.error('레이아웃 자동 불러오기 실패', error)
+                      }
+                    }
+                    if (safeProjectId === 'drone') {
+                      const manualDefaults = projectConfig?.manualDefaults as
+                        | Record<string, { pos?: number[]; rot?: number[]; scale?: number; scaleX?: number; scaleY?: number; scaleZ?: number }>
+                        | undefined
+                      if (manualDefaults) {
+                        const hardwareOverrides: ViewerTransforms = {}
+                        Object.entries(manualDefaults).forEach(([name, values]) => {
+                          if (!name.startsWith('Nut ') && !name.startsWith('Screw ')) return
+                          const pos =
+                            Array.isArray(values.pos) && values.pos.length === 3
+                              ? (values.pos as [number, number, number])
+                              : undefined
+                          const rot =
+                            Array.isArray(values.rot) && values.rot.length === 3
+                              ? (values.rot as [number, number, number])
+                              : undefined
+                          hardwareOverrides[name] = {
+                            pos,
+                            rot,
+                            scale: values.scale,
+                            scaleX: values.scaleX,
+                            scaleY: values.scaleY,
+                            scaleZ: values.scaleZ,
+                          }
+                        })
+                        if (Object.keys(hardwareOverrides).length > 0) {
+                          viewerRef.current?.applyTransformsByName?.(hardwareOverrides)
+                        }
                       }
                     }
                   }}
                   onSelectedChange={(index: number) => {
                     setSelectedIndex(index)
                   }}
-                  onNotesChange={(nextNotes: Note[]) => setNotes(nextNotes)}
+                  onNotesChange={(nextNotes: unknown[]) => setNotes(nextNotes as Note[])}
                   onActiveNoteChange={handleActiveNote}
                 />
 
@@ -671,8 +920,8 @@ export const StudyPage = () => {
                   </div>
                 )}
 
-                <S.ViewerFooter>
-                  <S.ProgressRow>
+                <S.ViewerFooter $expanded={expenseToggleOn}>
+                  <S.ProgressRow $expanded={expenseToggleOn}>
                     <S.ProgressWrap>
                       <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
                         {Math.round(explodePercent)}%
@@ -690,17 +939,42 @@ export const StudyPage = () => {
                       />
                     </S.ProgressWrap>
                   </S.ProgressRow>
+                  {expenseToggleOn && (
+                    <S.ExpenseToggleOutside
+                      type="button"
+                      aria-label="expense toggle"
+                      title="expense toggle"
+                      data-active={expenseToggleOn}
+                      $shifted={expenseToggleOn}
+                      onClick={handleExpenseToggle}
+                    />
+                  )}
                 </S.ViewerFooter>
               </S.ViewerBody>
-            </S.ViewerCard>
+          </S.ViewerCard>
 
-            <S.BottomChat>
-              <S.ChatPlaceholder>무엇이 궁금한가요?</S.ChatPlaceholder>
-              <S.ChatTag>{projectLabel}</S.ChatTag>
-              <S.ChatSend>↗</S.ChatSend>
-            </S.BottomChat>
-          </S.CenterColumn>
-        </S.ContentGrid>
-      </S.PageBody>
+            {!expenseToggleOn && (
+              <S.BottomChat
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  handleSendAiMessage(bottomPromptInput, 'bottom')
+                }}
+              >
+                <S.ChatInput
+                  value={bottomPromptInput}
+                  placeholder="무엇이 궁금한가요?"
+                  onChange={(event) => setBottomPromptInput(event.target.value)}
+                />
+                <S.ChatSend type="submit" disabled={!bottomPromptInput.trim()}>
+                  ↗
+                </S.ChatSend>
+              </S.BottomChat>
+            )}
+        </S.CenterColumn>
+      </S.ContentGrid>
+    </S.PageBody>
   )
 }
+
+export const StudyPage = () => <StudyLayout expanded={false} />
+export const StudyExpensePage = () => <StudyLayout expanded />
