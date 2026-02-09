@@ -24,11 +24,11 @@ export const useRecentList = () => {
         const data: RecentItem[] = await getRecentList();
         setItems(
           data.map(item => ({
-            id: item.id,
+            id: item.materialId,
             title: item.title,
-            detail: item.detail,
-            time: formatTime(item.time),
-            image: item.image,
+            detail: item.description,
+            time: formatTime(item.lastAccessAt),
+            image: item.thumbnailUrl,
           }))
         );
       } catch (error) {

@@ -1,8 +1,8 @@
 import * as S from "./RecentCard.Style";
-import type { RecentItem } from "../types";
+import type { RecentCardItem } from "@/features/recent/model/useRecentList";
 
 interface Props {
-  item: RecentItem;
+  item: RecentCardItem;
   onOpen?: () => void;
 }
 

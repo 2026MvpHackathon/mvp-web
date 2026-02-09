@@ -22,10 +22,10 @@ export const useObjectList = () => {
         const data: ObjectItem[] = await getObjectList();
         setItems(
           data.map(item => ({
-            id: item.id,
+            id: item.materialId,
             title: item.title,
-            detail: item.detail,
-            image: item.imageUrl,
+            detail: item.description,
+            image: item.thumbnailUrl,
           }))
         );
       } catch (error) {
