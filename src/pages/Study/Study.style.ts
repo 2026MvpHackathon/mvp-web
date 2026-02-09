@@ -67,6 +67,12 @@ export const PartsList = styled.div<{ $expanded?: boolean }>`
   grid-template-columns: ${({ $expanded }) =>
     $expanded ? 'repeat(2, minmax(0, 1fr))' : '1fr'};
   overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 `
 
 export const PartRow = styled.button<{ $active?: boolean; $expanded?: boolean }>`
@@ -206,6 +212,12 @@ export const AiBody = styled.div`
   font-size: 12px;
   overflow-y: auto;
   flex: 1;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 `
 
 export const AiPromptBar = styled.form`
@@ -244,6 +256,44 @@ export const AiChatBubble = styled.div`
   border-radius: 10px;
   font-size: 11px;
   line-height: 1.4;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
+
+export const AiChatText = styled.div`
+  white-space: pre-wrap;
+`
+
+export const AiQuizAction = styled.button`
+  font-size: 10px;
+  color: rgba(207, 224, 214, 0.7);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  align-self: flex-start;
+  text-decoration: underline;
+
+  &:hover {
+    color: rgba(207, 224, 214, 0.95);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+`
+
+export const AiChatBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   align-self: flex-start;
 `
 

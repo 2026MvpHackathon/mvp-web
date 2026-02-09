@@ -3,6 +3,7 @@ import type {
   ApiResponse,
   ChatMessage,
   MaterialPart,
+  QuizRegisterResult,
   StudyHomeItem,
   StudyNote,
   StudySession,
@@ -108,6 +109,19 @@ export const deleteStudyNote = async (sessionId: number, noteId: number) => {
   const res = await apiClient.delete<ApiResponse<null>>(
     `/api/study/session/${sessionId}/notes/${noteId}`,
   )
+  return res.data
+}
+
+export const registerQuiz = async (payload: {
+  materialId: number
+  modelId?: number
+  userQuestion: string
+  aiAnswer: string
+  isFavorite: boolean
+}) => {
+  const { modelId, ...rest } = payload
+  const body = Number.isFinite(modelId) ? { ...rest, modelId } : rest
+  const res = await apiClient.post<ApiResponse<QuizRegisterResult>>('/api/quiz/register', body)
   return res.data
 }
 
