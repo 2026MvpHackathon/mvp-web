@@ -17,7 +17,7 @@ const Image = ({path, size, alt}: ImageResponse) => {
 }
 
 interface QuizOrderItemProps {
-    state: "disable" | "correct" | "different"
+    state: "disable" | "correct" | "different" 
     order: string;
 }
 
