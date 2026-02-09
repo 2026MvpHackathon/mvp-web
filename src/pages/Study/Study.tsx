@@ -23,6 +23,11 @@ type NoteEditorState = {
   visible: boolean
 }
 
+type AiMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  text: string
+}
 type PartOverridesByProject = Record<string, Record<string, number>>
 
 type ViewerTransforms = Record<
@@ -86,6 +91,15 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
   const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
   const [aiPanelOpen, setAiPanelOpen] = useState(true)
+  const [aiMessages, setAiMessages] = useState<AiMessage[]>([
+    {
+      id: 'ai-1',
+      role: 'assistant',
+      text: '무엇이 궁금한가요? 편하게 질문해 주세요.',
+    },
+  ])
+  const [aiPromptInput, setAiPromptInput] = useState('')
+  const [bottomPromptInput, setBottomPromptInput] = useState('')
 
   const storageKey = `assembly-layout-${safeProjectId}`
   const defaultStorageKey = `assembly-default-layout-${safeProjectId}`
@@ -354,6 +368,33 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     setNoteEditor((prev) => ({ ...prev, visible: false }))
   }
 
+  const buildAiResponse = (question: string) => {
+    if (question.includes('드론')) {
+      return '드론은 무인 항공기로, 원격 제어나 자율 비행으로 다양한 작업을 수행합니다.'
+    }
+    return '현재 데모 모드라 간단 응답만 제공해요. 다른 질문도 해볼까요?'
+  }
+
+  const handleSendAiMessage = (rawText: string, source: 'ai' | 'bottom') => {
+    const text = rawText.trim()
+    if (!text) return
+    const userMessage: AiMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text,
+    }
+    const assistantMessage: AiMessage = {
+      id: `assistant-${Date.now() + 1}`,
+      role: 'assistant',
+      text: buildAiResponse(text),
+    }
+    setAiMessages((prev) => [...prev, userMessage, assistantMessage])
+    if (source === 'ai') {
+      setAiPromptInput('')
+    } else {
+      setBottomPromptInput('')
+    }
+  }
   useEffect(() => {
     if (!noteEditor.visible || !noteEditor.id) return
     const noteId = noteEditor.id
@@ -561,17 +602,33 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         <S.AiBadge>AI</S.AiBadge>
       </S.AiHeader>
       <S.AiBody>
-        <S.PartDesc>드론 정의가 뭐야?</S.PartDesc>
-        <S.AiChatBubble>
-          RTH(Return To Home)는 드론이 자동으로 홈 포인트로 복귀하는 기능입니다. GPS 신호가
-          안정적으로 확보된 후에 복귀하도록 설정합니다.
-        </S.AiChatBubble>
-        <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
+        {aiMessages.length === 0 ? (
+          <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
+        ) : (
+          aiMessages.map((message) =>
+            message.role === 'assistant' ? (
+              <S.AiChatBubble key={message.id}>{message.text}</S.AiChatBubble>
+            ) : (
+              <S.AiUserBubble key={message.id}>{message.text}</S.AiUserBubble>
+            ),
+          )
+        )}
       </S.AiBody>
       {showPrompt && (
-        <S.AiPromptBar>
-          <S.AiPromptPlaceholder>무엇이 궁금한가요?</S.AiPromptPlaceholder>
-          <S.ChatSend>↗</S.ChatSend>
+        <S.AiPromptBar
+          onSubmit={(event) => {
+            event.preventDefault()
+            handleSendAiMessage(aiPromptInput, 'ai')
+          }}
+        >
+          <S.AiPromptInput
+            value={aiPromptInput}
+            placeholder="무엇이 궁금한가요?"
+            onChange={(event) => setAiPromptInput(event.target.value)}
+          />
+          <S.ChatSend type="submit" disabled={!aiPromptInput.trim()}>
+            ↗
+          </S.ChatSend>
         </S.AiPromptBar>
       )}
     </S.AiCard>
@@ -897,9 +954,20 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           </S.ViewerCard>
 
             {!expenseToggleOn && (
-              <S.BottomChat>
-                <S.ChatPlaceholder>무엇이 궁금한가요?</S.ChatPlaceholder>
-                <S.ChatSend>↗</S.ChatSend>
+              <S.BottomChat
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  handleSendAiMessage(bottomPromptInput, 'bottom')
+                }}
+              >
+                <S.ChatInput
+                  value={bottomPromptInput}
+                  placeholder="무엇이 궁금한가요?"
+                  onChange={(event) => setBottomPromptInput(event.target.value)}
+                />
+                <S.ChatSend type="submit" disabled={!bottomPromptInput.trim()}>
+                  ↗
+                </S.ChatSend>
               </S.BottomChat>
             )}
         </S.CenterColumn>
