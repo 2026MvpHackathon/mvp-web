@@ -1,6 +1,10 @@
+import SelectObject from "@/entities/quiz-setting/ui/SelectObject";
+
 const QuizPage = ( ) => {
-    return(
-        <div>Quiz</div>
+  return (
+      <>
+        <SelectObject />
+      </>
     );
 }
 
