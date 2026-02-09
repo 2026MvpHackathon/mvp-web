@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, redirect } from 'react-router-dom'
 import HomePage from './pages/Home/Home'
 import App from './App' 
 import  { StudyPage } from './pages/Study/Study';
@@ -7,6 +7,7 @@ import LoginStep from './pages/Auth/ui/LoginStep/LoginStep';
 import SignupStep from './pages/Auth/ui/SiunupStep/SignupStep';
 import VerifyStep from './pages/Auth/ui/VerifyStep/VerifyStep';
 import SelectLoginOrSignupStep from './pages/Auth/ui/SelectLoginOrSignupStep/SelectLoginOrSignupStep';
+import { isAuthenticated } from './features/Auth/cookies';
 
 
 const router = createBrowserRouter([
@@ -15,9 +16,9 @@ const router = createBrowserRouter([
         element: <App />,
         children: [
             {
-            index: true,
-            element: <Navigate to="/auth/select"/>,
-            },
+                index: true,
+                element: <Navigate to="/home" />
+            },        
             {
               path: "home",
               element: <HomePage />,
@@ -52,9 +53,6 @@ const router = createBrowserRouter([
         ],
     },
 
-    
-
-    { path: "*", element: <Navigate to='/auth/login'/>  },
 ])
   
 export default router;

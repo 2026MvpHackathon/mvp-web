@@ -32,6 +32,7 @@ export const verify_explanation = styled.div`
     border: 0.5px solid rgba(92, 97, 88, 0.60);
 
     overflow-y: scroll;
+    white-space: pre;
 `
 
 export const verify_explanation_text = styled.p`

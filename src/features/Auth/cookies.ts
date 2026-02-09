@@ -30,3 +30,7 @@ export const setUserId = (id: string) => {
   console.log("Setting userId:", id); 
   Cookie.set("userId", id, {expires: 7, /* secure: true, */ sameSite: 'Lax'}) // 7일 뒤 만료
 }
+
+export const isAuthenticated = (): boolean => {
+  return Cookie.get("accessToken") !== undefined;
+};

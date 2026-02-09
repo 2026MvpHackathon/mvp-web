@@ -1,18 +1,18 @@
 import * as S from './AuthCheckBox.style'
 import AuthCheckBoxOn from '@/assets/AuthCheckBoxOn.png'
 import AuthCheckBoxOff from '@/assets/AuthCheckBoxOff.png'
-import { useState } from 'react';
 
 interface checkBoxProps {
     large: boolean; 
     text: string;
+    isActive: boolean;
+    setIsActive: (isActive: (prevState: boolean) => boolean) => void; 
 }
 
-const AuthCheckBox = ({large, text}: checkBoxProps) => {
-    const [isActive, setIsActive] = useState(false)
+const AuthCheckBox = ({large, text, isActive, setIsActive}: checkBoxProps) => { 
 
     const handleClick = () => {
-        setIsActive(!isActive)
+        setIsActive(prev => !prev) 
     }
 
     return(

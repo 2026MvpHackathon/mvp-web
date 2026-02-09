@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import VisibilityOff from '@/assets/icons/VisibilityOff';
+import VisibilityOn from '@/assets/icons/VisibilityOn';
 import * as S from './AuthInput.style'
 import type { FieldError, UseFormRegister } from 'react-hook-form'; 
 
@@ -25,6 +27,14 @@ type AuthInputProps =
     };
 
 const AuthInput = ({title, placeholder, type = 'text', ...props}: AuthInputProps) => {
+    const [showPassword, setShowPassword] = useState(false);
+
+    const toggleVisibility = () => {
+        setShowPassword(prev => !prev);
+    }
+
+    const inputType = type === 'password' ? (showPassword ? 'text' : 'password') : type;
+
     const inputProps = props.register && props.name
         ? props.register(props.name)
         : { onChange: props.onChange, value: props.value };
@@ -36,10 +46,14 @@ const AuthInput = ({title, placeholder, type = 'text', ...props}: AuthInputProps
                 <S.input_wrapper>
                     <S.input_input 
                         placeholder={placeholder} 
-                        type={type} 
+                        type={inputType} 
                         {...inputProps}
                     />
-                    {type === 'password' && <VisibilityOff size={'23px'}/>}
+                    {type === 'password' && (
+                        <div onClick={toggleVisibility} style={{ cursor: 'pointer' }}>
+                            {showPassword ? <VisibilityOn size={'23px'}/> : <VisibilityOff size={'23px'}/>}
+                        </div>
+                    )}
                 </S.input_wrapper>
             </S.input_field>
             {props.error && <S.ErrorText>{props.error.message}</S.ErrorText>}
