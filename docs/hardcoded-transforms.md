@@ -1,10 +1,17 @@
+# Hardcoded Transforms (projects.ts)
+
+## layoutDefaults
+```ts
 export const layoutDefaults = {
   armDistance: 180,
   legDistance: 260,
   motorHeight: 60,
   bladeHeight: 100
 };
+```
 
+## droneManualDefaults
+```ts
 export const droneManualDefaults = {
   "Main frame": {
     pos: [0, 0, 0],
@@ -231,7 +238,10 @@ export const droneManualDefaults = {
     scaleZ: 0.15
   }
 };
+```
 
+## suspensionManualDefaults
+```ts
 export const suspensionManualDefaults = {
   BASE: { pos: [-8.29, -30.23, -10.99], rot: [0, 0, 0], scale: 1.0 },
   NUT: { pos: [-8.6, 72.32, -11.15], rot: [0, 0, 0], scale: 0.49 },
@@ -239,7 +249,10 @@ export const suspensionManualDefaults = {
   SPRING: { pos: [-8.41, 7.04, -8.98], rot: [0, 0, 0], scale: 1.0 },
   "Rod Cap": { pos: [-7.59, -75.04, -10.13], rot: [0, 0, 90], scale: 1.86 }
 };
+```
 
+## leafSpringManualDefaults
+```ts
 export const leafSpringManualDefaults = {
   "Clamp-Center": { pos: [-12.77, -0.2, -7.7], rot: [90, 90, 0], scale: 0.6, scaleX: 0.6, scaleY: 0.6, scaleZ: 0.6 },
   "Clamp-Primary 1": { pos: [-56.7, 0, -18.37], rot: [90, -90, 0], scale: 0.31, scaleX: 0.31, scaleY: 0.31, scaleZ: 0.31 },
@@ -258,7 +271,10 @@ export const leafSpringManualDefaults = {
   "Spring Pin 3": { pos: [169.89, 0, 29.89], rot: [0, 0, 90], scale: 0.34, scaleX: 0.34, scaleY: 0.16, scaleZ: 0.16 },
   "Spring Pin 4": { pos: [203.94, 0, 49.79], rot: [0, 0, 90], scale: 0.45, scaleX: 0.45, scaleY: 0.16, scaleZ: 0.16 }
 };
+```
 
+## robotArmManualDefaults
+```ts
 export const robotArmManualDefaults = {
   base: { pos: [0, 0, 0], rot: [90, 0, 0], scale: 1.0 },
   Part2: { pos: [0, -24.89, 48.0], rot: [90, 0, 0], scale: 1.0 },
@@ -270,7 +286,10 @@ export const robotArmManualDefaults = {
   "Part8 1": { pos: [0, -181.4, 170.18], rot: [19, 0, -15], scale: 0.34 },
   "Part8 2": { pos: [23, -181.4, 170.18], rot: [19, 180, -15], scale: 0.34 }
 };
+```
 
+## v4EngineManualDefaults
+```ts
 export const v4EngineManualDefaults = {
   Crankshaft: { pos: [0, 0, 0], rot: [0, 0, 0], scale: 1.0 },
   "Connecting Rod Cap 1": { pos: [-28.25, -10.28, -6.16], rot: [90, 90, -12], scale: 0.18 },
@@ -310,7 +329,10 @@ export const v4EngineManualDefaults = {
   "Piston Ring 11": { pos: [41.46, -1.83, 54.51], rot: [90, 0, 0], scale: 0.16 },
   "Piston Ring 12": { pos: [41.46, -1.83, 51.86], rot: [90, 0, 0], scale: 0.16 }
 };
+```
 
+## robotGripperManualDefaults
+```ts
 export const robotGripperManualDefaults = {
   "Base Gear": { pos: [-14.66, 26.54, 2.61], rot: [90, 7, 90], scale: 0.28 },
   "Base Mounting bracket": { pos: [0, 58.54, 15.77], rot: [90, -90, 0], scale: 0.32 },
@@ -333,94 +355,5 @@ export const robotGripperManualDefaults = {
   "Pin 9": { pos: [-10.87, -99.96, 5.83], rot: [0, 90, 0], scale: 0.15 },
   "Pin 10": { pos: [11.9, -99.96, 5.83], rot: [0, 90, 0], scale: 0.16 }
 };
+```
 
-export type ProjectFile = string | { file: string; name?: string }
-
-export type ProjectConfig = {
-  label: string
-  basePath: string
-  type: "drone" | "simple" | "robotArm" | "suspension" | "v4Engine"
-  manualDefaults: Record<string, unknown>
-  defaultOverrides?: Record<string, number>
-  files?: ProjectFile[]
-  materialId?: number
-}
-
-export const projectConfigs: Record<string, ProjectConfig> = {
-  drone: {
-    label: "Drone",
-    basePath: "/assets/Drone",
-    type: "drone",
-    manualDefaults: droneManualDefaults,
-    materialId: 1
-  },
-  leafSpring: {
-    label: "Leaf Spring",
-    basePath: "/assets/Leaf Spring",
-    type: "simple",
-    manualDefaults: leafSpringManualDefaults,
-    materialId: 2,
-    defaultOverrides: {
-      "Clamp-Primary.glb": 2,
-      "Clamp-Secondary.glb": 2,
-      "Support.glb": 2,
-      "Pin.glb": 4
-    },
-    files: [
-      "Clamp-Center.glb",
-      "Clamp-Primary.glb",
-      "Clamp-Secondary.glb",
-      "Leaf-Layer.glb",
-      "Support-Chassis Rigid.glb",
-      "Support-Chassis.glb",
-      "Support-Rubber 60mm.glb",
-      "Support-Rubber.glb",
-      "Support.glb",
-      { file: "/assets/Robot Gripper/Pin.glb", name: "Spring Pin" }
-    ]
-  },
-  robotArm: {
-    label: "Robot Arm",
-    basePath: "/assets/Robot Arm",
-    type: "robotArm",
-    manualDefaults: robotArmManualDefaults,
-    materialId: 3
-  },
-  robotGripper: {
-    label: "Robot Gripper",
-    basePath: "/assets/Robot Gripper",
-    type: "simple",
-    manualDefaults: robotGripperManualDefaults,
-    materialId: 4,
-    defaultOverrides: {
-      "Base Plate.glb": 2,
-      "Gripper.glb": 2,
-      "Link.glb": 2,
-      "Pin.glb": 10
-    },
-    files: [
-      "Base Gear.glb",
-      "Base Mounting bracket.glb",
-      "Base Plate.glb",
-      "Gear link 1.glb",
-      "Gear link 2.glb",
-      "Gripper.glb",
-      "Link.glb",
-      "Pin.glb"
-    ]
-  },
-  suspension: {
-    label: "Suspension",
-    basePath: "/assets/Suspension",
-    type: "suspension",
-    manualDefaults: suspensionManualDefaults,
-    materialId: 5
-  },
-  v4Engine: {
-    label: "V4 Engine",
-    basePath: "/assets/V4_Engine",
-    type: "v4Engine",
-    manualDefaults: v4EngineManualDefaults,
-    materialId: 6
-  }
-};

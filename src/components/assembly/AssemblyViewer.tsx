@@ -30,6 +30,11 @@ class AssemblyEngine {
     this.controls.target.set(0, 60, 0);
     this.controls.minDistance = 10;
     this.controls.maxDistance = 2000000;
+    this.controls.addEventListener("change", () => {
+      if (this.callbacks?.onCameraChange) {
+        this.callbacks.onCameraChange(this.getCameraState());
+      }
+    });
 
     this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
     this.transformControls.setMode("translate");
@@ -85,7 +90,10 @@ class AssemblyEngine {
     this.transformControls.addEventListener("mouseUp", () => {
       this.controls.enabled = true;
     });
-    this.scene.add(this.transformControls);
+    const transformHelper = this.transformControls.getHelper();
+    if (transformHelper) {
+      this.scene.add(transformHelper);
+    }
 
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
@@ -1646,6 +1654,47 @@ class AssemblyEngine {
     this.emitSelection(this.state.selectedIndex);
   }
 
+  getCameraState() {
+    return {
+      position: [
+        Number(this.camera.position.x.toFixed(2)),
+        Number(this.camera.position.y.toFixed(2)),
+        Number(this.camera.position.z.toFixed(2))
+      ],
+      quaternion: [
+        Number(this.camera.quaternion.x.toFixed(4)),
+        Number(this.camera.quaternion.y.toFixed(4)),
+        Number(this.camera.quaternion.z.toFixed(4)),
+        Number(this.camera.quaternion.w.toFixed(4))
+      ],
+      target: [
+        Number(this.controls.target.x.toFixed(2)),
+        Number(this.controls.target.y.toFixed(2)),
+        Number(this.controls.target.z.toFixed(2))
+      ],
+      zoom: Number(this.camera.zoom.toFixed(2))
+    };
+  }
+
+  setCameraState(state) {
+    if (!state) return;
+    const { position, quaternion, target, zoom } = state;
+    if (Array.isArray(position) && position.length === 3) {
+      this.camera.position.set(position[0], position[1], position[2]);
+    }
+    if (Array.isArray(quaternion) && quaternion.length === 4) {
+      this.camera.quaternion.set(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+    }
+    if (Array.isArray(target) && target.length === 3) {
+      this.controls.target.set(target[0], target[1], target[2]);
+    }
+    if (Number.isFinite(zoom)) {
+      this.camera.zoom = zoom;
+      this.camera.updateProjectionMatrix();
+    }
+    this.controls.update();
+  }
+
   animate() {
     if (this.isDisposed) return;
     this.rafId = requestAnimationFrame(this.animate);
@@ -1667,6 +1716,12 @@ type AssemblyViewerProps = {
   onNotesChange?: (notes: unknown[]) => void
   onActiveNoteChange?: (id: string | null) => void
   onGroupTransformChange?: (values: { posX: number; posY: number; posZ: number }) => void
+  onCameraChange?: (state: {
+    position: [number, number, number]
+    quaternion: [number, number, number, number]
+    target: [number, number, number]
+    zoom: number
+  }) => void
 }
 
 export type AssemblyViewerHandle = {
@@ -1691,6 +1746,18 @@ export type AssemblyViewerHandle = {
   applyTransformsByName?: (transforms: Record<string, unknown>) => void
   focusOnPart?: (name: string) => void
   focusOnScene?: () => void
+  getCameraState?: () => {
+    position: [number, number, number]
+    quaternion: [number, number, number, number]
+    target: [number, number, number]
+    zoom: number
+  }
+  setCameraState?: (state: {
+    position?: [number, number, number]
+    quaternion?: [number, number, number, number]
+    target?: [number, number, number]
+    zoom?: number
+  }) => void
 }
 
 const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(function AssemblyViewer(
@@ -1702,7 +1769,8 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
     onSelectedChange,
     onNotesChange,
     onActiveNoteChange,
-    onGroupTransformChange
+    onGroupTransformChange,
+    onCameraChange
   },
   ref
 ) {
@@ -1717,7 +1785,8 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
       onSelectedChange,
       onNotesChange,
       onActiveNoteChange,
-      onGroupTransformChange
+      onGroupTransformChange,
+      onCameraChange
     });
     return () => {
       engineRef.current?.dispose();
@@ -1750,7 +1819,9 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
     getCurrentTransforms: () => engineRef.current?.getCurrentTransforms(),
     applyTransformsByName: (transforms) => engineRef.current?.applyTransformsByName(transforms),
     focusOnPart: (name) => engineRef.current?.focusOnPart(name),
-    focusOnScene: () => engineRef.current?.focusOnScene()
+    focusOnScene: () => engineRef.current?.focusOnScene(),
+    getCameraState: () => engineRef.current?.getCameraState(),
+    setCameraState: (state) => engineRef.current?.setCameraState(state)
   }));
 
   return <canvas ref={canvasRef} id="canvas" />;
