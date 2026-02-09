@@ -13,11 +13,17 @@ export interface SubmitResultRequest {
     isFavorite: boolean;
 }
 
+export interface QuizOption {
+    id: number;
+    text: string;
+    state: 'disabled' | 'selected' | 'correct' | 'different';
+}
+
 // response
 export interface QuizItem {
     quizQuestionId: number; 
     question: string;
-    options: string[];
+    options: string[]; // QuizOption[] 대신 string[]으로 되돌림
     correctAnswerIndex: number;
     aiAnswer: string;
 }
