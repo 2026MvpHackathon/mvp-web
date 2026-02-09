@@ -40,8 +40,8 @@ class AssemblyEngine {
     this.transformControls.setMode("translate");
     this.transformControls.setSpace("local");
     this.transformControls.size = 1.6;
-    this.transformControls.visible = true;
-    this.transformControls.enabled = true;
+    this.transformControls.visible = false;
+    this.transformControls.enabled = false;
     this.transformControls.addEventListener("dragging-changed", (event) => {
       this.controls.enabled = !event.value;
     });
@@ -90,10 +90,7 @@ class AssemblyEngine {
     this.transformControls.addEventListener("mouseUp", () => {
       this.controls.enabled = true;
     });
-    const transformHelper = this.transformControls.getHelper();
-    if (transformHelper) {
-      this.scene.add(transformHelper);
-    }
+    // Keep transform controls hidden; do not add helper to scene.
 
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
@@ -1571,8 +1568,8 @@ class AssemblyEngine {
 
   setEditMode(value) {
     this.editMode = value;
-    this.transformControls.visible = value;
-    this.transformControls.enabled = value;
+    this.transformControls.visible = false;
+    this.transformControls.enabled = false;
   }
 
   setNoteMode(value) {

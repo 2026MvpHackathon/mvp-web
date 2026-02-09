@@ -396,17 +396,17 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }
 
+  const handleSwipeMode = () => {
+    if (viewMode === 'single') return
+    setEditMode(false)
+    viewerRef.current?.setEditMode?.(false)
+  }
+
   const handleSelectMode = () => {
     if (viewMode === 'single') return
     setEditMode(true)
     viewerRef.current?.setEditMode?.(true)
     viewerRef.current?.setTransformMode?.('translate')
-  }
-
-  const handleSwipeMode = () => {
-    if (viewMode === 'single') return
-    setEditMode(false)
-    viewerRef.current?.setEditMode?.(false)
   }
 
   const handleToggleNote = () => {

@@ -4,7 +4,10 @@ import path from 'path';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiUrl = env.VITE_API_URL || 'http://dotenv.p-e.kr:8080';
+  const rawApiUrl = env.VITE_API_URL || 'http://dotenv.p-e.kr:8080';
+  const apiUrl = rawApiUrl.includes('qick.p-e.kr')
+    ? 'http://dotenv.p-e.kr:8080'
+    : rawApiUrl;
 
   return {
     plugins: [react()],
