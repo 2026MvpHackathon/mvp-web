@@ -45,4 +45,11 @@ export const input_field_name_small_text = styled.p`
 
 `
 
+export const ErrorText = styled.p`
+    color: ${colors.state.error};
+    ${typography("body", "sm", "regular")};
+    margin-top: -3.5rem; 
+    margin-bottom: 0;
+`
+
 

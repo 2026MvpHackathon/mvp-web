@@ -1,6 +1,6 @@
-import AuthCheckBox from '@/widgets/Auth/ui/AuthCheckBox';
+import AuthCheckBox from '@/widgets/Auth/ui/AuthCheckBox/AuthCheckBox';
 import * as S from './VerifyStep.style';
-import AuthBtn from '@/widgets/Auth/ui/AuthBtn';
+import AuthBtn from '@/widgets/Auth/ui/AuthBtn/AuthBtn';
 import { useNavigate } from 'react-router-dom';
 
 const VerifyStep = () => {

@@ -18,7 +18,7 @@ export const input_fieldname = styled.span`
     
 `
 
-export const input_field = styled.div`
+export const input_field = styled.div<{ $isError: boolean }>`
     width: 100%;
     height: auto;
     padding-bottom: 1.0313rem;
@@ -26,7 +26,7 @@ export const input_field = styled.div`
     ${flexColumnStart}
     gap: 1rem;
 
-    border-bottom: 1px solid rgba(183, 201, 185, 0.20);
+    border-bottom: 1px solid ${({ $isError }) => ($isError ? colors.state.error : rgba(183, 201, 185, 0.20))};
 `
 
 export const input_wrapper = styled.div`
@@ -53,4 +53,11 @@ export const input_input = styled.input`
     &:focus{
         outline: none; 
     }
+`
+
+export const ErrorText = styled.p`
+    color: ${colors.state.error};
+    ${typography("body", "sm", "regular")};
+    margin-top: 0.5rem;
+    margin-bottom: 0;
 `

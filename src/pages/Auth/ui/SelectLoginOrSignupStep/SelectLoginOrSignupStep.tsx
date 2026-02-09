@@ -1,4 +1,4 @@
-import AuthBtn from '@/widgets/Auth/ui/AuthBtn';
+import AuthBtn from '@/widgets/Auth/ui/AuthBtn/AuthBtn';
 import * as S from './SelectLoginOrSignupStep.style'
 import { useNavigate } from 'react-router-dom';
 
@@ -20,14 +20,14 @@ const LoginOrSignup = ({guideText, btnName, onClick}: LoginOrSignupProps) => {
 const SelectLoginOrSignupStep = () => {
     const navigate = useNavigate();
     
-    const text = [
+    const TEXT = [
         {guideText: '이미 계정이 있으신가요?', btnName: '로그인', path: '/auth/login'},
         {guideText: 'SIMVEX는 처음이신가요?', btnName: '회원가입', path: '/auth/signup'},
     ]
 
     return(
         <S.container>
-            {text.map((text, index) => (
+            {TEXT.map((text, index) => (
                 <LoginOrSignup key={index} 
                     guideText={text.guideText} 
                     btnName={text.btnName}
