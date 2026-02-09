@@ -1,5 +1,5 @@
 import * as S from './Header.style';
-import Logo from '/src/assets/Logo.png'
+import Logo from '/src/assets/Logo/Logo.png';
 import { useLocation } from 'react-router-dom';
 
 interface ImageResponse {

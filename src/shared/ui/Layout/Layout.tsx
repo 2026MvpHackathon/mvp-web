@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import Header from '../header/ui/Header';
+import Header from '../Header/Header';
 import * as S from './Layout.style'
 
 const Layout = () => {

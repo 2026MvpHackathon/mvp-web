@@ -1,6 +1,6 @@
 import * as S from './DuringQuizChoiceItem.style';
-import QuizWrongAnswer from '/src/assets/QuizWrongAnswer.png'
-import QuizCorrectAnswer from '/src/assets/QuizCorrectAnswer.png'
+import QuizWrongAnswer from '/src/assets/Quiz/QuizWrongAnswer.png'
+import QuizCorrectAnswer from '/src/assets/Quiz/QuizCorrectAnswer.png'
 
 
 interface ImageResponse {

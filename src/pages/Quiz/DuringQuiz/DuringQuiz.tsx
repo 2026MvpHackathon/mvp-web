@@ -1,10 +1,10 @@
-import DuringQuizAccuracyRate from '@/widgets/quiz/ui/DuringQuizAccuracyRate';
+import DuringQuizAccuracyRate from '@/widgets/quiz/ui/DuringQuizAccuracyRate/DuringQuizAccuracyRate';
 import * as S from './DuringQuiz.style';
-import DuringQuizOrderItem from '@/widgets/quiz/ui/DuringQuizOrderItem';
-import DuringQuizHeader from '@/widgets/quiz/ui/DuringQuizHeader';
-import DuringQuizQuestion from '@/widgets/quiz/ui/DuringQuizQuestion';
-import DuringQuizChoiceItem from '@/widgets/quiz/ui/DuringQuizChoiceItem';
-import QuizBtn from '@/widgets/quiz/ui/QuizBtn';
+import DuringQuizOrderItem from '@/widgets/quiz/ui/DuringQuizOrderItem/DuringQuizOrderItem';
+import DuringQuizHeader from '@/widgets/quiz/ui/DuringQuizHeader/DuringQuizHeader';
+import DuringQuizQuestion from '@/widgets/quiz/ui/DuringQuizQuestion/DuringQuizQuestion';
+import DuringQuizChoiceItem from '@/widgets/quiz/ui/DuringQuizChoiceItem/DuringQuizChoiceItem';
+import QuizBtn from '@/widgets/quiz/ui/QuizBtn/QuizBtn';
 
 const DuringQuizPage = () => {
     return(

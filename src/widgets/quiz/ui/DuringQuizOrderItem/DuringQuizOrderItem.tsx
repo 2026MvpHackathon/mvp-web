@@ -1,7 +1,7 @@
 import * as S from './DuringQuizOrderItem.style';
-import QuizDifferent from '/src/assets/QuizDifferent.png'
-import QuizCorrect from '/src/assets/QuizCorrect.png'
-import QuizDisable from '/src/assets/QuizDisable.png'
+import QuizDifferent from '/src/assets/Quiz/QuizDifferent.png'
+import QuizCorrect from '/src/assets/Quiz/QuizCorrect.png'
+import QuizDisable from '/src/assets/Quiz/QuizDisable.png'
 import { colors } from '@/shared/values/token';
 
 interface ImageResponse {

@@ -1,9 +1,9 @@
-import QuizAI from '@/assets/icons/QuizAI';
+import QuizAI from '@/assets/icons/Quiz/QuizAI';
 import * as S from './DuringQuizHeader.style';
 import { colors } from '@/shared/values/token';
-import QuizDB from '@/assets/icons/QuizDB';
-import QuizFavoritesOn from '@/assets/icons/QuizFavoritesOn';
-import QuizFavoritesOff from '@/assets/icons/QuizFavoritesOff';
+import QuizDB from '@/assets/icons/Quiz/QuizDB';
+import QuizFavoritesOn from '@/assets/icons/Quiz/QuizFavoritesOn';
+import QuizFavoritesOff from '@/assets/icons/Quiz/QuizFavoritesOff';
 
 interface QuizHeader {
     type: "AI" | "DB";
