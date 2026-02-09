@@ -408,7 +408,7 @@ class AssemblyEngine {
     this.emitNotes();
   }
 
-  clearNotes() {
+  clearNotes(silent = false) {
     this.notes.forEach((note) => {
       if (note.sprite?.parent) {
         note.sprite.parent.remove(note.sprite);
@@ -424,8 +424,73 @@ class AssemblyEngine {
     this.notes = [];
     this.hoveredNoteId = null;
     this.activeNoteId = null;
-    this.emitActiveNote(null);
+    if (!silent) {
+      this.emitActiveNote(null);
+      this.emitNotes();
+    }
+  }
+
+  addNoteFromServer({ id, text, position, parentName }) {
+    if (!Array.isArray(position) || position.length !== 3) return;
+    const point = new THREE.Vector3(position[0], position[1], position[2]);
+    const part = parentName
+      ? this.parts.find((item) => item.name === parentName)?.object
+      : null;
+    const target = part ? this.resolveNoteTarget(part) : null;
+    const sprite = this.createNoteSprite(text);
+    if (target) {
+      const localPoint = target.worldToLocal(point.clone());
+      sprite.position.copy(localPoint);
+      target.add(sprite);
+    } else {
+      sprite.position.copy(point);
+      this.scene.add(sprite);
+    }
+    sprite.renderOrder = 10;
+    sprite.userData.noteId = id;
+    const note = {
+      id,
+      text,
+      parentName: parentName || null,
+      sprite,
+      compact: this.createNoteTexture(text, "compact"),
+      full: this.createNoteTexture(text, "full")
+    };
+    this.notes.push(note);
+    this.noteId = Math.max(this.noteId, id + 1);
+  }
+
+  setNotesFromServer(notes = []) {
+    this.clearNotes(true);
+    notes.forEach((note) => this.addNoteFromServer(note));
     this.emitNotes();
+  }
+
+  replaceNoteId(oldId, newId) {
+    if (oldId === newId) return;
+    const note = this.notes.find((item) => item.id === oldId);
+    if (!note) return;
+    note.id = newId;
+    if (note.sprite?.userData) {
+      note.sprite.userData.noteId = newId;
+    }
+    if (this.activeNoteId === oldId) {
+      this.activeNoteId = newId;
+      this.emitActiveNote(newId);
+    }
+    if (this.hoveredNoteId === oldId) {
+      this.hoveredNoteId = newId;
+    }
+    this.noteId = Math.max(this.noteId, newId + 1);
+    this.emitNotes();
+  }
+
+  getNoteWorldPosition(noteId) {
+    const note = this.notes.find((item) => item.id === noteId);
+    if (!note?.sprite) return null;
+    const position = new THREE.Vector3();
+    note.sprite.getWorldPosition(position);
+    return [position.x, position.y, position.z];
   }
 
   buildSimpleParts(files) {
@@ -1711,7 +1776,7 @@ type AssemblyViewerProps = {
   onPartsChange?: (parts: string[]) => void
   onSelectedChange?: (index: number, values?: unknown) => void
   onNotesChange?: (notes: unknown[]) => void
-  onActiveNoteChange?: (id: string | null) => void
+  onActiveNoteChange?: (id: string | number | null) => void
   onGroupTransformChange?: (values: { posX: number; posY: number; posZ: number }) => void
   onCameraChange?: (state: {
     position: [number, number, number]
@@ -1736,9 +1801,14 @@ export type AssemblyViewerHandle = {
   applySelectedTransform?: (values: unknown) => void
   setNoteMode?: (value: boolean) => void
   setNoteText?: (value: string) => void
-  updateNote?: (id: string, text: string) => void
-  deleteNote?: (id: string) => void
-  getNoteScreenPosition?: (id: string) => { x: number; y: number; visible: boolean } | null
+  updateNote?: (id: string | number, text: string) => void
+  deleteNote?: (id: string | number) => void
+  setNotesFromServer?: (
+    notes: { id: number; text: string; position: [number, number, number]; parentName?: string | null }[],
+  ) => void
+  replaceNoteId?: (oldId: number, newId: number) => void
+  getNoteScreenPosition?: (id: string | number) => { x: number; y: number; visible: boolean } | null
+  getNoteWorldPosition?: (id: number) => [number, number, number] | null
   getCurrentTransforms?: () => unknown
   applyTransformsByName?: (transforms: Record<string, unknown>) => void
   focusOnPart?: (name: string) => void
@@ -1812,7 +1882,10 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
     setNoteText: (value) => engineRef.current?.setNoteText(value),
     updateNote: (id, text) => engineRef.current?.updateNote(id, text),
     deleteNote: (id) => engineRef.current?.deleteNote(id),
+    setNotesFromServer: (notes) => engineRef.current?.setNotesFromServer(notes),
+    replaceNoteId: (oldId, newId) => engineRef.current?.replaceNoteId(oldId, newId),
     getNoteScreenPosition: (id) => engineRef.current?.getNoteScreenPosition(id),
+    getNoteWorldPosition: (id) => engineRef.current?.getNoteWorldPosition(id),
     getCurrentTransforms: () => engineRef.current?.getCurrentTransforms(),
     applyTransformsByName: (transforms) => engineRef.current?.applyTransformsByName(transforms),
     focusOnPart: (name) => engineRef.current?.focusOnPart(name),
