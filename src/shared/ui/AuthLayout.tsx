@@ -1,5 +1,5 @@
 import * as S from './AuthLayout.style'
-import AuthGuide from '@/widgets/AuthLayout/ui/AuthGuide';
+import AuthGuide from '@/widgets/Auth/ui/AuthGuide';
 import { Outlet, useLocation } from 'react-router-dom';
 import { theme } from '@/shared/Theme';
 import { ThemeProvider } from 'styled-components';

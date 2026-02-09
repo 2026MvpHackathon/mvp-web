@@ -1,4 +1,4 @@
-import AuthInputField from '@/widgets/AuthLayout/ui/AuthInputField';
+import AuthInputField from '@/widgets/Auth/ui/AuthInputField';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 

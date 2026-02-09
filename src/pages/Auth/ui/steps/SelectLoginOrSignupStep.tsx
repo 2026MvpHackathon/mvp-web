@@ -1,4 +1,4 @@
-import AuthBtn from '@/widgets/AuthLayout/ui/AuthBtn';
+import AuthBtn from '@/widgets/Auth/ui/AuthBtn';
 import * as S from './SelectLoginOrSignupStep.style'
 import { useNavigate } from 'react-router-dom';
 
