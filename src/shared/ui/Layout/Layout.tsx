@@ -81,9 +81,13 @@ const EXPENSE_BG = colors.background.Dark;
       setEvaluation(
         '미흡한 성적입니다.\n오답 리스트를 확인하여 해당 내용을 재학습하시기 바랍니다.'
       );
-    } else {
+    } else if (score >= 0) {
+        setEvaluation(
+          '"불합격 수준입니다. \n오답 리스트를 참고하여 전체 내용을 처음부터 다시 학습하시기 바랍니다'
+        );
+      } else {
       setEvaluation(
-        '불합격 수준입니다.\n오답 리스트를 참고하여 전체 내용을 처음부터 다시 학습하시기 바랍니다.'
+        '잠시만 기다려주세요...'
       );
     }
   };

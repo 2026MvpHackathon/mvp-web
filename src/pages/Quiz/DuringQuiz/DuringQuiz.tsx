@@ -228,8 +228,9 @@ const DuringQuizPage = () => {
         if (currentQuizIndex < quizItems.length - 1) {
         setCurrentQuizIndex(prev => prev + 1);
         } else {
-        console.log('퀴즈가 끝났습니다.'); 
-        setText(displayAccuracyRate);
+        console.log('퀴즈가 끝났습니다.');
+        const numericAccuracyRate = parseFloat(displayAccuracyRate.replace('%', '')).toString();
+        setText(numericAccuracyRate);
         setIsBlur(true);
         setLoadingAnimationType('fillUp'); // Set animation type for quiz completion
 
