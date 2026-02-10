@@ -20,7 +20,7 @@ const ObjectCard = ({ item, onOpen }: Props) => {
         <S.detail>{item.detail}</S.detail>
       </S.infoContainer>
 
-      <S.objectImg src={`/src/assets${item.image}`} alt={item.title} />
+      <S.objectImg src={`${item.image}`} alt={item.title} />
     </S.container>
   );
 };
