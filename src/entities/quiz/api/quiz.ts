@@ -1,5 +1,10 @@
 import axiosInstance from "@/features/Auth/axiosInstance";
-import type { QuizRequest, QuizResponse, SubmitResultRequest, SubmitResultResponse } from "../types/createQuiz";
+import type {
+  QuizRequest,
+  QuizResponse,
+  SubmitResultRequest,
+  SubmitResultResponse,
+} from "../types/createQuiz";
 
 export const createQuiz = async (
   payload: QuizRequest
@@ -13,12 +18,12 @@ export const createQuiz = async (
 };
 
 export const submitQuizResult = async (
-    payload: SubmitResultRequest
+  payload: SubmitResultRequest
 ): Promise<SubmitResultResponse> => {
-    const res = await axiosInstance.post<SubmitResultResponse>(
-        "/api/quiz/submit-result",
-        payload
-    );
+  const res = await axiosInstance.post<SubmitResultResponse>(
+    "/api/quiz/submit-result",
+    payload
+  );
 
-    return res.data;
+  return res.data;
 };
