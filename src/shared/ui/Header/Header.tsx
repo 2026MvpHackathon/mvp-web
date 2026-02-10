@@ -86,7 +86,7 @@ const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure 
                 <Link path={'/study'} menu={'Study'} active={location.pathname === '/study'}/>
                 <Link path={'/quiz'} menu={'Quiz'} active={location.pathname.startsWith('/quiz')}/>                                                
             </S.header_menu_wrapper>
-            <S.header_btn onClick={isLoggedIn ? handleLogout : handleLoginClick} isAuthPage={isAuthPage}>
+            <S.header_btn onClick={isLoggedIn ? handleLogout : handleLoginClick} $isAuthPage={isAuthPage}>
                 {isLoggedIn ? '로그아웃' : '로그인'}
             </S.header_btn>
         </S.header_container>

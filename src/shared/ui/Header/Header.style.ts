@@ -32,7 +32,7 @@ export const header_menu = styled.span<{ $active?: boolean }>`
 `
 
 interface HeaderBtnProps {
-    isAuthPage: boolean;
+    $isAuthPage: boolean;
 }
 
 export const header_btn = styled.button<HeaderBtnProps>`
@@ -42,7 +42,7 @@ export const header_btn = styled.button<HeaderBtnProps>`
     border: 1px solid ${colors.main.assistive};
     background: ${colors.background.Dark};
 
-    color: ${props => props.isAuthPage ? colors.text.strong : colors.main.normal};
+    color: ${props => props.$isAuthPage ? colors.text.strong : colors.main.normal};
     ${typography("caption", "md", "medium")};
 
     &:hover, :focus {
