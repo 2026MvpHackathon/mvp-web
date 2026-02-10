@@ -50,6 +50,9 @@ const Layout = () => {
             <S.top_ui>
                 <S.accuracy_rate>{text}</S.accuracy_rate>
                 <S.evaluation>{evaluation}</S.evaluation>
+                <S.LoadingBarWrapper>
+                    <S.LoadingBarFill />
+                </S.LoadingBarWrapper>
             </S.top_ui>
         )}
 

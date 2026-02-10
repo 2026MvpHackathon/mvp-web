@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
 import { flexColumnCenter } from '@/shared/values/_flex'
 import { typography } from '@/shared/values/typography.mixin'
 import { colors } from '@/shared/values/_foundation'
@@ -46,18 +46,40 @@ export const top_ui = styled.div`
   width: 100%; // 너비를 100%로 변경
 `
 
-export const text_wrapper = styled.div`
-    width: 100%;
-    ${flexColumnCenter};
-`
-
-export const accuracy_rate = styled.span`
+export const accuracy_rate = styled.p`
     ${typography("heading","xxl","bold")};
     color: ${colors.text.strong};
+    margin: 0px;
+    text-align: center;
 `
 
-export const evaluation = styled.span`
+export const evaluation = styled.p`
     ${typography("heading","lg","semibold")};
     color: ${colors.text.normal};
+    margin: 0px;
+    text-align: center;
+
     white-space: pre;
 `
+
+// 로딩바 스타일 추가
+const loadingAnimation = keyframes`
+  0% { width: 0%; }
+  100% { width: 100%; } // 0%에서 100%로 한 번만 채워지도록 변경
+`;
+
+export const LoadingBarWrapper = styled.div`
+  width: 100%;
+  max-width: 20rem; // 로딩바 최대 너비
+  height: 0.25rem; // 로딩바 높이
+  background-color: ${colors.main.assistive}; // 로딩바 배경색
+  border-radius: 0.125rem;
+  overflow: hidden;
+`;
+
+export const LoadingBarFill = styled.div`
+  height: 100%;
+  background-color: ${colors.main.normal}; // 로딩바 채우기 색상
+  border-radius: 0.125rem;
+  animation: ${loadingAnimation} 5s ease-out forwards; 
+`;
