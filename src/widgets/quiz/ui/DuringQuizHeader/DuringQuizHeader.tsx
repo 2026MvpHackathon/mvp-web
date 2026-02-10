@@ -43,7 +43,7 @@ const DuringQuizHeader = ({
             <S.header_bottom_container>
                 <S.ProgressBarWrapper>
                     <S.ProgressBarBackground />
-                    <S.ProgressBarFill progress={progressPercent} />
+                    <S.ProgressBarFill $progress={progressPercent} />
                 </S.ProgressBarWrapper>
                 <S.header_bottom_progress_percent_wrapper>
                     <S.header_bottom_question_status>{currentQuestionText}</S.header_bottom_question_status>

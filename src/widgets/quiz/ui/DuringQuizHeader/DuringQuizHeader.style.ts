@@ -62,11 +62,11 @@ export const ProgressBarBackground = styled.div`
     border-radius: 1.5px;
 `
 
-export const ProgressBarFill = styled.div<{ progress: number }>`
+export const ProgressBarFill = styled.div<{ $progress: number }>`
     position: absolute;
     top: 0;
     left: 0;
-    width: ${props => props.progress}%;
+    width: ${props => props.$progress}%;
     height: 3px;
     background-color: ${colors.main.normal};
     border-radius: 1.5px;
