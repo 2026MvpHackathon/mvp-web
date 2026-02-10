@@ -70,6 +70,7 @@ export const registerQuiz = async (registrationData: any): Promise<any> => {
 
 export const generateQuiz = async (generationData: any): Promise<any> => {
   const response = await axiosInstance.post(`/api/quiz/generate`, generationData);
+  console.log("Quiz Generation Response:", response); // Log the response
   return response.data;
 };
 
