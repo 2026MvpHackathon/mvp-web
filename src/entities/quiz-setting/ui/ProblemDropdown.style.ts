@@ -5,7 +5,11 @@ export const Wrapper = styled.div`
   display: flex;
   align-items: center;
   gap: 0.625rem;
+`;
+
+export const DropdownWrapper = styled.div`
   position: relative;
+  width: fit-content;
 `;
 
 export const DropdownBox = styled.div`
@@ -44,12 +48,25 @@ export const OptionList = styled.ul`
   left: 0;
 
   width: 100%;
+  max-height: 8rem;
+  overflow-y: auto;
+
   background-color: ${token.colors.background.Dark};
   border: 1px solid ${token.colors.line.alternative};
   border-radius: ${token.shapes.small};
 
   padding: 0.25rem 0;
   z-index: 10;
+
+
+  &::-webkit-scrollbar {
+    width: 0.5rem;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: ${token.colors.line.alternative};
+    border-radius: 0.25rem;
+  }
 `;
 
 export const Option = styled.li`

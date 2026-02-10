@@ -37,15 +37,14 @@ const ProblemDropdown = () => {
 
   return (
     <S.Wrapper ref={wrapperRef}>
-      <S.DropdownBox onClick={() => setOpen(prev => !prev)}>
-        <S.Value>{selected}</S.Value>
-        <S.Arrow $open={open}>▾</S.Arrow>
-      </S.DropdownBox>
+      <S.DropdownWrapper>
+        <S.DropdownBox onClick={() => setOpen(prev => !prev)}>
+          <S.Value>{selected}</S.Value>
+          <S.Arrow $open={open}>▾</S.Arrow>
+        </S.DropdownBox>
 
-      <S.Label>문제</S.Label>
-
-      {open && (
-        <S.OptionList>
+        {open && (
+          <S.OptionList>
           {options.map(option => (
             <S.Option
               key={option}
@@ -57,8 +56,11 @@ const ProblemDropdown = () => {
               {option}
             </S.Option>
           ))}
-        </S.OptionList>
-      )}
+          </S.OptionList>
+        )}
+      </S.DropdownWrapper>
+
+      <S.Label>문제</S.Label>
     </S.Wrapper>
   );
 };

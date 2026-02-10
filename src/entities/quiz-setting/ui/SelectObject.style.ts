@@ -1,14 +1,10 @@
 import styled from "styled-components";
 import * as token from "@/shared/values/token";
 
-export const HiddenCheckbox = styled.input`
-  display: none;
-`;
-
-export const Container = styled.div`
+export const Container = styled.div<{ $selected: boolean }>`
   width: 13.4375rem;
   height: 10.98375rem;
-  border: 1px solid ${token.colors.text.alternative2};
+  border: 1px solid ${({ $selected }) => ($selected ? token.colors.text.strong : token.colors.text.alternative2)};
   border-radius: ${token.shapes.small};
   padding: 0.9375rem;
   ${token.flexColumn}
@@ -24,11 +20,11 @@ export const Title = styled.span`
   ${token.typography("heading", "sm", "semibold")}
 `;
 
-export const Circle = styled.div`
+export const Circle = styled.div<{ $selected: boolean }>`
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 50%;
-  background-color: ${token.colors.text.alternative2};
+  background-color: ${({ $selected }) => ($selected ? token.colors.text.strong : token.colors.text.alternative2)};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -42,19 +38,6 @@ export const Icon = styled.img`
 export const objectImg = styled.img`
   width: 100%;
   object-fit: cover;
-`
-
-export const Select = styled.label`
-  cursor: pointer;
-  display: inline-block;
-
-  ${HiddenCheckbox}:checked + ${Container} {
-    border-color: ${token.colors.text.strong};
-  }
-
-  ${HiddenCheckbox}:checked + ${Container} ${Circle} {
-    background-color: ${token.colors.text.strong};
-  }
 `;
 
 
