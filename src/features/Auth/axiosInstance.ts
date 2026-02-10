@@ -31,13 +31,13 @@ axiosInstance.interceptors.request.use( //axios 인스턴스 설정
     const userId = getCookie("userId")
 
     if(accessToken) { //토큰이 있으면 헤더에 설정
-      config.headers["Authorization"] = `Bearer ${accessToken}`;
+      config.headers.set("Authorization", `Bearer ${accessToken}`);
     } else { 
       if(refreshToken && userId) {
         const newToken = await tokenRefresh(refreshToken, userId); //토큰 재발급
 
         if(newToken) {
-          config.headers["Authorization"] = `Bearer ${newToken}`;
+          config.headers.set("Authorization", `Bearer ${newToken}`);
         }
       } 
       else { //로그인 페이지로 이동
