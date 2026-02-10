@@ -3,6 +3,7 @@ import Logo from '/src/assets/Logo/Logo.png'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getCookie, deleteCookie } from '@/features/Auth/cookies';
 import axiosInstance from '@/features/Auth/axiosInstance';
+import { useToast } from '../Toast/ToastContext';
 
 
 
@@ -41,6 +42,7 @@ const Link = ({path, menu, active}: LinkResponse) => {
 }
 
 const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure props
+    const { showToast } = useToast();
     const location = useLocation();
     const navigate = useNavigate();
     const isAuthPage = location.pathname.startsWith('/auth');
@@ -54,10 +56,11 @@ const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure 
         if (refreshToken) {
             try {
                 await axiosInstance.post(`/api/auth/logout`, { refreshToken }); // Use relative path
+                showToast('성공적으로 로그아웃되었습니다..', 'success')
                 // console.log("로그아웃 API 응답 (성공):", response);
             } catch (error: any) {
                 console.error("로그아웃 API 호출 중 오류 발생:", error);
-                alert("로그아웃 처리 중 오류가 발생했습니다.");
+                showToast('로그아웃 처리 중 오류가 발생했습니다.', 'error')
                 
                 
             }

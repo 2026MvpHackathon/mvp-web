@@ -54,7 +54,7 @@ export const ToastItem = styled.div<{ type?: 'success' | 'error' | 'info' }>`
   background-color: ${props => {
     switch (props.type) {
       case 'success':
-        return colors.state.success; // 녹색 계열
+        return "#08BE57"; // 녹색 계열
       case 'error':
         return colors.state.error;   // 빨간색 계열
       case 'info':
