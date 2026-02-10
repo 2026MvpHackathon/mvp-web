@@ -11,6 +11,7 @@ interface ImageResponse {
     path: string;
     size: string;
     alt: string;
+    to: string;
 }
 
 interface LinkResponse {
@@ -25,9 +26,9 @@ interface HeaderProps {
     setIsLoggedIn: (loggedIn: boolean) => void;
 }
 
-const Image = ({path, size, alt}: ImageResponse) => {
+const Image = ({path, size, alt, to}: ImageResponse) => {
     return(
-        <img src={path} width={size} alt={alt}/>
+        <S.styled_link to={to}><img src={path} width={size} alt={alt}/></S.styled_link>
     );
 }
 
@@ -76,7 +77,7 @@ const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure 
 
     return(
         <S.header_container>
-            <Image path={Logo} size={'104px'} alt={'Logo'}/>
+            <Image path={Logo} size={'104px'} alt={'Logo'} to={'/home'}/>
             <S.header_menu_wrapper>
                 <Link path={'/home'} menu={'Home'} active={location.pathname === '/home'}/>
                 <Link path={'/study'} menu={'Study'} active={location.pathname === '/study'}/>

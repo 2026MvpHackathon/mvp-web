@@ -16,6 +16,10 @@ export const btn_container = styled.button`
     background: rgba(0, 0, 0, 0.25);
 
     cursor: pointer;
+
+    &:hover {
+        background: rgba(64, 64, 64, 0.25);
+    }
 `
 
 export const btn_text = styled.span`
