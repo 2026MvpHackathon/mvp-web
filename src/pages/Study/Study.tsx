@@ -664,7 +664,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         studySessionId,
         question: text,
         materialId: activeMaterialId,
-        modelId: selectedModelId,
+        modelId: typeof selectedModelId === 'number' ? selectedModelId : undefined,
       })
       const assistantMessage: AiMessage = {
         id: `assistant-${response.data.messageId}`,
