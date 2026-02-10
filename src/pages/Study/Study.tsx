@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import * as THREE from 'three'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
@@ -62,6 +62,18 @@ type ViewerTransforms = Record<
 
 const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const urlMaterialId = searchParams.get('materialId')
+  const projectIdFromMaterial = useMemo(() => {
+    if (!urlMaterialId) return null
+    const mid = Number(urlMaterialId)
+    if (!Number.isFinite(mid)) return null
+    const entry = Object.entries(projectConfigs).find(
+      ([, config]) => config.materialId === mid,
+    )
+    return entry?.[0] ?? null
+  }, [urlMaterialId])
+
   const viewerRef = useRef<AssemblyViewerHandle | null>(null)
   const progressRef = useRef<HTMLInputElement | null>(null)
   const [progressWidth, setProgressWidth] = useState(0)
@@ -74,9 +86,28 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     [],
   )
 
-  const [projectId, setProjectId] = useState(
-    () => localStorage.getItem('assembly-last-project') || 'drone',
-  )
+  const [projectId, setProjectId] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    const mid = params.get('materialId')
+    if (mid) {
+      const num = Number(mid)
+      if (Number.isFinite(num)) {
+        const entry = Object.entries(projectConfigs).find(
+          ([, config]) => config.materialId === num,
+        )
+        if (entry) return entry[0]
+      }
+    }
+    return localStorage.getItem('assembly-last-project') || 'drone'
+  })
+
+  // URL에 materialId가 있으면 해당 material의 project로 전환 (직접 /study 접근 후 쿼리 변경 등)
+  useEffect(() => {
+    if (projectIdFromMaterial && projectIdFromMaterial !== projectId) {
+      setProjectId(projectIdFromMaterial)
+      localStorage.setItem('assembly-last-project', projectIdFromMaterial)
+    }
+  }, [projectIdFromMaterial, projectId])
   const safeProjectId = Object.prototype.hasOwnProperty.call(projectConfigs, projectId)
     ? projectId
     : 'drone'
@@ -615,7 +646,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         studySessionId,
         question: text,
         materialId: activeMaterialId,
-        modelId: selectedModelId,
+        modelId: selectedModelId || undefined,
       })
       const assistantMessage: AiMessage = {
         id: `assistant-${response.data.messageId}`,
