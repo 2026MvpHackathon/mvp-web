@@ -18,7 +18,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       setIsLoading(false);
 
       if (!loggedIn) {
-        console.log("로그인하세요.");
+        console.warn("로그인하세요."); // Changed to warn, as it's an important user message
         navigate("/auth/select");
       }
     };

@@ -153,7 +153,7 @@ const QuizPage = () => {
       // Call the new API function to start the quiz session
       await startQuizSession(quizSettings);
       setIsQuizStarted(true);
-      console.log("Quiz Started with settings:", quizSettings);
+      // console.log("Quiz Started with settings:", quizSettings);
       showToast("퀴즈가 시작되었습니다!", "success");
     } catch (error) {
       console.error("Failed to start quiz:", error);

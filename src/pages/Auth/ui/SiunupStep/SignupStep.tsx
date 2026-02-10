@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { InputConfig } from '@/widgets/Auth/ui/AuthInputField/AuthInputField';
 import { publicInstance } from '@/features/Auth/axiosInstance'; 
 
-// const SERVER_URL = import.meta.env.VITE_API_URL; // Removed
+
 
 const SignupStep = () => {
     const navigate = useNavigate();

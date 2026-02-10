@@ -3,9 +3,9 @@ import Logo from '/src/assets/Logo/Logo.png'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getCookie, deleteCookie } from '@/features/Auth/cookies';
 import axiosInstance from '@/features/Auth/axiosInstance';
-// import { useEffect, useState } from 'react'; // Removed
 
-// const SERVER_URL = import.meta.env.VITE_API_URL; // Removed
+
+
 
 interface ImageResponse {
     path: string;
@@ -42,27 +42,20 @@ const Link = ({path, menu, active}: LinkResponse) => {
 const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure props
     const location = useLocation();
     const navigate = useNavigate();
-    // const [isLoggedIn, setIsLoggedIn] = useState(false); // Removed internal state
 
-    // useEffect(() => { // Removed internal useEffect
-    //     const checkLoginStatus = () => {
-    //         const accessToken = getCookie("accessToken");
-    //         setIsLoggedIn(!!accessToken);
-    //     };
-    //     checkLoginStatus();
 
-    // }, []);
 
-    console.log("Header Rendered in AuthPage context"); // 디버깅용 로그 추가
+
+    // console.log("Header Rendered in AuthPage context"); // 디버깅용 로그 추가
 
     const handleLogout = async () => {
         const refreshToken = getCookie("refreshToken");
-        console.log("Logout 시도 - RefreshToken:", refreshToken);
+        // console.log("Logout 시도 - RefreshToken:", refreshToken);
 
         if (refreshToken) {
             try {
-                const response = await axiosInstance.post(`/api/auth/logout`, { refreshToken }); // Use relative path
-                console.log("로그아웃 API 응답 (성공):", response);
+                await axiosInstance.post(`/api/auth/logout`, { refreshToken }); // Use relative path
+                // console.log("로그아웃 API 응답 (성공):", response);
             } catch (error: any) {
                 console.error("로그아웃 API 호출 중 오류 발생:", error);
                 alert("로그아웃 처리 중 오류가 발생했습니다. 세션을 확인해주세요.");

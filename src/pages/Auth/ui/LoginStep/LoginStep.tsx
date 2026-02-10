@@ -8,7 +8,7 @@ import { publicInstance } from '@/features/Auth/axiosInstance';
 import type { InputConfig } from '@/widgets/Auth/ui/AuthInputField/AuthInputField';
 import { useAuthStatus } from '@/shared/ui/Layout/Layout'; // Import useAuthStatus
 
-// const SERVER_URL = import.meta.env.VITE_API_URL; // Removed
+
 
 export type LoginInputs = {
   email: string,

@@ -12,7 +12,7 @@ const VerifyStep = () => {
         if (isActive) {
             navigate('/auth/login');
         } else {
-            console.log("checkBox 비활성화");
+            console.warn("checkBox 비활성화"); // Changed to warn, as it might be an intentional UI state
         }
     }
 
