@@ -3,18 +3,24 @@ import { flexColumnCenter } from '@/shared/values/_flex'
 import { typography } from '@/shared/values/typography.mixin'
 import { colors } from '@/shared/values/_foundation'
 
-export const container = styled.div`
-    ${flexColumnCenter};
+export const container = styled.div<{ $isExpense?: boolean }>`
+    display: flex;
+    flex-direction: column;
+    align-items: ${({ $isExpense }) => ($isExpense ? 'stretch' : 'center')};
+    justify-content: ${({ $isExpense }) => ($isExpense ? 'flex-start' : 'center')};
     width: 100vw;
-    height: 100vh;
+    min-height: 100vh;
     position: relative;
+    background: ${({ $isExpense }) => ($isExpense ? colors.background.Dark : 'transparent')};
 `
 
-export const body = styled.div`
+export const body = styled.div<{ $isExpense?: boolean }>`
     width: 100%;
-    height: 100%;
-
+    height: ${({ $isExpense }) => ($isExpense ? '100vh' : '100%')};
+    flex: ${({ $isExpense }) => ($isExpense ? 1 : 'none')};
+    min-height: ${({ $isExpense }) => ($isExpense ? '100vh' : '0')};
     padding: 2.25rem 2.5rem;
+    background: ${({ $isExpense }) => ($isExpense ? colors.background.Dark : 'transparent')};
 `
 
 // blur
