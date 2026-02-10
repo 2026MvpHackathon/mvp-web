@@ -15,6 +15,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 type LayoutContext = {
     setText: (v: string) => void;
     setIsBlur: (v: boolean) => void;
+    setLoadingAnimationType: (type: 'none' | 'backAndForth' | 'fillUp') => void;
 };
 
 type LocalQuizItem = Omit<QuizItem, 'options'> & {
@@ -39,9 +40,12 @@ const DuringQuizPage = () => {
 
     const currentQuiz: LocalQuizItem | undefined = quizItems[currentQuizIndex];
 
-    const { setText, setIsBlur } = useOutletContext<LayoutContext>();
+    const { setText, setIsBlur, setLoadingAnimationType } = useOutletContext<LayoutContext>();
     // 퀴즈 생성
     const handleCreateQuiz = async () => {
+        setText("퀴즈를 생성 중..."); // Set loading text
+        setIsBlur(true); // Show blur overlay
+        setLoadingAnimationType('backAndForth'); // Set animation type for quiz generation
         try {
         const res = await createQuiz({
             quizQuestionIds: [1, 2, 3],
@@ -66,6 +70,10 @@ const DuringQuizPage = () => {
         setCurrentQuizIndex(0);
         } catch (e) {
         console.error(e);
+        } finally {
+            setIsBlur(false); // Hide blur overlay
+            setText(""); // Clear loading text
+            setLoadingAnimationType('none'); // Reset animation type
         }
     };
 
@@ -142,7 +150,7 @@ const DuringQuizPage = () => {
     const handleSubmitAnswer = async () => {
         if (!currentQuiz || currentQuiz.isSubmitted) return;
 
-        console.log("handleSubmitAnswer 시작. 현재 퀴즈 상태 (제출 전):", currentQuiz); // 추가
+        // console.log("handleSubmitAnswer 시작. 현재 퀴즈 상태 (제출 전):", currentQuiz); // 추가
 
         const answerIndex = currentQuiz.correctAnswerIndex;
         const selectedOption = currentQuiz.options.find(
@@ -157,8 +165,8 @@ const DuringQuizPage = () => {
             isCorrect: isCorrect,
             isFavorite: currentQuiz.isFavorite, // 즐겨찾기 상태 반영
         };
-        const submitRes = await submitQuizResult(submissionPayload);
-        console.log('Quiz Submission Response:', submitRes);
+        await submitQuizResult(submissionPayload);
+        // console.log('Quiz Submission Response:', submitRes);
         } catch (error) {
         console.error('Error submitting quiz result:', error);
         }
@@ -183,9 +191,9 @@ const DuringQuizPage = () => {
             : item
         )
         );
-        console.log("handleSubmitAnswer 완료. setQuizItems 호출됨."); // 추가
+        // console.log("handleSubmitAnswer 완료. setQuizItems 호출됨."); // 추가
         setShowCommentary(true); // 해설 표시
-        console.log("해설 표시 상태 (예상):", true); // showCommentary는 비동기로 업데이트되므로, 예상값을 찍음 // 추가
+        // console.log("해설 표시 상태 (예상):", true); // showCommentary는 비동기로 업데이트되므로, 예상값을 찍음 // 추가
     };
 
     // 즐겨찾기 토글 함수
@@ -205,7 +213,7 @@ const DuringQuizPage = () => {
             : item
         )
         );
-        console.log(`퀴즈 ${currentQuizIndex + 1}번 즐겨찾기 상태 변경: ${currentQuiz.isFavorite} -> ${nextIsFavorite}`); // 추가
+        // console.log(`퀴즈 ${currentQuizIndex + 1}번 즐겨찾기 상태 변경: ${currentQuiz.isFavorite} -> ${nextIsFavorite}`); // 추가
     };
 
     // 이전 퀴즈로 이동
@@ -220,13 +228,15 @@ const DuringQuizPage = () => {
         if (currentQuizIndex < quizItems.length - 1) {
         setCurrentQuizIndex(prev => prev + 1);
         } else {
-        console.log('퀴즈가 끝났습니다.'); 
-        setText(displayAccuracyRate);
+                const numericAccuracyRate = parseFloat(displayAccuracyRate.replace('%', '')).toString();
+        setText(numericAccuracyRate);
         setIsBlur(true);
+        setLoadingAnimationType('fillUp'); // Set animation type for quiz completion
 
         setTimeout(() => {
             setText("")
             setIsBlur(false);
+            setLoadingAnimationType('none'); // Reset animation type
         }, 6000);
 
         navigate("/quiz");

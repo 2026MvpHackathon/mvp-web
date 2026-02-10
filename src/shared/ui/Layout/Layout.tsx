@@ -34,6 +34,7 @@ const Layout = () => {
   const [isBlur, setIsBlur] = useState(false);
   const [evaluation, setEvaluation] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Added isLoggedIn state
+  const [loadingAnimationType, setLoadingAnimationType] = useState<'none' | 'backAndForth' | 'fillUp'>('none'); // New state for animation type
 
 const EXPENSE_BG = colors.background.Dark;
 
@@ -80,9 +81,13 @@ const EXPENSE_BG = colors.background.Dark;
       setEvaluation(
         '미흡한 성적입니다.\n오답 리스트를 확인하여 해당 내용을 재학습하시기 바랍니다.'
       );
-    } else {
+    } else if (score >= 0) {
+        setEvaluation(
+          '"불합격 수준입니다. \n오답 리스트를 참고하여 전체 내용을 처음부터 다시 학습하시기 바랍니다'
+        );
+      } else {
       setEvaluation(
-        '불합격 수준입니다.\n오답 리스트를 참고하여 전체 내용을 처음부터 다시 학습하시기 바랍니다.'
+        '잠시만 기다려주세요...'
       );
     }
   };
@@ -102,7 +107,9 @@ const EXPENSE_BG = colors.background.Dark;
                 <S.accuracy_rate>{text}</S.accuracy_rate>
                 <S.evaluation>{evaluation}</S.evaluation>
                 <S.LoadingBarWrapper>
-                <S.LoadingBarFill />
+                {loadingAnimationType !== 'none' && (
+                    <S.LoadingBarFill $animationType={loadingAnimationType} />
+                )}
                 </S.LoadingBarWrapper>
             </S.top_ui>
             )}
@@ -114,7 +121,7 @@ const EXPENSE_BG = colors.background.Dark;
             $isExpense={hideHeader}
             style={location.pathname.includes('/auth') ? { padding: '0px' } : undefined}
             >
-                <Outlet context={{ setText, setIsBlur }} />
+                <Outlet context={{ setText, setIsBlur, setLoadingAnimationType }} /> {/* Expose setLoadingAnimationType */}
             </S.body>
         </S.container>
             </AuthStatusContext.Provider>

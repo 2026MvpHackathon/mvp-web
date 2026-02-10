@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import axiosInstance from '@/features/Auth/axiosInstance'; // Use axiosInstance for authenticated calls
 import type { QuizCategory } from '@/features/quiz/quiz-category-select/QuizCategorySelect';
 import type { QuizListItem } from '@/entities/quiz-setting/types';
 
@@ -27,7 +27,7 @@ export interface QuizQuestionsResponse {
 
 // Actual API calls
 export const getQuizQuestions = async (category: QuizCategory): Promise<QuizQuestionsResponse> => {
-  const response = await apiClient.get<QuizQuestionsResponse>(`/api/quiz/questions`, {
+  const response = await axiosInstance.get<QuizQuestionsResponse>(`/api/quiz/questions`, {
     params: { category }
   });
   return response.data;
@@ -44,32 +44,33 @@ export const fetchAIQuizAnswers = async (category: QuizCategory): Promise<AIQuiz
 };
 
 export const fetchFavoriteItems = async (): Promise<QuizListItem[]> => {
-  const response = await apiClient.get<QuizListItem[]>(`/api/quiz/favorites`);
+  const response = await axiosInstance.get<QuizListItem[]>(`/api/quiz/favorites`);
   return response.data;
 };
 
 export const fetchWrongAnswerItems = async (): Promise<QuizListItem[]> => {
-  const response = await apiClient.get<QuizListItem[]>(`/api/quiz/wrong-answers`);
+  const response = await axiosInstance.get<QuizListItem[]>(`/api/quiz/wrong-answers`);
   return response.data;
 };
 
 export const fetchAverageCorrectRate = async (): Promise<AverageRateResponse> => {
-  const response = await apiClient.get<AverageRateResponse>(`/api/quiz/average-rate`);
+  const response = await axiosInstance.get<AverageRateResponse>(`/api/quiz/average-rate`);
   return response.data;
 };
 
 export const submitQuizResult = async (resultData: any): Promise<any> => {
-  const response = await apiClient.post(`/api/quiz/submit-result`, resultData);
+  const response = await axiosInstance.post(`/api/quiz/submit-result`, resultData);
   return response.data;
 };
 
 export const registerQuiz = async (registrationData: any): Promise<any> => {
-  const response = await apiClient.post(`/api/quiz/register`, registrationData);
+  const response = await axiosInstance.post(`/api/quiz/register`, registrationData);
   return response.data;
 };
 
-export const generateQuiz = async (generationData: any): Promise<any> => {
-  const response = await apiClient.post(`/api/quiz/generate`, generationData);
+export const generateQuiz = async (settings: QuizStartSettings): Promise<any> => {
+  const response = await axiosInstance.post(`/api/quiz/generate`, settings);
+  console.log("Quiz Generation Response:", response); // Log the response
   return response.data;
 };
 
@@ -81,8 +82,3 @@ export interface QuizStartSettings {
   isWrongAnswerIncluded: boolean;
   numberOfProblems: number;
 }
-
-export const startQuizSession = async (settings: QuizStartSettings): Promise<any> => {
-  const response = await apiClient.post(`/api/quiz/start`, settings);
-  return response.data;
-};

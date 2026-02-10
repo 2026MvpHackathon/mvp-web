@@ -1,17 +1,10 @@
-import axios from "axios";
+import axiosInstance from "@/features/Auth/axiosInstance"; // Use configured axiosInstance
 import type { RecentItem, RecentApiResponse } from "../types";
 
 export const getRecentList = async (): Promise<RecentItem[]> => {
-  const apiUrl = new URL("/api/study/home/find/recent", import.meta.env.VITE_API_URL).href;
-  
+  const apiUrl = "/api/study/home/find/recent"; // Use relative path
 
-  const token = localStorage.getItem('accessToken');
-  
-  const res = await axios.get<RecentApiResponse>(apiUrl, {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : ''
-    }
-  });
+  const res = await axiosInstance.get<RecentApiResponse>(apiUrl); // axiosInstance handles headers automatically
   
   return res.data.data;
 };

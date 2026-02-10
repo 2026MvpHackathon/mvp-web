@@ -6,6 +6,7 @@ export const container = styled.div`
   padding: 1rem 1.25rem;
   background-color: ${token.colors.fill.alternative3};
   border-radius: ${token.shapes.small};
+  overflow: hidden;
 `;
 
 export const item = styled.div`

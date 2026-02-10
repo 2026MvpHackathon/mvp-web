@@ -25,7 +25,7 @@ import {
   deleteStudyNote,
   saveStudySession,
 } from '../../entities/study/api/studyApi'
-import type { MaterialPart, StudySession, StudySessionPart } from '../../entities/study/types'
+import type { MaterialPart, StudySession, StudySessionPart, StudyHomeItem, ChatMessage, StudyNote } from '../../entities/study/types'
 import './Study.css'
 import * as S from './Study.style'
 
@@ -817,7 +817,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           if (error.response?.status === 409) {
             try {
               const homeResponse = await getStudyHomeAll()
-              const match = homeResponse.data.find((item) => item.materialId === materialId)
+              const match = homeResponse.data.find((item: StudyHomeItem) => item.materialId === materialId)
               if (match) {
                 setStudySessionId(match.sessionId)
                 try {
@@ -857,7 +857,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         const response = await getMaterialParts(activeMaterialId)
         if (cancelled) return
         const next: Record<string, MaterialPart> = {}
-        response.data.forEach((part) => {
+        response.data.forEach((part: MaterialPart) => {
           next[resolveBaseName(part.name)] = part
         })
         setMaterialPartsByBase(next)
@@ -889,7 +889,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         ])
         if (cancelled) return
         const nextParts: Record<string, StudySessionPart> = {}
-        partsResponse.data.forEach((part) => {
+        partsResponse.data.forEach((part: StudySessionPart) => {
           const base = resolveBaseName(part.name)
           const lower = part.name.toLowerCase()
           const baseLower = base.toLowerCase()
@@ -902,7 +902,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         })
         setSessionPartsByBase(nextParts)
         if (chatResponse.data.length > 0) {
-          const nextMessages: AiMessage[] = chatResponse.data.map((message) => ({
+          const nextMessages: AiMessage[] = chatResponse.data.map((message: ChatMessage) => ({
             id: `${message.messageId}`,
             role: toRole(message.messageType),
             text: message.messageContent,
@@ -928,7 +928,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       try {
         const response = await getStudyNotes(studySessionId)
         if (cancelled) return
-        const mappedNotes = response.data.map((note) => ({
+        const mappedNotes = response.data.map((note: StudyNote) => ({
           id: note.noteId,
           text: note.text,
           position: note.position,
@@ -936,7 +936,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         }))
         isHydratingNotesRef.current = true
         viewerRef.current?.setNotesFromServer?.(mappedNotes)
-        noteIdMapRef.current = response.data.reduce<Record<number, number>>((acc, note) => {
+        noteIdMapRef.current = response.data.reduce<Record<number, number>>((acc: Record<number, number>, note: StudyNote) => {
           acc[note.noteId] = note.noteId
           return acc
         }, {})

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { InputConfig } from '@/widgets/Auth/ui/AuthInputField/AuthInputField';
 import { publicInstance } from '@/features/Auth/axiosInstance'; 
 
-const SERVER_URL = import.meta.env.VITE_API_URL; // SERVER_URL 정의
+
 
 const SignupStep = () => {
     const navigate = useNavigate();
@@ -43,7 +43,7 @@ const SignupStep = () => {
                 return;
             }
             try {
-                await publicInstance.post(`${SERVER_URL}/api/auth/email/send`, { email });
+                await publicInstance.post(`/api/auth/email/send`, { email }); // Use relative path
                 setNext(true); // 인증코드 입력 단계로 이동
             } catch (error: any) {
                 setGeneralError(error.response?.data?.message || '이메일 발송에 실패했습니다.');
@@ -55,7 +55,7 @@ const SignupStep = () => {
                 return;
             }
             try {
-                await publicInstance.post(`${SERVER_URL}/api/auth/email/verify`, { email, code });
+                await publicInstance.post(`/api/auth/email/verify`, { email, code }); // Use relative path
                 setPasswordStep(true); // 비밀번호 설정 단계로 이동
             } catch (error: any) {
                 setGeneralError(error.response?.data?.message || '인증코드 확인에 실패했습니다.');
@@ -77,7 +77,7 @@ const SignupStep = () => {
 
         try {
             // 회원가입 API 호출
-            await publicInstance.post(`${SERVER_URL}/api/auth/signup`, { email, password });
+            await publicInstance.post(`/api/auth/signup`, { email, password }); // Use relative path
             navigate('/auth/verify'); // 회원가입 성공 후 이동
         } catch (error: any) {
             setGeneralError(error.response?.data?.message || '회원가입에 실패했습니다.');
