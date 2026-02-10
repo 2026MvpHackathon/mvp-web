@@ -29,9 +29,11 @@ export interface QuizItem {
 }
   
 export interface QuizResponse {
+    data: any;
     status: number;
     message: string;
-    data: QuizItem[];
+    quizzes: QuizItem[]; // Corrected to match API response
+    metadata?: any; // Add metadata if it's consistently present
 }
 
 export interface SubmitResultResponse {

@@ -34,33 +34,35 @@ export const CheckboxRow = styled.div`
   gap: 1.875rem;
 `;
 
-export const StartQuizButton = styled.button`
+export const StartQuizButton = styled.button<{ $active?: boolean }>`
   width: 8.25rem;
   height: 2.625rem;
-  background-color: ${token.colors.fill.alternative2};
-  color: ${token.colors.text.alternative2};
+  background-color: ${({ $active }) =>
+    $active ? token.colors.main.alternative : token.colors.fill.alternative2};
+  color: ${({ $active }) =>
+    $active ? token.colors.text.normal : token.colors.text.alternative2};
   border: none;
   border-radius: ${token.shapes.small};
   ${token.typography("body", "md", "medium")};
-  cursor: pointer;
+  cursor: ${({ $active }) => ($active ? "pointer" : "not-allowed")};
 
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
 
   &:hover {
-    background-color: ${token.colors.fill.alternative2};
+    background-color: ${({ $active }) =>
+      $active ? token.colors.main.alternative : token.colors.fill.alternative2};
   }
 
   &:active {
-    background-color: ${token.colors.main.alternative};
-  }
-
-  &:disabled {
-    background-color: ${token.colors.fill.alternative2};
-    cursor: not-allowed;
+    background-color: ${({ $active }) =>
+      $active ? token.colors.main.alternative : token.colors.fill.alternative2};
   }
 `;
+
+
 
 export const ProductSelectionContainer = styled.div`
   display: flex;
