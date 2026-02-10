@@ -11,6 +11,7 @@ export type StudySession = {
   quaternion: [number, number, number, number]
   target: [number, number, number]
   zoom: number
+  percent?: number // Added this line
   view: string
   materialId: number
   sessionId: number
@@ -23,6 +24,7 @@ export type StudySessionSavePayload = {
   quaternion: [number, number, number, number]
   target: [number, number, number]
   zoom: number
+  percent?: number // Added this line
 }
 
 export type StudySessionPart = {

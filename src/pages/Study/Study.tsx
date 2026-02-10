@@ -1091,7 +1091,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       quaternion: q as [number, number, number, number],
       target: [Number(tgt[0]), Number(tgt[1]), Number(tgt[2])],
       zoom: Number(zm),
-      percent: studySession.percent ?? (studySession as Record<string, unknown>).explodePercent,
+      percent: studySession.percent ?? ((studySession as Record<string, unknown>).explodePercent as number | undefined),
       sessionId: studySessionId,
     }
   }, [studySession, studySessionId])
@@ -1107,14 +1107,15 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       zoom: pending.zoom,
     })
     const pct = pending.percent
-    if (Number.isFinite(pct) && pct >= 0 && pct <= 100) {
-      setExplodePercent(pct)
-      const scale = percentToScale(pct)
+    if (typeof pct === 'number' && Number.isFinite(pct) && pct >= 0 && pct <= 100) {
+      const actualPct: number = pct; // Explicitly narrow type
+      setExplodePercent(actualPct)
+      const scale = percentToScale(actualPct)
       viewerRef.current?.setExplodeScale?.(scale)
       // 분해량이 반영되려면 target/current를 1로 두어야 함 (current가 0이면 scale만 있어도 분해 0)
-      const amount = pct <= 0 ? 0 : 1
+      const amount = actualPct <= 0 ? 0 : 1
       viewerRef.current?.setExplodeCurrent?.(amount)
-      setIsAssemble(pct <= 0)
+      setIsAssemble(actualPct <= 0)
     }
     appliedCameraSessionIdRef.current = pending.sessionId
   }
