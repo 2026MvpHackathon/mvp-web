@@ -1,15 +1,30 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from '../Header/Header';
 import * as S from './Layout.style';
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react'; // Added createContext and useContext
 import { ToastProvider } from '@/shared/ui/Toast/ToastContext';
 import { colors } from '@/shared/values/_foundation';
+import { getCookie } from '@/features/Auth/cookies';
 
 
-interface LayoutContextType {
-  setText: (v: string) => void;
-  setIsBlur: (v: boolean) => void;
+
+
+// Define the type for the AuthStatusContext
+interface AuthStatusContextType {
+  setIsLoggedIn: (loggedIn: boolean) => void;
 }
+
+// Create the AuthStatusContext
+export const AuthStatusContext = createContext<AuthStatusContextType | undefined>(undefined);
+
+// Custom hook to use the AuthStatusContext
+export const useAuthStatus = () => {
+    const context = useContext(AuthStatusContext);
+    if (context === undefined) {
+        throw new Error('useAuthStatus must be used within an AuthStatusProvider');
+    }
+    return context;
+};
 
 
 const Layout = () => {
@@ -18,9 +33,14 @@ const Layout = () => {
   const [text, setText] = useState('');
   const [isBlur, setIsBlur] = useState(false);
   const [evaluation, setEvaluation] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Added isLoggedIn state
 
 const EXPENSE_BG = colors.background.Dark;
 
+    useEffect(() => {
+        const accessToken = getCookie("accessToken");
+        setIsLoggedIn(!!accessToken);
+    }, []); // Added useEffect to check login status
 
     // expense: 흰 배경 없이 아래까지 채우기 (66ac796처럼)
     useEffect(() => {
@@ -73,7 +93,7 @@ const EXPENSE_BG = colors.background.Dark;
 
     return (
         <ToastProvider>
-            
+            <AuthStatusContext.Provider value={{ setIsLoggedIn }}> {/* Wrapped with AuthStatusContext.Provider */}
             <S.container $isExpense={hideHeader}>
             {isBlur && <S.blur_overlay/>}
 
@@ -87,7 +107,8 @@ const EXPENSE_BG = colors.background.Dark;
             </S.top_ui>
             )}
 
-            {!hideHeader && <Header />}
+            {!hideHeader && <Header isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />} 
+            {/* Passed isLoggedIn and setIsLoggedIn to Header */}
 
             <S.body
             $isExpense={hideHeader}
@@ -96,6 +117,7 @@ const EXPENSE_BG = colors.background.Dark;
                 <Outlet context={{ setText, setIsBlur }} />
             </S.body>
         </S.container>
+            </AuthStatusContext.Provider>
         </ToastProvider>
     );
 };

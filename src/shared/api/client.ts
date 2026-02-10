@@ -23,10 +23,7 @@ const resolveToken = () => {
 apiClient.interceptors.request.use((config) => {
   const token = resolveToken()
   if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    }
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
   return config
 })
