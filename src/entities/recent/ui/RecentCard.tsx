@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import * as S from "./RecentCard.Style";
 import type { RecentCardItem } from "@/features/recent/model/useRecentList";
 
@@ -8,9 +7,6 @@ interface Props {
 }
 
 const RecentCard = ({ item, onOpen }: Props) => {
-  // useEffect(() => {
-  //   console.log("실제 서버 이미지 경로:", );
-  // }, [item.image]);
 
   return (
     <S.container>
@@ -28,8 +24,7 @@ const RecentCard = ({ item, onOpen }: Props) => {
           <S.openButtonContainer>
             <S.openButton onClick={onOpen}>열기</S.openButton>
           </S.openButtonContainer>
-          {/* 서버에서 온 경로를 그대로 src에 주입 */}
-          <S.img src={item.image} alt={item.title} />
+          <S.img src={`/src/assets${item.image}`} alt={item.title} />
         </S.bottom>
       </S.item>
     </S.container>

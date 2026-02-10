@@ -275,7 +275,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     const percent = Math.min(100, Math.max(0, explodePercentRef.current))
     try {
       await saveStudySession(sid, {
-        view: view === 'single' ? 'SINGLE_VIEW' : 'ASSEMBLY_VIEW',
+        view: view === 'single' ? 'PART_VIEW' : 'ASSEMBLY_VIEW',
         position,
         quaternion,
         target,
@@ -320,7 +320,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         const zoom = Number.isFinite(cam.zoom) ? cam.zoom : 1.5
         const percent = Math.min(100, Math.max(0, explodePercentRef.current))
         saveStudySession(sid, {
-          view: view === 'single' ? 'SINGLE_VIEW' : 'ASSEMBLY_VIEW',
+          view: view === 'single' ? 'PART_VIEW' : 'ASSEMBLY_VIEW',
           position,
           quaternion,
           target,
