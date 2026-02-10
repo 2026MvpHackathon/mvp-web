@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import DuringQuizAccuracyRate from '@/widgets/quiz/ui/DuringQuizAccuracyRate/DuringQuizAccuracyRate';
 import DuringQuizOrderItem from '@/widgets/quiz/ui/DuringQuizOrderItem/DuringQuizOrderItem';
@@ -28,6 +28,9 @@ const DuringQuizPage = () => {
     const [quizItems, setQuizItems] = useState<LocalQuizItem[]>([]); 
     const [currentQuizIndex, setCurrentQuizIndex] = useState<number>(0);
     const [showCommentary, setShowCommentary] = useState<boolean>(false);
+    
+    // useRef to ensure handleCreateQuiz is called only once
+    const hasFetchedQuizRef = useRef(false);
     
     // 정답률 계산을 위한 상태
     // const [totalCorrectAnswers, setTotalCorrectAnswers] = useState<number>(0);
@@ -67,7 +70,10 @@ const DuringQuizPage = () => {
     };
 
     useEffect(() => {
-        handleCreateQuiz();
+        if (!hasFetchedQuizRef.current) {
+            handleCreateQuiz();
+            hasFetchedQuizRef.current = true;
+        }
     }, []);
 
     useEffect(() => {
