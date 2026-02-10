@@ -18,6 +18,7 @@ import {
   getMaterialParts,
   getStudyNotes,
   getStudyHomeAll,
+  getStudySession,
   getStudySessionParts,
   registerQuiz,
   updateStudyNote,
@@ -64,6 +65,10 @@ type ViewerTransforms = Record<
   }
 >
 
+const DEFAULT_AI_MESSAGES: AiMessage[] = [
+  { id: 'ai-1', role: 'assistant', text: '무엇이 궁금한가요? 편하게 질문해 주세요.' },
+]
+
 const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const navigate = useNavigate()
   const viewerRef = useRef<AssemblyViewerHandle | null>(null)
@@ -109,13 +114,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
   const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
   const [aiPanelOpen, setAiPanelOpen] = useState(true)
-  const [aiMessages, setAiMessages] = useState<AiMessage[]>([
-    {
-      id: 'ai-1',
-      role: 'assistant',
-      text: '무엇이 궁금한가요? 편하게 질문해 주세요.',
-    },
-  ])
+  const [aiMessages, setAiMessages] = useState<AiMessage[]>(DEFAULT_AI_MESSAGES)
   const [quizSubmittingId, setQuizSubmittingId] = useState<string | null>(null)
   const [quizAddedIds, setQuizAddedIds] = useState<Set<string>>(new Set())
   const [aiPromptInput, setAiPromptInput] = useState('')
@@ -821,6 +820,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               const match = homeResponse.data.find((item) => item.materialId === materialId)
               if (match) {
                 setStudySessionId(match.sessionId)
+                try {
+                  const sessionRes = await getStudySession(match.sessionId)
+                  if (sessionRes?.data) setStudySession(sessionRes.data)
+                } catch {
+                  // 세션 상세만 실패한 경우 sessionId만 있어도 채팅/파츠 로드는 됨
+                }
               } else {
                 console.warn('세션이 이미 존재하지만 sessionId를 찾지 못했습니다.', responseData)
               }
@@ -866,6 +871,13 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }, [activeMaterialId])
 
+  // 세션이 없으면(로그아웃/계정 전환 등) AI 채팅도 초기화 → 계정마다 채팅 내역 분리
+  useEffect(() => {
+    if (!studySessionId) {
+      setAiMessages(DEFAULT_AI_MESSAGES)
+    }
+  }, [studySessionId])
+
   useEffect(() => {
     let cancelled = false
     const fetchSessionData = async () => {
@@ -896,6 +908,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
             text: message.messageContent,
           }))
           setAiMessages(nextMessages)
+        } else {
+          setAiMessages(DEFAULT_AI_MESSAGES)
         }
       } catch (error) {
         console.error('세션 데이터 조회 실패', error)

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getCookie } from '@/features/Auth/cookies'
 
 const baseURL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_URL
 
@@ -6,18 +7,14 @@ export const apiClient = axios.create({
   baseURL: baseURL || undefined,
 })
 
+/** 로그인한 계정의 토큰 사용(쿠키). Study/채팅 등이 계정마다 구분되도록 함 */
 const resolveToken = () => {
   if (typeof window === 'undefined') {
     return import.meta.env.VITE_DEV_ACCESS_TOKEN || ''
   }
-  const stored = window.localStorage.getItem('accessToken')
-  if (stored) return stored
-  const envToken = import.meta.env.VITE_DEV_ACCESS_TOKEN
-  if (envToken) {
-    window.localStorage.setItem('accessToken', envToken)
-    return envToken
-  }
-  return ''
+  const cookieToken = getCookie('accessToken')
+  if (cookieToken) return cookieToken
+  return import.meta.env.VITE_DEV_ACCESS_TOKEN || ''
 }
 
 apiClient.interceptors.request.use((config) => {
