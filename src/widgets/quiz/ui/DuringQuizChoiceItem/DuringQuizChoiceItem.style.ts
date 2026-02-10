@@ -34,7 +34,7 @@ export const container = styled.div<State>`
     
 `
 
-export const text = styled.text<State>`
+export const text = styled.span<State>`
     color:
     ${props => 
         (props.$state === "disabled"? colors.secondary.alternative:

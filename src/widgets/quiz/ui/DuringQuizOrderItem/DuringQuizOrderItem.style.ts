@@ -6,7 +6,7 @@ export const container = styled.div`
     gap: 1.25rem;
     display: inline-flex;
 `
-export const text = styled.text`
+export const text = styled.span`
     color: ${colors.text.normal}
     ${typography("body",'lg','semibold')}
 `
