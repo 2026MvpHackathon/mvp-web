@@ -424,3 +424,11 @@ export const projectConfigs: Record<string, ProjectConfig> = {
     materialId: 6
   }
 };
+
+/** materialId → projectId (URL 쿼리로 올바른 프로젝트 로드용) */
+export const materialIdToProjectId: Record<number, string> = {}
+Object.entries(projectConfigs).forEach(([key, config]) => {
+  if (config.materialId != null) {
+    (materialIdToProjectId as Record<number, string>)[config.materialId] = key
+  }
+})
