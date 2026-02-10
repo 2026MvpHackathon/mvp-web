@@ -190,6 +190,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       'V4 엔진은 실린더가 V자형으로 4개 배치된 내연기관입니다. 크랭크축, 피스톤, 커넥팅 로드, 피스톤 링·핀 등으로 구성되어 있습니다.',
   }
   const projectDescription =
+    studySession?.detail?.trim() ||
     materialDescriptionFromServer?.trim() ||
     projectDescriptions[safeProjectId] ||
     '프로젝트 설명이 준비 중입니다.'
@@ -1002,23 +1003,47 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                 try {
                   console.log('[세션 조회] sessionId로 GET 요청:', match.sessionId)
                   const sessionRes = await getStudySession(match.sessionId)
-                  console.log('[세션 조회] API 응답 전체:', sessionRes)
-                  // API: { status, message, data: { position, quaternion, target, zoom, ... } }
+                  
                   const session = (sessionRes && typeof sessionRes === 'object' && 'data' in sessionRes)
                     ? (sessionRes as { data: StudySession }).data
                     : (sessionRes as StudySession)
-                  console.log('[세션 조회] 파싱된 session (카메라 복원용):', session ? { position: session.position, quaternion: session.quaternion, target: session.target, zoom: session.zoom, sessionId: session.sessionId } : null)
+          
                   if (session && typeof session === 'object' && 'sessionId' in session) {
                     setStudySession(session as StudySession)
-                    console.log('[세션 조회] setStudySession 완료, 카메라 복원 예정')
+                    
+                    // --- [수치 복구 코드 시작] ---
+                    // 1. 서버에서 가져온 percent 값 확인 (기본값 0)
+                    const savedPercent = typeof session.percent === 'number' ? session.percent : 0
+                    
+                    // 2. React 상태 및 Ref 동기화
+                    setExplodePercent(savedPercent)
+                    explodePercentRef.current = savedPercent
+                    
+                    // 3. 3D 뷰어 실제 분해 수치 적용
+                    if (viewerRef.current) {
+                      const scale = percentToScale(savedPercent)
+                      viewerRef.current.setExplodeScale?.(scale)
+                      
+                      // 1% 이하일 때만 조립 모드로 설정
+                      if (savedPercent <= 1) {
+                        setIsAssemble(true)
+                        viewerRef.current.setTarget?.(0)
+                      } else {
+                        setIsAssemble(false)
+                        viewerRef.current.setTarget?.(1)
+                      }
+                    }
+                    console.log('[세션 조회] 분해 수치 복원 완료:', savedPercent)
+                    // --- [수치 복구 코드 끝] ---
+          
                   } else {
-                    console.warn('[세션 조회] session이 없거나 sessionId 없음, setStudySession 스킵')
+                    console.warn('[세션 조회] session이 없거나 sessionId 없음')
                   }
                 } catch (err) {
                   console.warn('GET /api/study/session/{id} 조회 실패:', err)
                 }
               } else {
-                console.warn('세션이 이미 존재하지만 sessionId를 찾지 못했습니다.', responseData)
+                console.warn('세션이 이미 존재하지만 sessionId를 찾지 못했습니다.')
               }
             } catch (homeError) {
               console.warn('세션이 이미 존재하지만 sessionId를 조회하지 못했습니다.', homeError)
