@@ -38,6 +38,7 @@ const DuringQuizPage = () => {
 
   const [displayAccuracyRate, setDisplayAccuracyRate] = useState("0%");
   const [displayText, setDisplayText] = useState("0 문제 중 0 문제 맞췄어요!");
+  const [quizMetadataText, setQuizMetadataText] = useState("");
 
   const hasFetchedQuizRef = useRef(false);
   const currentQuiz = quizItems[currentQuizIndex];
@@ -77,6 +78,18 @@ const DuringQuizPage = () => {
 
       const res = await createQuiz(payload);
       const quizList: QuizItem[] = res?.quizzes ?? res?.data?.quizzes ?? [];
+      const metadata = res?.metadata ?? res?.data?.metadata;
+    
+      // 범위 설정
+      if (metadata) {
+        const metadataString = `${metadata.materialName} / ${
+            metadata.isFavorite ? "즐겨찾기 포함" : "즐겨찾기 미포함"
+          } / ${
+            metadata.isIncorrect ? "오답 포함" : "오답 미포함"
+          } / ${metadata.totalQuestions} 문제`;
+          
+          setQuizMetadataText(metadataString);
+        }
 
       setQuizItems(
         quizList.map((q) => ({
@@ -242,7 +255,7 @@ const DuringQuizPage = () => {
       <S.main_container>
         <DuringQuizHeader
           type="AI"
-          rangeText="범위"
+          rangeText={quizMetadataText}
           title={`0${currentQuizIndex + 1}. 다음 문제의 정답을 고르시오.`}
           currentQuestionText={`${currentQuizIndex + 1}/${quizItems.length}`}
           progressPercent={progressPercent}
