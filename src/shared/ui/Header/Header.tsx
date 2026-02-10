@@ -3,7 +3,7 @@ import Logo from '/src/assets/Logo/Logo.png'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getCookie, deleteCookie } from '@/features/Auth/cookies';
 import axiosInstance from '@/features/Auth/axiosInstance';
-import { useEffect, useState } from 'react';
+// import { useEffect, useState } from 'react'; // Removed
 
 const SERVER_URL = import.meta.env.VITE_API_URL;
 
@@ -17,6 +17,12 @@ interface LinkResponse {
     path: string;
     menu: string;
     active?: boolean;
+}
+
+// Added HeaderProps interface
+interface HeaderProps {
+    isLoggedIn: boolean;
+    setIsLoggedIn: (loggedIn: boolean) => void;
 }
 
 const Image = ({path, size, alt}: ImageResponse) => {
@@ -33,19 +39,19 @@ const Link = ({path, menu, active}: LinkResponse) => {
     );
 }
 
-const Header = () => {
+const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure props
     const location = useLocation();
     const navigate = useNavigate();
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    // const [isLoggedIn, setIsLoggedIn] = useState(false); // Removed internal state
 
-    useEffect(() => {
-        const checkLoginStatus = () => {
-            const accessToken = getCookie("accessToken");
-            setIsLoggedIn(!!accessToken);
-        };
-        checkLoginStatus();
+    // useEffect(() => { // Removed internal useEffect
+    //     const checkLoginStatus = () => {
+    //         const accessToken = getCookie("accessToken");
+    //         setIsLoggedIn(!!accessToken);
+    //     };
+    //     checkLoginStatus();
 
-    }, []);
+    // }, []);
 
     console.log("Header Rendered in AuthPage context"); // 디버깅용 로그 추가
 
@@ -53,23 +59,21 @@ const Header = () => {
         const refreshToken = getCookie("refreshToken");
         console.log("Logout 시도 - RefreshToken:", refreshToken);
 
-        // axiosInstance를 사용하여 Authorization 헤더가 자동으로 포함되도록 함
         if (refreshToken) {
             try {
                 const response = await axiosInstance.post(`${SERVER_URL}/api/auth/logout`, { refreshToken });
-                console.log("로그아웃 API 응답 (성공):", response); // 성공 응답 전체 로그
-                // 200 OK 응답이므로, 이 지점에 도달하면 로그아웃 성공으로 간주
+                console.log("로그아웃 API 응답 (성공):", response);
             } catch (error: any) {
-                console.error("로그아웃 API 호출 중 오류 발생:", error); // 오류 객체 전체 로그
+                console.error("로그아웃 API 호출 중 오류 발생:", error);
                 alert("로그아웃 처리 중 오류가 발생했습니다. 세션을 확인해주세요.");
             }
         }
-
+        
         deleteCookie("accessToken"); 
         deleteCookie("refreshToken");
         deleteCookie("email"); 
         deleteCookie("userId");
-        setIsLoggedIn(false);
+        setIsLoggedIn(false); // Use prop's setIsLoggedIn
         navigate("/auth/select");
     };
 

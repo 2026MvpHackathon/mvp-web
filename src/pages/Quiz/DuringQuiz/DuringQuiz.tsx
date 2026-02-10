@@ -30,7 +30,7 @@ const DuringQuizPage = () => {
     const [showCommentary, setShowCommentary] = useState<boolean>(false);
     
     // 정답률 계산을 위한 상태
-    const [totalCorrectAnswers, setTotalCorrectAnswers] = useState<number>(0);
+    // const [totalCorrectAnswers, setTotalCorrectAnswers] = useState<number>(0);
     const [displayAccuracyRate, setDisplayAccuracyRate] = useState<string>("0%");
     const [displayText, setDisplayText] = useState<string>("0 문제 중 0 문제 맞췄어요!");
 
@@ -84,7 +84,7 @@ const DuringQuizPage = () => {
     // quizItems가 변경될 때마다 정답률 재계산
     useEffect(() => {
         if (quizItems.length === 0) {
-        setTotalCorrectAnswers(0);
+        // setTotalCorrectAnswers(0);
         setDisplayAccuracyRate("0%");
         setDisplayText("0 문제 중 0 문제 맞췄어요!");
         return;
@@ -107,7 +107,7 @@ const DuringQuizPage = () => {
 
         const currentAccuracyRate = totalQuestions > 0 ? (correctlyAnsweredCount / totalQuestions * 100).toFixed(1) : "0";
         
-        setTotalCorrectAnswers(correctlyAnsweredCount);
+        // setTotalCorrectAnswers(correctlyAnsweredCount);
         setDisplayAccuracyRate(`${currentAccuracyRate}%`);
         setDisplayText(`${totalQuestions} 문제 중 ${correctlyAnsweredCount} 문제 맞췄어요!`);
 
