@@ -141,6 +141,10 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const [studySession, setStudySession] = useState<StudySession | null>(null)
   const [studySessionId, setStudySessionId] = useState<number | null>(null)
   const [materialPartsByBase, setMaterialPartsByBase] = useState<Record<string, MaterialPart>>({})
+  const [partsFetchError, setPartsFetchError] = useState<string | null>(null)
+  const [materialDescriptionFromServer, setMaterialDescriptionFromServer] = useState<string | null>(
+    null,
+  )
   const [sessionPartsByBase, setSessionPartsByBase] = useState<
     Record<string, StudySessionPart>
   >({})
@@ -174,10 +178,54 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const projectDescriptions: Record<string, string> = {
     drone:
       '드론(Drone)은 조종사가 탑승하지 않고 무선전파 유도를 통해 원격 제어하거나 자율 비행하는 무인 항공기(UAV) 또는 무인 항공 시스템(UAS)을 의미합니다. 초기엔 군사용으로 개발되었으나 현재는 촬영, 방제, 물류 배송, 취미용 등 다양한 분야에 활용되는 4차 산업 핵심 기기입니다.',
+    suspension:
+      '서스펜션(Suspension)은 차량이 노면의 요철을 지날 때 발생하는 충격을 흡수하고, 타이어가 노면을 안정적으로 잡을 수 있도록 하는 장치입니다. 베이스, 로드, 스프링, 너트 등으로 구성되어 있습니다.',
+    robotArm:
+      '로봇 팔(Robot Arm)은 산업 현장에서 반복 작업, 용접, 조립, 픽앤플레이스 등에 사용되는 다관절 메커니즘입니다. 베이스, 링크, 관절, 그리퍼 등으로 구성됩니다.',
+    robotGripper:
+      '로봇 그리퍼(Robot Gripper)는 로봇 팔 끝에 장착되어 물체를 잡고 놓는 역할을 하는 장치입니다. 기어, 링크, 그리퍼 손가락 등으로 구성됩니다.',
+    leafSpring:
+      '판스프링(Leaf Spring)은 여러 겹의 강철 판을 겹쳐 만든 탄성 부품으로, 주로 상용차·트럭의 현가 장치에 사용됩니다. 클램프, 리프 레이어, 서포트 등으로 구성됩니다.',
+    v4Engine:
+      'V4 엔진은 실린더가 V자형으로 4개 배치된 내연기관입니다. 크랭크축, 피스톤, 커넥팅 로드, 피스톤 링·핀 등으로 구성되어 있습니다.',
   }
   const projectDescription =
-    projectDescriptions[safeProjectId] ?? '프로젝트 설명이 준비 중입니다.'
-  const partDescription = '드론의 주요 부품으로 기능 설명이 제공됩니다.'
+    materialDescriptionFromServer?.trim() ||
+    projectDescriptions[safeProjectId] ||
+    '프로젝트 설명이 준비 중입니다.'
+  const partDescriptions: Record<string, string> = {
+    drone: '드론의 주요 부품으로 기능 설명이 제공됩니다.',
+    robotArm: '로봇 팔의 주요 부품으로 기능 설명이 제공됩니다.',
+    robotGripper: '로봇 그리퍼의 주요 부품으로 기능 설명이 제공됩니다.',
+    suspension: '서스펜션의 주요 부품으로 기능 설명이 제공됩니다.',
+    leafSpring: '판스프링의 주요 부품으로 기능 설명이 제공됩니다.',
+    v4Engine: 'V4 엔진의 주요 부품으로 기능 설명이 제공됩니다.',
+  }
+  const partDescription = partDescriptions[safeProjectId] ?? '해당 프로젝트의 주요 부품으로 기능 설명이 제공됩니다.'
+
+  /** API가 description/detail 외 다른 필드명·중첩 구조로 넘길 수 있음 (스펙: detail이 상세 설명) */
+  const getPartDescriptionText = (part: MaterialPart | undefined): string => {
+    if (!part || typeof part !== 'object') return ''
+    const p = part as Record<string, unknown>
+    const candidates = [
+      p.detail,
+      p.description,
+      p.partDescription,
+      p.part_description,
+      p.content,
+      p.explanation,
+      p.desc,
+      p.summary,
+      p.text,
+      p.info,
+      (p.partInfo as Record<string, unknown> | undefined)?.description,
+      (p.partInfo as Record<string, unknown> | undefined)?.detail,
+    ]
+    for (const v of candidates) {
+      if (typeof v === 'string' && v.trim()) return v.trim()
+    }
+    return ''
+  }
 
   const normalizePartName = (name: string) => {
     if (safeProjectId === 'robotArm') {
@@ -194,6 +242,25 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const activeMaterialId = studySession?.materialId ?? materialId
 
   const resolveBaseName = (name: string) => normalizePartName(name)
+
+  /** API 부품명(예: "Robot Base", "Suspension Base")을 뷰어에서 쓰는 키(예: "base", "BASE")로 변환 */
+  const apiNameToViewerKey = (apiName: string, projectId: string): string => {
+    const lower = apiName.toLowerCase().trim()
+    const noSpace = apiName.replace(/\s+/g, '')
+    if (projectId === 'robotArm') {
+      if (lower === 'robot base' || lower === 'base') return 'base'
+      const partNum = apiName.match(/Part\s*(\d+)/i)
+      if (partNum) return `Part${partNum[1]}`
+      if (noSpace.toLowerCase().startsWith('part8')) return 'Part8'
+    }
+    if (projectId === 'suspension') {
+      if (lower.includes('base')) return 'BASE'
+      if (lower.includes('nut')) return 'NUT'
+      if (lower.includes('rod')) return 'ROD'
+      if (lower.includes('spring')) return 'SPRING'
+    }
+    return noSpace || apiName
+  }
 
   const resolveSessionPartId = (parentName?: string | null) => {
     if (!parentName) return null
@@ -493,7 +560,13 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const partOverrides = partOverridesByProject[safeProjectId] ?? projectConfig?.defaultOverrides
 
   const handleExpenseToggle = () => {
-    navigate(expanded ? '/study' : '/study/expense')
+    const materialId = projectConfig?.materialId
+    const query = typeof materialId === 'number' ? `?materialId=${materialId}` : ''
+    if (expanded) {
+      navigate(`/study${query}`)
+    } else {
+      navigate(`/study/expense${query}`)
+    }
   }
 
   const handleSelectPart = (index: number) => {
@@ -515,6 +588,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     const scale = percentToScale(nextPercent)
     setExplodePercent(nextPercent)
     viewerRef.current?.setExplodeScale?.(scale)
+    const amount = nextPercent <= 0 ? 0 : 1
+    viewerRef.current?.setExplodeCurrent?.(amount)
     if (nextPercent <= 1) {
       setIsAssemble(true)
       viewerRef.current?.setTarget?.(0)
@@ -962,30 +1037,85 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }, [materialId])
 
+  // 학습 기계(프로젝트) 설명은 서버 study/home 목록에서 받아와 표시
+  useEffect(() => {
+    let cancelled = false
+    const fetchMaterialDescription = async () => {
+      if (!materialId) {
+        setMaterialDescriptionFromServer(null)
+        return
+      }
+      try {
+        const res = await getStudyHomeAll()
+        if (cancelled) return
+        const item = res.data?.find((x) => x.materialId === materialId)
+        setMaterialDescriptionFromServer(item?.description?.trim() ?? null)
+      } catch {
+        if (!cancelled) setMaterialDescriptionFromServer(null)
+      }
+    }
+    fetchMaterialDescription()
+    return () => {
+      cancelled = true
+    }
+  }, [materialId])
+
+  // 부품 설명/이미지는 현재 보고 있는 프로젝트 기준으로 조회 (세션 materialId 사용 시 드론만 조회되는 문제 방지)
   useEffect(() => {
     let cancelled = false
     const fetchMaterialParts = async () => {
-      if (!activeMaterialId) {
+      if (!materialId) {
         setMaterialPartsByBase({})
         return
       }
       try {
-        const response = await getMaterialParts(activeMaterialId)
+        setPartsFetchError(null)
+        const response = await getMaterialParts(materialId)
         if (cancelled) return
+        const raw = response?.data
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray((raw as { list?: MaterialPart[] })?.list)
+            ? (raw as { list: MaterialPart[] }).list
+            : Array.isArray((raw as { parts?: MaterialPart[] })?.parts)
+              ? (raw as { parts: MaterialPart[] }).parts
+              : []
         const next: Record<string, MaterialPart> = {}
-        response.data.forEach((part) => {
-          next[resolveBaseName(part.name)] = part
+        list.forEach((part) => {
+          const key = resolveBaseName(part.name)
+          const keyNoSpace = key.replace(/\s+/g, '')
+          const viewerKey = apiNameToViewerKey(part.name, safeProjectId)
+          next[key] = part
+          next[key.toLowerCase()] = part
+          next[keyNoSpace] = part
+          next[keyNoSpace.toLowerCase()] = part
+          next[viewerKey] = part
+          next[viewerKey.toLowerCase()] = part
+          next[part.name] = part
+          next[part.name.toLowerCase()] = part
+          next[part.name.replace(/\s+/g, '')] = part
+          next[part.name.replace(/\s+/g, '').toLowerCase()] = part
         })
+        if (import.meta.env.DEV && list.length > 0) {
+          console.log('[부품 API 응답 샘플] 첫 번째 부품 구조:', list[0])
+        }
         setMaterialPartsByBase(next)
       } catch (error) {
         console.error('부품 목록 조회 실패', error)
+        if (!cancelled) {
+          const message =
+            axios.isAxiosError(error) && error.response?.status === 401
+              ? '로그인이 필요합니다. 로그인 후 다시 시도해 주세요.'
+              : '서버에 연결되지 않아 부품 설명을 불러올 수 없습니다. .env의 VITE_API_URL과 서버 상태를 확인해 주세요.'
+          setPartsFetchError(message)
+        }
       }
     }
     fetchMaterialParts()
     return () => {
       cancelled = true
     }
-  }, [activeMaterialId])
+  }, [materialId, safeProjectId])
 
   useEffect(() => {
     let cancelled = false
@@ -1234,13 +1364,17 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
             const selectedPart =
               uniqueParts.find((item) => item.base === selectedBase) || uniqueParts[0]
             const selectedLabel = selectedPart?.base || 'Main Frame'
-            const selectedMeta = materialPartsByBase[selectedLabel]
+            const selectedMeta =
+              materialPartsByBase[selectedLabel] ||
+              materialPartsByBase[selectedLabel.toLowerCase()] ||
+              materialPartsByBase[selectedLabel.replace(/\s+/g, '')] ||
+              materialPartsByBase[selectedLabel.replace(/\s+/g, '').toLowerCase()]
             const selectedThumb =
               selectedMeta?.imageUrl ||
               partThumbnails[selectedLabel] ||
               getPartIconSvg(selectedLabel)
             const selectedDesc =
-              selectedMeta?.detail || selectedMeta?.description || partDescription
+              getPartDescriptionText(selectedMeta) || partDescription
             return (
               <S.PartsDetail>
                 <S.PartsDetailLabel>Detail</S.PartsDetailLabel>
@@ -1255,6 +1389,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         </S.PartsDetailSection>
       ) : (
         <S.CardHeader>Parts</S.CardHeader>
+      )}
+      {partsFetchError && (
+        <S.PartsFetchError role="alert">{partsFetchError}</S.PartsFetchError>
       )}
       <S.PartsList $expanded={expanded}>
         {uniqueParts.map((part) => (
@@ -1282,6 +1419,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               style={{
                 backgroundImage: `url(${
                   materialPartsByBase[part.base]?.imageUrl ||
+                  materialPartsByBase[part.base.toLowerCase()]?.imageUrl ||
+                  materialPartsByBase[part.base.replace(/\s+/g, '')]?.imageUrl ||
+                  materialPartsByBase[part.base.replace(/\s+/g, '').toLowerCase()]?.imageUrl ||
                   partThumbnails[part.base] ||
                   getPartIconSvg(part.base)
                 })`,
@@ -1291,7 +1431,11 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               <S.PartTitle>{part.base}</S.PartTitle>
               {!expanded && (
                 <S.PartDesc>
-                  {materialPartsByBase[part.base]?.description || partDescription}
+                  {getPartDescriptionText(materialPartsByBase[part.base]) ||
+                    getPartDescriptionText(materialPartsByBase[part.base.toLowerCase()]) ||
+                    getPartDescriptionText(materialPartsByBase[part.base.replace(/\s+/g, '')]) ||
+                    getPartDescriptionText(materialPartsByBase[part.base.replace(/\s+/g, '').toLowerCase()]) ||
+                    partDescription}
                 </S.PartDesc>
               )}
             </S.PartMeta>

@@ -68,6 +68,17 @@ export const PartsCard = styled(Card)<{ $expanded?: boolean }>`
   }
 `
 
+export const PartsFetchError = styled.div`
+  padding: 10px 14px;
+  margin: 0 14px 8px;
+  border-radius: 8px;
+  background: rgba(220, 80, 80, 0.15);
+  border: 1px solid rgba(220, 80, 80, 0.4);
+  color: #f0a0a0;
+  font-size: 12px;
+  line-height: 1.4;
+`
+
 export const PartsList = styled.div<{ $expanded?: boolean }>`
   padding: 0 14px 16px;
   display: grid;

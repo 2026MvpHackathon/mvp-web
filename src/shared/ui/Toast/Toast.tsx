@@ -12,6 +12,7 @@ interface ToastProps {
 }
 
 // 토스트 예시
+// const { showToast } = useToast();
 {/* <button onClick={() => showToast('Object를 선택해 주세요', 'info')} style={{color:"#FFF"}}>
 info 토스트
 </button> */}

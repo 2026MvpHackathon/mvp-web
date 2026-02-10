@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { getCookie } from '@/features/Auth/cookies'
+import { navigate } from '@/shared/lib/navigate';
 
 const baseURL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_URL
 
@@ -24,4 +25,15 @@ apiClient.interceptors.request.use((config) => {
   }
   return config
 })
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      console.log('토큰이 만료되었습니다.');
+      navigate('/auth/select');
+    }
+    return Promise.reject(error);
+  }
+);
 
