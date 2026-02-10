@@ -1,0 +1,1347 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Drone 조립/분해</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --panel: rgba(20, 22, 28, 0.85);
+        --text: #e6e8ee;
+        --accent: #6ea8fe;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Noto Sans KR", system-ui, -apple-system, sans-serif;
+        height: 100vh;
+        overflow: hidden;
+      }
+      #app {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      #canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #hud {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        padding: 14px 16px;
+        background: var(--panel);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(8px);
+        display: grid;
+        gap: 10px;
+        min-width: 220px;
+      }
+      #hud h1 {
+        font-size: 16px;
+        margin: 0;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        flex: 1;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: #222835;
+        color: var(--text);
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+      button:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      button.active {
+        background: var(--accent);
+        color: #0b0e14;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+      }
+      .value-input {
+        width: 86px;
+        padding: 4px 6px;
+        border-radius: 6px;
+        border: 1px solid #2a3040;
+        background: #1a202c;
+        color: var(--text);
+        font-size: 12px;
+        text-align: right;
+      }
+      input[type="range"] {
+        width: 100%;
+      }
+      select {
+        width: 100%;
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 1px solid #2a3040;
+        background: #1a202c;
+        color: var(--text);
+        font-size: 12px;
+      }
+      #status {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="canvas"></canvas>
+      <div id="hud">
+        <h1>Drone 조립 / 분해</h1>
+        <div class="row">
+          <button id="assembleBtn" class="active">조립</button>
+          <button id="disassembleBtn">분해</button>
+        </div>
+        <label>
+          <span>프로젝트</span>
+        </label>
+        <select id="projectSelect"></select>
+        <div class="row">
+          <button id="editToggle">편집 모드: ON</button>
+        </div>
+        <div class="row">
+          <button id="modeTranslate">이동</button>
+          <button id="modeRotate">회전</button>
+          <button id="modeScale">스케일</button>
+        </div>
+        <label>
+          <span>분해 거리</span>
+          <span id="explodeValue">1.0x</span>
+        </label>
+        <input id="explodeRange" type="range" min="0.4" max="2.4" step="0.1" value="1.0" />
+        <label>
+          <span>선택 파트</span>
+        </label>
+        <select id="partSelect"></select>
+        <label>
+          <span>위치 X</span>
+          <input id="posXInput" class="value-input" type="number" min="-400" max="400" step="0.01" value="0" />
+        </label>
+        <input id="posXRange" type="range" min="-400" max="400" step="0.01" value="0" />
+        <label>
+          <span>위치 Y</span>
+          <input id="posYInput" class="value-input" type="number" min="-400" max="400" step="0.01" value="0" />
+        </label>
+        <input id="posYRange" type="range" min="-400" max="400" step="0.01" value="0" />
+        <label>
+          <span>위치 Z</span>
+          <input id="posZInput" class="value-input" type="number" min="-400" max="400" step="0.01" value="0" />
+        </label>
+        <input id="posZRange" type="range" min="-400" max="400" step="0.01" value="0" />
+        <label>
+          <span>회전 X</span>
+          <input id="rotXInput" class="value-input" type="number" min="-180" max="180" step="1" value="0" />
+        </label>
+        <input id="rotXRange" type="range" min="-180" max="180" step="1" value="0" />
+        <label>
+          <span>회전 Y</span>
+          <input id="rotYInput" class="value-input" type="number" min="-180" max="180" step="1" value="0" />
+        </label>
+        <input id="rotYRange" type="range" min="-180" max="180" step="1" value="0" />
+        <label>
+          <span>회전 Z</span>
+          <input id="rotZInput" class="value-input" type="number" min="-180" max="180" step="1" value="0" />
+        </label>
+        <input id="rotZRange" type="range" min="-180" max="180" step="1" value="0" />
+        <label>
+          <span>스케일</span>
+          <input id="scaleInput" class="value-input" type="number" min="0.01" max="3.0" step="0.01" value="1.00" />
+        </label>
+        <input id="scaleRange" type="range" min="0.01" max="3.0" step="0.01" value="1.0" />
+        <label>
+          <span>애니메이션 속도</span>
+          <span id="speedValue">1.0x</span>
+        </label>
+        <input id="speedRange" type="range" min="0.4" max="2.0" step="0.1" value="1.0" />
+        <div id="status">로딩 중...</div>
+      </div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { TransformControls } from "three/addons/controls/TransformControls.js";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+      const canvas = document.getElementById("canvas");
+      const statusEl = document.getElementById("status");
+      const assembleBtn = document.getElementById("assembleBtn");
+      const disassembleBtn = document.getElementById("disassembleBtn");
+      const projectSelect = document.getElementById("projectSelect");
+      const editToggle = document.getElementById("editToggle");
+      const modeTranslate = document.getElementById("modeTranslate");
+      const modeRotate = document.getElementById("modeRotate");
+      const modeScale = document.getElementById("modeScale");
+      const explodeRange = document.getElementById("explodeRange");
+      const explodeValue = document.getElementById("explodeValue");
+      const partSelect = document.getElementById("partSelect");
+      const posXRange = document.getElementById("posXRange");
+      const posYRange = document.getElementById("posYRange");
+      const posZRange = document.getElementById("posZRange");
+      const rotXRange = document.getElementById("rotXRange");
+      const rotYRange = document.getElementById("rotYRange");
+      const rotZRange = document.getElementById("rotZRange");
+      const scaleRange = document.getElementById("scaleRange");
+      const posXInput = document.getElementById("posXInput");
+      const posYInput = document.getElementById("posYInput");
+      const posZInput = document.getElementById("posZInput");
+      const rotXInput = document.getElementById("rotXInput");
+      const rotYInput = document.getElementById("rotYInput");
+      const rotZInput = document.getElementById("rotZInput");
+      const scaleInput = document.getElementById("scaleInput");
+      const speedRange = document.getElementById("speedRange");
+      const speedValue = document.getElementById("speedValue");
+      const DEBUG_WIREFRAME = false;
+      const DEBUG_EDGES = false;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xffffff);
+
+      const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
+      camera.position.set(260, 180, 260);
+
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.shadowMap.enabled = true;
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.target.set(0, 60, 0);
+      controls.minDistance = 10;
+      controls.maxDistance = 2000000;
+
+      const transformControls = new TransformControls(camera, renderer.domElement);
+      transformControls.setMode("translate");
+      transformControls.setSpace("local");
+      transformControls.size = 1.6;
+      transformControls.visible = true;
+      transformControls.enabled = true;
+      transformControls.addEventListener("dragging-changed", (event) => {
+        controls.enabled = !event.value;
+      });
+      transformControls.addEventListener("objectChange", () => {
+        const obj = transformControls.object;
+        if (!obj) return;
+        const index = parts.findIndex((part) => part.object === obj);
+        if (index >= 0) {
+          const part = parts[index];
+          part.basePosition = obj.position.clone();
+          part.baseRotation = obj.rotation.clone();
+          part.baseScale = obj.scale.clone();
+        }
+      });
+      transformControls.addEventListener("mouseDown", () => {
+        controls.enabled = false;
+      });
+      transformControls.addEventListener("mouseUp", () => {
+        controls.enabled = true;
+      });
+      scene.add(transformControls);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+      const keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+      keyLight.position.set(200, 300, 120);
+      keyLight.castShadow = true;
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x9bbcff, 0.6);
+      rimLight.position.set(-200, 120, -160);
+      scene.add(rimLight);
+
+      const grid = new THREE.GridHelper(400, 20, 0xd0d4db, 0xe6e8ee);
+      grid.position.y = -1;
+      grid.material.transparent = true;
+      grid.material.opacity = 0.35;
+      scene.add(grid);
+
+      const loader = new GLTFLoader();
+      let group = new THREE.Group();
+      scene.add(group);
+      let selectable = [];
+      let currentBasePath = ".";
+
+      const layout = {
+        armDistance: 180,
+        legDistance: 260,
+        motorHeight: 60,
+        bladeHeight: 100
+      };
+
+      let manualDefaults = {
+        "Main frame": { pos: [0, 0, 0], rot: [0, 0, 0], scale: 1.0 },
+        "Main frame MIR": { pos: [0, 0, 13], rot: [0, 0, 0], scale: 1.0 },
+        "Leg 1": { pos: [47, -58, 1], rot: [90, -114, 0], scale: 0.3 },
+        "Leg 2": { pos: [-46, -58, 1], rot: [90, 116, 0], scale: 0.3 },
+        "Leg 3": { pos: [42, 47, 1], rot: [-90, -140, 180], scale: 0.3 },
+        "Leg 4": { pos: [-43, 48, 1], rot: [90, 38, 0], scale: 0.3 },
+        "Arm 1": { pos: [-50, 57, 12], rot: [90, 56, 180], scale: 0.11 },
+        "Arm 2": { pos: [49, 55, 12], rot: [90, 56, 180], scale: 0.11 },
+        "Arm 3": { pos: [-56, -63, 12], rot: [90, -45, 180], scale: 0.11 },
+        "Arm 4": { pos: [57, -62, 12], rot: [90, -135, 180], scale: 0.11 },
+        "Blade 1": { pos: [-50, 57, 16], rot: [90, 45, 0], scale: 0.5 },
+        "Blade 2": { pos: [49, 55, 16], rot: [90, 135, 0], scale: 0.5 },
+        "Blade 3": { pos: [-56, -63, 16], rot: [90, -45, 0], scale: 0.5 },
+        "Blade 4": { pos: [57, -62, 16], rot: [90, -135, 0], scale: 0.5 },
+        "Gearing 1": { pos: [51, -60, 5], rot: [-90, 45, 180], scale: 0.1 },
+        "Gearing 2": { pos: [-50, -60, 4], rot: [90, 135, 0], scale: 0.1 },
+        "Gearing 3": { pos: [-46, 52, 5], rot: [90, -45, 0], scale: 0.1 },
+        "Gearing 4": { pos: [44, 50, 5], rot: [90, -135, 0], scale: 0.1 },
+        "Beater disc 1": { pos: [0, 61, 7], rot: [-180, -90, 180], scale: 0.12 },
+        "Nut 1": { pos: [-35.66, 38.07, 9.75], rot: [90, 0, 0], scale: 0.03 },
+        "Nut 2": { pos: [35.60, 38.04, 10.00], rot: [90, 0, 0], scale: 0.03 },
+        "Nut 3": { pos: [35.59, -53.21, 10.00], rot: [90, 0, 0], scale: 0.03 },
+        "Nut 4": { pos: [-35.58, -53.15, 10.00], rot: [90, 0, 0], scale: 0.03 },
+        "Screw 1": { pos: [-35.57, 37.99, 1.70], rot: [-90, 0, 0], scale: 0.02 },
+        "Screw 2": { pos: [35.57, 38.11, 1.70], rot: [-90, 0, 0], scale: 0.02 },
+        "Screw 3": { pos: [35.75, -53.26, 1.70], rot: [-90, 0, 0], scale: 0.02 },
+        "Screw 4": { pos: [-35.51, -53.18, 1.70], rot: [-90, 0, 0], scale: 0.02 },
+        "xyz": { pos: [0.46, 8.64, -0.30], rot: [90, 0, 0], scale: 0.15 }
+      };
+
+      const suspensionManualDefaults = {
+        BASE: { pos: [-8.29, -30.23, -10.99], rot: [0, 0, 0], scale: 1.0 },
+        NUT: { pos: [-8.60, 72.32, -11.15], rot: [0, 0, 0], scale: 0.49 },
+        ROD: { pos: [-7.62, 60.35, -11.16], rot: [0, 0, 0], scale: 1.0 },
+        SPRING: { pos: [-8.41, 7.04, -8.98], rot: [0, 0, 0], scale: 1.0 },
+        "Rod Cap": { pos: [-7.59, -75.04, -10.13], rot: [0, 0, 90], scale: 1.86 }
+      };
+
+      const robotArmManualDefaults = {
+        base: { pos: [0, 0, 0], rot: [90, 0, 0], scale: 1.0 },
+        Part2: { pos: [0, -24.89, 48.0], rot: [90, 0, 0], scale: 1.0 },
+        Part3: { pos: [-12.37, -21.85, 107.97], rot: [-130, 0, 90], scale: 1.25 },
+        Part4: { pos: [11.38, -20.96, 170.5], rot: [83, 0, 0], scale: 1.0 },
+        Part5: { pos: [11.66, -103.94, 190.28], rot: [83, 0, 0], scale: 0.54 },
+        Part6: { pos: [11.61, -136.6, 186.24], rot: [19, 0, 0], scale: 0.39 },
+        Part7: { pos: [11.49, -161.67, 177.4], rot: [109, 0, 0], scale: 0.27 },
+        "Part8 1": { pos: [0, -181.4, 170.18], rot: [19, 0, -15], scale: 0.34 },
+        "Part8 2": { pos: [23, -181.4, 170.18], rot: [19, 180, -15], scale: 0.34 }
+      };
+
+      const v4EngineManualDefaults = {
+        Crankshaft: { pos: [0, 0, 0], rot: [0, 0, 0], scale: 1.0 },
+        "Connecting Rod Cap 1": { pos: [-28.25, -10.28, -6.16], rot: [90, 90, -12], scale: 0.18 },
+        "Connecting Rod Cap 2": { pos: [-5.04, 10.13, -6.62], rot: [90, 90, 12], scale: 0.18 },
+        "Connecting Rod Cap 3": { pos: [18.18, 10.88, -5.95], rot: [90, 90, 16], scale: 0.18 },
+        "Connecting Rod Cap 4": { pos: [41.46, -9.93, -6.16], rot: [90, 90, -9], scale: 0.18 },
+        "Connecting Rod 1": { pos: [-28.25, -3.5, 25.35], rot: [90, 90, -12], scale: 0.42 },
+        "Connecting Rod 2": { pos: [-5.04, 3.46, 24.83], rot: [90, 90, 12], scale: 0.42 },
+        "Connecting Rod 3": { pos: [18.18, 2.13, 24.57], rot: [90, 90, 16], scale: 0.42 },
+        "Connecting Rod 4": { pos: [41.46, -4.95, 25.09], rot: [90, 90, -9], scale: 0.42 },
+        "Conrod Bolt 1": { pos: [-28.25, -16.23, 4.9], rot: [90, 90, -12], scale: 0.09 },
+        "Conrod Bolt 2": { pos: [-28.25, 0.06, 1.65], rot: [90, 90, -12], scale: 0.09 },
+        "Conrod Bolt 3": { pos: [-5.04, 0.15, 1.04], rot: [90, 90, 13], scale: 0.09 },
+        "Conrod Bolt 4": { pos: [-5.04, 16.54, 4.5], rot: [90, 90, 12], scale: 0.09 },
+        "Conrod Bolt 5": { pos: [18.18, 16.55, 5.1], rot: [90, 90, 16], scale: 0.09 },
+        "Conrod Bolt 6": { pos: [18.18, 0.42, 0.51], rot: [90, 90, 16], scale: 0.09 },
+        "Conrod Bolt 7": { pos: [41.46, -17.0, 4.07], rot: [90, 90, -9], scale: 0.09 },
+        "Conrod Bolt 8": { pos: [41.46, 0.11, 1.39], rot: [90, 90, -9], scale: 0.09 },
+        "Piston 1": { pos: [-28.25, 0.68, 49.78], rot: [90, 90, 0], scale: 0.18 },
+        "Piston 2": { pos: [-5.04, -0.71, 49.16], rot: [90, 90, 0], scale: 0.18 },
+        "Piston 3": { pos: [18.18, -3.4, 48.6], rot: [90, 90, 0], scale: 0.18 },
+        "Piston 4": { pos: [41.46, -1.83, 49.62], rot: [90, 90, 0], scale: 0.18 },
+        "Piston Pin 1": { pos: [-28.25, 0.62, 45.1], rot: [90, 90, 0], scale: 0.15 },
+        "Piston Pin 2": { pos: [-5.04, -0.65, 44.4], rot: [90, 90, 0], scale: 0.15 },
+        "Piston Pin 3": { pos: [18.18, -3.4, 43.96], rot: [90, 90, 0], scale: 0.15 },
+        "Piston Pin 4": { pos: [41.46, -1.82, 45.04], rot: [90, 90, 0], scale: 0.15 },
+        "Piston Ring 1": { pos: [-28.25, 0.68, 57.3], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 2": { pos: [-28.25, 0.68, 54.65], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 3": { pos: [-28.25, 0.68, 52.03], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 4": { pos: [-5.04, -0.71, 56.68], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 5": { pos: [-5.04, -0.71, 54.05], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 6": { pos: [-5.04, -0.71, 51.4], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 7": { pos: [18.18, -3.4, 56.12], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 8": { pos: [18.18, -3.4, 53.48], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 9": { pos: [18.18, -3.4, 50.87], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 10": { pos: [41.46, -1.83, 57.14], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 11": { pos: [41.46, -1.83, 54.51], rot: [90, 0, 0], scale: 0.16 },
+        "Piston Ring 12": { pos: [41.46, -1.83, 51.86], rot: [90, 0, 0], scale: 0.16 }
+      };
+
+      const v4Spread = {
+        enabled: false,
+        columns: 6,
+        spacingX: 60,
+        spacingZ: 60,
+        startX: -150,
+        startZ: -120
+      };
+
+      function buildDroneParts() {
+        let parts = [
+          { name: "Main frame", file: "Main frame.glb", explode: new THREE.Vector3(0, 0, 0) },
+          { name: "Main frame MIR", file: "Main frame_MIR.glb", explode: new THREE.Vector3(0, 0, 0) },
+          { name: "Nut", file: "Nut.glb", explode: new THREE.Vector3(-80, 40, -80) },
+          { name: "Screw", file: "Screw.glb", explode: new THREE.Vector3(80, 40, -80) },
+          { name: "xyz", file: "xyz.glb", explode: new THREE.Vector3(0, 0, -160) }
+        ];
+
+        try {
+        const armDirs = [
+          new THREE.Vector3(1, 0, 1).normalize(),
+          new THREE.Vector3(-1, 0, 1).normalize(),
+          new THREE.Vector3(1, 0, -1).normalize(),
+          new THREE.Vector3(-1, 0, -1).normalize()
+        ];
+
+        const getOffsets = (dir) => {
+          const armPos = dir.clone().multiplyScalar(layout.armDistance);
+          const legPos = dir.clone().multiplyScalar(layout.legDistance);
+          const motorPos = legPos.clone().add(new THREE.Vector3(0, layout.motorHeight, 0));
+          const bladePos = legPos.clone().add(new THREE.Vector3(0, layout.bladeHeight, 0));
+          return { armPos, legPos, motorPos, bladePos };
+        };
+
+        const armParts = armDirs.flatMap((dir, index) => {
+          const yaw = Math.atan2(dir.z, dir.x);
+          const offsets = getOffsets(dir);
+          const explode = dir.clone().multiplyScalar(180);
+          return [
+            {
+              name: `Arm ${index + 1}`,
+              file: "Arm gear.glb",
+              baseOffset: offsets.armPos,
+              baseRotation: new THREE.Euler(0, yaw, 0),
+              explode,
+              meta: { kind: "arm", dir }
+            },
+            {
+              name: `Leg ${index + 1}`,
+              file: "Leg.glb",
+              baseOffset: offsets.legPos,
+              baseRotation: new THREE.Euler(0, yaw, 0),
+              explode,
+              meta: { kind: "leg", dir }
+            },
+            {
+              name: `Gearing ${index + 1}`,
+              file: "Gearing.glb",
+              baseOffset: offsets.motorPos,
+              baseRotation: new THREE.Euler(0, yaw, 0),
+              explode,
+              meta: { kind: "motor", dir }
+            },
+            {
+              name: `Blade ${index + 1}`,
+              file: "Impellar Blade.glb",
+              baseOffset: offsets.bladePos,
+              baseRotation: new THREE.Euler(Math.PI / 2, yaw, 0),
+              explode,
+              meta: { kind: "blade", dir }
+            }
+          ];
+        });
+
+        const hardwareOffsets = armDirs.map((dir) =>
+          dir.clone().multiplyScalar(layout.armDistance * 0.7).add(new THREE.Vector3(0, -8, 0))
+        );
+        const nuts = hardwareOffsets.map((offset, index) => ({
+          name: `Nut ${index + 1}`,
+          file: "Nut.glb",
+          baseOffset: offset,
+          baseRotation: new THREE.Euler(0, 0, 0),
+          explode: offset.clone().normalize().multiplyScalar(120)
+        }));
+        const screws = hardwareOffsets.map((offset, index) => ({
+          name: `Screw ${index + 1}`,
+          file: "Screw.glb",
+          baseOffset: offset.clone().add(new THREE.Vector3(0, 6, 0)),
+          baseRotation: new THREE.Euler(0, 0, 0),
+          explode: offset.clone().normalize().multiplyScalar(120)
+        }));
+
+          parts = [
+          { name: "Main frame", file: "Main frame.glb", explode: new THREE.Vector3(0, 0, 0) },
+          { name: "Main frame MIR", file: "Main frame_MIR.glb", explode: new THREE.Vector3(0, 0, 0) },
+          ...armParts,
+          { name: "Beater disc 1", file: "Beater disc.glb", explode: new THREE.Vector3(0, 0, 0) },
+          ...nuts,
+          ...screws,
+          { name: "xyz", file: "xyz.glb", explode: new THREE.Vector3(0, 0, -160) }
+          ];
+        } catch (error) {
+          console.error("Parts build error", error);
+          statusEl.textContent = `구성 오류: ${error.message}`;
+        }
+
+        return parts;
+      }
+
+      function createRodCapMesh() {
+        const group = new THREE.Group();
+        const metal = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, metalness: 0.6, roughness: 0.35 });
+        const dark = new THREE.MeshStandardMaterial({ color: 0x6d7077, metalness: 0.3, roughness: 0.65 });
+        const deep = new THREE.MeshStandardMaterial({ color: 0x0b0e14, metalness: 0.0, roughness: 1.0 });
+
+        const addBore = (position, axis, radius, length) => {
+          const bore = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius, radius, length, 24, 1, true),
+            dark
+          );
+          const cap = new THREE.Mesh(new THREE.CircleGeometry(radius, 24), deep);
+          const pos = position.clone();
+          if (axis === "x") {
+            bore.rotation.z = Math.PI / 2;
+            cap.rotation.y = Math.PI / 2;
+            cap.position.set(pos.x - length * 0.45, pos.y, pos.z);
+          } else if (axis === "y") {
+            cap.rotation.x = Math.PI / 2;
+            cap.position.set(pos.x, pos.y - length * 0.45, pos.z);
+          }
+          bore.position.copy(pos);
+          bore.userData.rodCapHole = true;
+          cap.userData.rodCapHole = true;
+          group.add(bore);
+          group.add(cap);
+        };
+
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 18, 32), metal);
+        body.rotation.z = Math.PI / 2;
+        group.add(body);
+
+        const flange = new THREE.Mesh(new THREE.CylinderGeometry(16, 16, 3, 32), metal);
+        flange.position.x = 10;
+        flange.rotation.z = Math.PI / 2;
+        group.add(flange);
+
+        const boss = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 8, 24), metal);
+        boss.position.x = -10;
+        boss.rotation.z = Math.PI / 2;
+        group.add(boss);
+
+        // Front hole (boss)
+        addBore(new THREE.Vector3(-10, 0, 0), "x", 3.2, 10);
+
+        // Flange hole
+        addBore(new THREE.Vector3(10, 0, 0), "x", 3.8, 6);
+
+        // Side bosses with holes (left/right)
+        const sideBossLeft = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 6, 24), metal);
+        sideBossLeft.position.y = 8;
+        sideBossLeft.rotation.x = Math.PI / 2;
+        group.add(sideBossLeft);
+        addBore(new THREE.Vector3(0, 8, 0), "y", 2.2, 8);
+
+        const sideBossRight = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 6, 24), metal);
+        sideBossRight.position.y = -8;
+        sideBossRight.rotation.x = Math.PI / 2;
+        group.add(sideBossRight);
+        addBore(new THREE.Vector3(0, -8, 0), "y", 2.2, 8);
+
+        return group;
+      }
+
+      function getFirstMeshMaterial(object) {
+        let found = null;
+        object.traverse((child) => {
+          if (found) return;
+          if (child.isMesh && child.material) {
+            found = Array.isArray(child.material) ? child.material[0] : child.material;
+          }
+        });
+        return found;
+      }
+
+      function syncRodCapMaterial() {
+        if (currentProjectId !== "suspension") return;
+        const rodPart = parts.find((part) => part.name === "ROD");
+        const capPart = parts.find((part) => part.name === "Rod Cap");
+        if (!rodPart || !capPart || !rodPart.object || !capPart.object) return;
+        const rodMaterial = getFirstMeshMaterial(rodPart.object);
+        if (!rodMaterial) return;
+
+        const baseMaterial = rodMaterial.clone();
+        baseMaterial.side = THREE.DoubleSide;
+        const holeMaterial = rodMaterial.clone();
+        if (holeMaterial.color) {
+          holeMaterial.color.multiplyScalar(0.35);
+        }
+        if ("roughness" in holeMaterial) {
+          holeMaterial.roughness = Math.min(1, holeMaterial.roughness + 0.3);
+        }
+        if ("metalness" in holeMaterial) {
+          holeMaterial.metalness = Math.max(0, holeMaterial.metalness - 0.2);
+        }
+        holeMaterial.side = THREE.DoubleSide;
+
+        capPart.object.traverse((child) => {
+          if (!child.isMesh) return;
+          if (child.userData && child.userData.rodCapHole) {
+            child.material = holeMaterial.clone();
+          } else {
+            child.material = baseMaterial.clone();
+          }
+        });
+      }
+
+      function buildSimpleParts(files) {
+        return files.map((file, index) => {
+          const angle = (index / Math.max(files.length, 1)) * Math.PI * 2;
+          const radius = 80;
+          return {
+            name: file.replace(/\.glb$/i, ""),
+            file,
+            baseOffset: new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius),
+            explode: new THREE.Vector3(0, 0, 0)
+          };
+        });
+      }
+
+      function buildSuspensionParts() {
+        const parts = buildSimpleParts(["BASE.glb", "NUT.glb", "ROD.glb", "SPRING.glb"]);
+        parts.push({
+          name: "Rod Cap",
+          factory: createRodCapMesh,
+          baseOffset: new THREE.Vector3(120, 0, 0),
+          explode: new THREE.Vector3(0, 0, 0)
+        });
+        return parts;
+      }
+
+      function buildRobotArmParts() {
+        const baseParts = buildSimpleParts([
+          "base.glb",
+          "Part2.glb",
+          "Part3.glb",
+          "Part4.glb",
+          "Part5.glb",
+          "Part6.glb",
+          "Part7.glb"
+        ]);
+        const part8a = { name: "Part8 1", file: "Part8.glb", explode: new THREE.Vector3(0, 0, 0) };
+        const part8b = { name: "Part8 2", file: "Part8.glb", explode: new THREE.Vector3(0, 0, 0) };
+        return [...baseParts, part8a, part8b];
+      }
+
+      function buildV4EngineParts() {
+        const baseParts = buildSimpleParts(["Crankshaft.glb"]);
+        const bolts = Array.from({ length: 8 }, (_, index) => ({
+          name: `Conrod Bolt ${index + 1}`,
+          file: "Conrod Bolt.glb",
+          explode: new THREE.Vector3(0, 0, 0)
+        }));
+        const rings = Array.from({ length: 12 }, (_, index) => ({
+          name: `Piston Ring ${index + 1}`,
+          file: "Piston Ring.glb",
+          explode: new THREE.Vector3(0, 0, 0)
+        }));
+        const caps = Array.from({ length: 4 }, (_, index) => ({
+          name: `Connecting Rod Cap ${index + 1}`,
+          file: "Connecting Rod Cap.glb",
+          explode: new THREE.Vector3(0, 0, 0)
+        }));
+        const rods = Array.from({ length: 4 }, (_, index) => ({
+          name: `Connecting Rod ${index + 1}`,
+          file: "Connecting Rod.glb",
+          explode: new THREE.Vector3(0, 0, 0)
+        }));
+        const pins = Array.from({ length: 4 }, (_, index) => ({
+          name: `Piston Pin ${index + 1}`,
+          file: "Piston Pin.glb",
+          explode: new THREE.Vector3(0, 0, 0)
+        }));
+        const pistons = Array.from({ length: 4 }, (_, index) => ({
+          name: `Piston ${index + 1}`,
+          file: "Piston.glb",
+          explode: new THREE.Vector3(0, 0, 0)
+        }));
+        return [...baseParts, ...rings, ...bolts, ...caps, ...rods, ...pins, ...pistons];
+      }
+
+      function applyV4SpreadLayout() {
+        if (!v4Spread.enabled || currentProjectId !== "v4Engine") return;
+        let index = 0;
+        for (const part of parts) {
+          if (manualDefaults[part.name]) continue;
+          const col = index % v4Spread.columns;
+          const row = Math.floor(index / v4Spread.columns);
+          const x = v4Spread.startX + col * v4Spread.spacingX;
+          const z = v4Spread.startZ + row * v4Spread.spacingZ;
+          part.baseOffset = new THREE.Vector3(x, 0, z);
+          if (part.object) {
+            part.object.position.copy(part.baseOffset);
+            part.basePosition = part.object.position.clone();
+          }
+          index += 1;
+        }
+      }
+
+      const projectConfigs = {
+        drone: {
+          label: "Drone",
+          basePath: "/Drone",
+          parts: buildDroneParts,
+          manualDefaults
+        },
+        leafSpring: {
+          label: "Leaf Spring",
+          basePath: "/Leaf Spring",
+          parts: () =>
+            buildSimpleParts([
+              "Clamp-Center.glb",
+              "Clamp-Primary.glb",
+              "Clamp-Secondary.glb",
+              "Leaf-Layer.glb",
+              "Support-Chassis Rigid.glb",
+              "Support-Chassis.glb",
+              "Support-Rubber 60mm.glb",
+              "Support-Rubber.glb",
+              "Support.glb"
+            ])
+        },
+        machineVice: {
+          label: "Machine Vice",
+          basePath: "/Machine Vice",
+          parts: () =>
+            buildSimpleParts([
+              "Part1 Fuhrung.glb",
+              "Part1.glb",
+              "Part2 Feste Backe.glb",
+              "Part3-lose backe.glb",
+              "Part4 spindelsockel.glb",
+              "Part5-Spannbacke.glb",
+              "Part6-fuhrungschiene.glb",
+              "Part7-TrapezSpindel.glb",
+              "Part8-grundplatte.glb",
+              "Part9-Druckhulse.glb"
+            ])
+        },
+        robotArm: {
+          label: "Robot Arm",
+          basePath: "/Robot Arm",
+          parts: buildRobotArmParts,
+          manualDefaults: robotArmManualDefaults
+        },
+        robotGripper: {
+          label: "Robot Gripper",
+          basePath: "/Robot Gripper",
+          parts: () =>
+            buildSimpleParts([
+              "Base Gear.glb",
+              "Base Mounting bracket.glb",
+              "Base Plate.glb",
+              "Gear link 1.glb",
+              "Gear link 2.glb",
+              "Gripper.glb",
+              "Link.glb",
+              "Pin.glb"
+            ])
+        },
+        suspension: {
+          label: "Suspension",
+          basePath: "/Suspension",
+          parts: buildSuspensionParts,
+          manualDefaults: suspensionManualDefaults
+        },
+        v4Engine: {
+          label: "V4 Engine",
+          basePath: "/V4_Engine",
+          parts: buildV4EngineParts,
+          manualDefaults: v4EngineManualDefaults
+        }
+      };
+
+      let parts = projectConfigs.drone.parts();
+      let currentProjectId = "drone";
+
+      const state = {
+        loaded: 0,
+        total: parts.length,
+        target: 0,
+        current: 0,
+        speed: 1.0,
+        explodeScale: 1.0,
+        selectedIndex: 0
+      };
+
+      function updateStatus(extra = "") {
+        if (state.loaded === state.total) {
+          statusEl.textContent = extra ? `준비 완료 · ${extra}` : "준비 완료";
+          return;
+        }
+        statusEl.textContent = `로딩 중... (${state.loaded}/${state.total})`;
+      }
+
+      function prepareObject(part, object) {
+        object.traverse((child) => {
+          child.visible = true;
+          if (child.layers) child.layers.enable(0);
+          if (child.isMesh || child.isLine || child.isLineSegments || child.isPoints) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            child.frustumCulled = false;
+            if (child.geometry && child.geometry.computeVertexNormals) {
+              child.geometry.computeVertexNormals();
+            }
+            if (DEBUG_WIREFRAME) {
+              if (child.isLine || child.isLineSegments) {
+                child.material = new THREE.LineBasicMaterial({ color: 0xff55ff });
+              } else if (child.isPoints) {
+                child.material = new THREE.PointsMaterial({ color: 0xff55ff, size: 4 });
+              } else {
+                child.material = new THREE.MeshBasicMaterial({
+                  color: 0xff55ff,
+                  wireframe: true
+                });
+              }
+              if (DEBUG_EDGES && child.isMesh && child.geometry) {
+                const edges = new THREE.EdgesGeometry(child.geometry, 1);
+                const line = new THREE.LineSegments(
+                  edges,
+                  new THREE.LineBasicMaterial({ color: 0xff55ff })
+                );
+                line.renderOrder = 10;
+                child.add(line);
+              }
+            } else {
+              if (!child.material) {
+                child.material = new THREE.MeshStandardMaterial({
+                  color: 0x9bbcff,
+                  metalness: 0.2,
+                  roughness: 0.6
+                });
+              }
+              if (Array.isArray(child.material)) {
+                child.material.forEach((mat) => {
+                  mat.side = THREE.DoubleSide;
+                });
+              } else {
+                child.material.side = THREE.DoubleSide;
+              }
+            }
+          }
+        });
+        let objectBox = new THREE.Box3().setFromObject(object);
+        let objectSize = objectBox.getSize(new THREE.Vector3());
+        let objectMaxDim = Math.max(objectSize.x, objectSize.y, objectSize.z);
+        if (Number.isFinite(objectMaxDim) && objectMaxDim > 0) {
+          if (objectMaxDim < 5) {
+            const scale = 120 / objectMaxDim;
+            object.scale.setScalar(scale);
+          } else if (objectMaxDim > 2000) {
+            const scale = 300 / objectMaxDim;
+            object.scale.setScalar(scale);
+          }
+        }
+        object.updateMatrixWorld(true);
+        objectBox = new THREE.Box3().setFromObject(object);
+        const objectCenter = objectBox.getCenter(new THREE.Vector3());
+        const pivot = new THREE.Group();
+        pivot.add(object);
+        object.position.sub(objectCenter);
+        pivot.updateMatrixWorld(true);
+
+        part.object = pivot;
+        const manual = v4Spread.enabled && currentProjectId === "v4Engine" ? null : manualDefaults[part.name];
+        if (manual) {
+          part.manual = true;
+          part.baseOffset = new THREE.Vector3(...manual.pos);
+          part.baseRotation = new THREE.Euler(
+            THREE.MathUtils.degToRad(manual.rot[0]),
+            THREE.MathUtils.degToRad(manual.rot[1]),
+            THREE.MathUtils.degToRad(manual.rot[2])
+          );
+          part.baseScale = new THREE.Vector3(manual.scale, manual.scale, manual.scale);
+        }
+        if (part.baseOffset) {
+          pivot.position.copy(part.baseOffset);
+        }
+        if (part.baseRotation) {
+          pivot.rotation.copy(part.baseRotation);
+        }
+        if (part.baseScale) {
+          pivot.scale.copy(part.baseScale);
+        }
+        part.basePosition = pivot.position.clone();
+        part.baseRotation = pivot.rotation.clone();
+        part.baseScale = pivot.scale.clone();
+        group.add(pivot);
+        selectable.push(pivot);
+        state.loaded += 1;
+        updateStatus();
+      }
+
+      function loadPart(part) {
+        if (part.factory) {
+          return new Promise((resolve, reject) => {
+            try {
+              const object = part.factory();
+              prepareObject(part, object);
+              resolve();
+            } catch (error) {
+              console.error(`Failed to build ${part.name}`, error);
+              reject(error);
+            }
+          });
+        }
+        const path = currentBasePath && currentBasePath !== "." ? `${currentBasePath}/${part.file}` : part.file;
+        const url = encodeURI(path);
+        return new Promise((resolve, reject) => {
+          loader.load(
+            url,
+            (gltf) => {
+              prepareObject(part, gltf.scene);
+              resolve();
+            },
+            undefined,
+            (error) => {
+              console.error(`Failed to load ${part.file}`, error);
+              reject(error);
+            }
+          );
+        });
+      }
+
+      async function loadAll() {
+        updateStatus();
+        for (const part of parts) {
+          await loadPart(part);
+        }
+        updateLayout();
+        applyV4SpreadLayout();
+        group.rotation.set(-Math.PI / 2, 0, 0);
+        centerGroup(group);
+        for (const part of parts) {
+          if (part.object) {
+            part.basePosition = part.object.position.clone();
+          }
+        }
+        fitCameraToObject(group, camera, controls);
+        updateStatus("준비 완료");
+        rebuildSelect();
+        setSelected(0);
+        syncRodCapMaterial();
+      }
+
+      function resetScene() {
+        transformControls.detach();
+        if (group) {
+          scene.remove(group);
+        }
+        group = new THREE.Group();
+        scene.add(group);
+        selectable = [];
+      }
+
+      function initProjectSelect() {
+        projectSelect.innerHTML = "";
+        Object.entries(projectConfigs).forEach(([key, config]) => {
+          const option = document.createElement("option");
+          option.value = key;
+          option.textContent = config.label;
+          projectSelect.appendChild(option);
+        });
+        projectSelect.value = "drone";
+      }
+
+      async function setProject(projectId) {
+        const config = projectConfigs[projectId];
+        if (!config) return;
+        currentProjectId = projectId;
+        currentBasePath = config.basePath || ".";
+        manualDefaults = config.manualDefaults || {};
+        parts = config.parts();
+        state.loaded = 0;
+        state.total = parts.length;
+        state.current = 0;
+        state.target = 0;
+        resetScene();
+        await loadAll();
+      }
+
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+      let editMode = true;
+      function onPointerDown(event) {
+        if (!editMode) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(selectable, true);
+        if (!hits.length) return;
+        const hit = hits[0].object;
+        let target = hit;
+        while (target.parent && target.parent !== group) {
+          target = target.parent;
+        }
+        if (target) {
+          transformControls.attach(target);
+          const index = parts.findIndex((part) => part.object === target);
+          if (index >= 0) {
+            partSelect.value = String(index);
+            setSelected(index);
+          }
+        }
+      }
+      renderer.domElement.addEventListener("pointerdown", onPointerDown, { passive: false });
+
+      function centerGroup(object) {
+        const box = new THREE.Box3().setFromObject(object);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        let scale = 1;
+        if (maxDim > 1000) {
+          scale = 300 / maxDim;
+        } else if (maxDim > 0 && maxDim < 50) {
+          scale = 200 / maxDim;
+        }
+        object.scale.setScalar(scale);
+        object.position.sub(center.multiplyScalar(scale));
+      }
+
+      function fitCameraToObject(object, cameraToFit, controlsToFit) {
+        const box = new THREE.Box3().setFromObject(object);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (!Number.isFinite(maxDim) || maxDim === 0) {
+          cameraToFit.position.set(200, 140, 200);
+          cameraToFit.near = 0.1;
+          cameraToFit.far = 100000;
+          cameraToFit.updateProjectionMatrix();
+          controlsToFit.target.set(0, 0, 0);
+          controlsToFit.update();
+          return "bbox 없음";
+        }
+        const fov = cameraToFit.fov * (Math.PI / 180);
+        const cameraZ = Math.abs((maxDim / 2) / Math.tan(fov / 2)) * 1.6;
+        const safeZ = Math.min(Math.max(cameraZ, 200), 1000000);
+
+        cameraToFit.position.set(center.x + safeZ, center.y + safeZ * 0.5, center.z + safeZ);
+        cameraToFit.near = Math.max(safeZ / 1000, 0.1);
+        cameraToFit.far = Math.max(safeZ * 1000, 2000);
+        cameraToFit.updateProjectionMatrix();
+
+        controlsToFit.target.copy(center);
+        controlsToFit.update();
+        return `bbox ${size.x.toFixed(1)}·${size.y.toFixed(1)}·${size.z.toFixed(1)}`;
+      }
+
+      function applyExplode(amount) {
+        for (const part of parts) {
+          if (!part.object) continue;
+          let offset = part.explode ? part.explode.clone() : new THREE.Vector3(0, 0, 0);
+          let effectiveAmount = amount;
+          // Custom explode rules by part name.
+          if (currentProjectId === "suspension") {
+            if (part.name === "ROD") {
+              offset = new THREE.Vector3(0, 185, 0);
+            } else if (part.name === "SPRING") {
+              offset = new THREE.Vector3(0, 100, 0);
+            } else if (part.name === "NUT") {
+              offset = new THREE.Vector3(0, 270, 0);
+            } else if (part.name === "BASE") {
+              offset = new THREE.Vector3(0, 0, 0);
+            } else if (part.name === "Rod Cap") {
+              offset = new THREE.Vector3(0, -70, 0);
+            }
+          } else if (currentProjectId === "robotArm") {
+            if (part.name === "base") {
+              offset = new THREE.Vector3(0, 0, -80);
+            } else if (part.name === "Part3") {
+              offset = new THREE.Vector3(-80, 0, 0);
+            } else if (part.name === "Part5") {
+              offset = new THREE.Vector3(0, -80, 0);
+            } else if (part.name === "Part6") {
+              offset = new THREE.Vector3(0, -120, 0);
+            } else if (part.name === "Part7") {
+              offset = new THREE.Vector3(0, -160, 0);
+            } else if (part.name === "Part8 1") {
+              offset = new THREE.Vector3(-80, 0, 0);
+            } else if (part.name === "Part8 2") {
+              offset = new THREE.Vector3(80, 0, 0);
+            }
+          } else if (currentProjectId === "v4Engine") {
+            const delayOthers = 0.4;
+            if (part.name.startsWith("Piston Ring ")) {
+              const ringIndex = Number(part.name.split(" ")[2]);
+              if ([1, 4, 7, 10].includes(ringIndex)) {
+                offset = new THREE.Vector3(0, 0, 80);
+              } else if ([2, 5, 8, 11].includes(ringIndex)) {
+                offset = new THREE.Vector3(0, 0, 65);
+              } else if ([3, 6, 9, 12].includes(ringIndex)) {
+                offset = new THREE.Vector3(0, 0, 55);
+              }
+              effectiveAmount = Math.max(0, (amount - delayOthers) / (1 - delayOthers));
+            } else if (part.name.startsWith("Piston Pin ")) {
+              const pinIndex = Number(part.name.split(" ")[2]);
+              if ([1, 2].includes(pinIndex)) {
+                offset = new THREE.Vector3(-50, 0, 0);
+              } else if ([3, 4].includes(pinIndex)) {
+                offset = new THREE.Vector3(50, 0, 0);
+              }
+            } else if (part.name.startsWith("Piston ")) {
+              offset = new THREE.Vector3(0, 0, 40);
+              effectiveAmount = Math.max(0, (amount - delayOthers) / (1 - delayOthers));
+            } else if (part.name.startsWith("Conrod Bolt ")) {
+              offset = new THREE.Vector3(0, 0, 50);
+              effectiveAmount = Math.max(0, (amount - delayOthers) / (1 - delayOthers));
+            } else if (part.name.startsWith("Connecting Rod Cap ")) {
+              offset = new THREE.Vector3(0, 0, -50);
+              effectiveAmount = Math.max(0, (amount - delayOthers) / (1 - delayOthers));
+            } else if (part.name.startsWith("Connecting Rod ")) {
+              offset = new THREE.Vector3(0, 0, 20);
+              effectiveAmount = Math.max(0, (amount - delayOthers) / (1 - delayOthers));
+            }
+          } else {
+            if (part.name.startsWith("Blade")) {
+              offset = new THREE.Vector3(0, 0, 70);
+            } else if (part.name.startsWith("Arm")) {
+              offset = new THREE.Vector3(0, 0, 50);
+            } else if (part.name.startsWith("Gearing")) {
+              offset = new THREE.Vector3(0, 0, -35);
+            } else if (part.name === "Leg 1" || part.name === "Leg 3") {
+              offset = new THREE.Vector3(60, 0, 0);
+            } else if (part.name === "Leg 2" || part.name === "Leg 4") {
+              offset = new THREE.Vector3(-60, 0, 0);
+            } else if (part.name.startsWith("Nut")) {
+              offset = new THREE.Vector3(0, 0, 40);
+            } else if (part.name.startsWith("Screw")) {
+              offset = new THREE.Vector3(0, 0, -60);
+            } else if (part.name.startsWith("Beater disc")) {
+              offset = new THREE.Vector3(0, 50, 0);
+            } else if (part.name === "Main frame") {
+              offset = new THREE.Vector3(0, 0, -20);
+            } else if (part.name === "Main frame MIR") {
+              offset = new THREE.Vector3(0, 0, 20);
+            } else if (part.name === "xyz") {
+              offset = new THREE.Vector3(0, 0, 0);
+            }
+          }
+          offset.multiplyScalar(effectiveAmount * state.explodeScale);
+          part.object.position.copy(part.basePosition).add(offset);
+        }
+      }
+
+      function rebuildSelect() {
+        partSelect.innerHTML = "";
+        parts.forEach((part, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          option.textContent = part.name;
+          partSelect.appendChild(option);
+        });
+        partSelect.value = String(state.selectedIndex);
+      }
+
+      function syncTransformLabels() {
+        posXInput.value = Number(posXRange.value).toFixed(2);
+        posYInput.value = Number(posYRange.value).toFixed(2);
+        posZInput.value = Number(posZRange.value).toFixed(2);
+        rotXInput.value = Number(rotXRange.value).toFixed(0);
+        rotYInput.value = Number(rotYRange.value).toFixed(0);
+        rotZInput.value = Number(rotZRange.value).toFixed(0);
+        scaleInput.value = Number(scaleRange.value).toFixed(2);
+      }
+
+      function setSelected(index) {
+        state.selectedIndex = index;
+        const part = parts[index];
+        if (!part || !part.object) return;
+        posXRange.value = part.object.position.x.toFixed(2);
+        posYRange.value = part.object.position.y.toFixed(2);
+        posZRange.value = part.object.position.z.toFixed(2);
+        rotXRange.value = THREE.MathUtils.radToDeg(part.object.rotation.x).toFixed(0);
+        rotYRange.value = THREE.MathUtils.radToDeg(part.object.rotation.y).toFixed(0);
+        rotZRange.value = THREE.MathUtils.radToDeg(part.object.rotation.z).toFixed(0);
+        scaleRange.value = part.object.scale.x.toFixed(2);
+        syncTransformLabels();
+      }
+
+      function applySelectedTransform() {
+        const part = parts[state.selectedIndex];
+        if (!part || !part.object) return;
+        part.object.position.set(
+          Number(posXRange.value),
+          Number(posYRange.value),
+          Number(posZRange.value)
+        );
+        part.object.rotation.set(
+          THREE.MathUtils.degToRad(Number(rotXRange.value)),
+          THREE.MathUtils.degToRad(Number(rotYRange.value)),
+          THREE.MathUtils.degToRad(Number(rotZRange.value))
+        );
+        const scale = Number(scaleRange.value);
+        part.object.scale.setScalar(scale);
+        part.basePosition = part.object.position.clone();
+        part.baseRotation = part.object.rotation.clone();
+        part.baseScale = part.object.scale.clone();
+        applyExplode(state.current);
+      }
+
+      function updateLayout() {
+        for (const part of parts) {
+          if (part.manual) continue;
+          if (!part.meta) continue;
+          const dir = part.meta.dir;
+          const armPos = dir.clone().multiplyScalar(layout.armDistance);
+          const legPos = dir.clone().multiplyScalar(layout.legDistance);
+          const motorPos = legPos.clone().add(new THREE.Vector3(0, layout.motorHeight, 0));
+          const bladePos = legPos.clone().add(new THREE.Vector3(0, layout.bladeHeight, 0));
+          if (part.meta.kind === "arm") part.baseOffset = armPos;
+          if (part.meta.kind === "leg") part.baseOffset = legPos;
+          if (part.meta.kind === "motor") part.baseOffset = motorPos;
+          if (part.meta.kind === "blade") part.baseOffset = bladePos;
+          if (part.object) {
+            part.object.position.copy(part.baseOffset);
+            part.basePosition = part.object.position.clone();
+          }
+        }
+        applyExplode(state.current);
+      }
+
+      function setTarget(value) {
+        state.target = value;
+        assembleBtn.classList.toggle("active", value === 0);
+        disassembleBtn.classList.toggle("active", value === 1);
+      }
+
+      assembleBtn.addEventListener("click", () => setTarget(0));
+      disassembleBtn.addEventListener("click", () => setTarget(1));
+
+      explodeRange.addEventListener("input", (event) => {
+        state.explodeScale = Number(event.target.value);
+        explodeValue.textContent = `${state.explodeScale.toFixed(1)}x`;
+      });
+
+      partSelect.addEventListener("change", (event) => {
+        setSelected(Number(event.target.value));
+      });
+      [posXRange, posYRange, posZRange, rotXRange, rotYRange, rotZRange, scaleRange].forEach((el) => {
+        el.addEventListener("input", () => {
+          syncTransformLabels();
+          applySelectedTransform();
+        });
+      });
+      [posXInput, posYInput, posZInput].forEach((el, index) => {
+        el.addEventListener("input", () => {
+          const ranges = [posXRange, posYRange, posZRange];
+          ranges[index].value = el.value;
+          syncTransformLabels();
+          applySelectedTransform();
+        });
+      });
+      [rotXInput, rotYInput, rotZInput].forEach((el, index) => {
+        el.addEventListener("input", () => {
+          const ranges = [rotXRange, rotYRange, rotZRange];
+          ranges[index].value = el.value;
+          syncTransformLabels();
+          applySelectedTransform();
+        });
+      });
+      scaleInput.addEventListener("input", () => {
+        scaleRange.value = scaleInput.value;
+        syncTransformLabels();
+        applySelectedTransform();
+      });
+
+      speedRange.addEventListener("input", (event) => {
+        state.speed = Number(event.target.value);
+        speedValue.textContent = `${state.speed.toFixed(1)}x`;
+      });
+
+      function resize() {
+        const { clientWidth, clientHeight } = canvas.parentElement;
+        renderer.setSize(clientWidth, clientHeight, false);
+        camera.aspect = clientWidth / clientHeight;
+        camera.updateProjectionMatrix();
+      }
+      window.addEventListener("resize", resize);
+      resize();
+
+      const clock = new THREE.Clock();
+      function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        const step = delta * 1.2 * state.speed;
+        state.current += (state.target - state.current) * Math.min(step, 1);
+        applyExplode(state.current);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+
+      initProjectSelect();
+      setProject("drone").catch((error) => {
+        console.error(error);
+        statusEl.textContent = "로딩 실패: 콘솔 확인 필요";
+      });
+      animate();
+
+      window.addEventListener("error", (event) => {
+        statusEl.textContent = `에러: ${event.message}`;
+      });
+      window.addEventListener("unhandledrejection", (event) => {
+        statusEl.textContent = `Promise 에러: ${event.reason && event.reason.message ? event.reason.message : event.reason}`;
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (!editMode) return;
+        if (event.key === "w") transformControls.setMode("translate");
+        if (event.key === "e") transformControls.setMode("rotate");
+        if (event.key === "r") transformControls.setMode("scale");
+        if (event.key === "Escape") transformControls.detach();
+      });
+
+      editToggle.addEventListener("click", () => {
+        editMode = !editMode;
+        transformControls.visible = editMode;
+        transformControls.enabled = editMode;
+        if (!editMode) {
+          transformControls.detach();
+        }
+        editToggle.textContent = `편집 모드: ${editMode ? "ON" : "OFF"}`;
+      });
+
+      modeTranslate.addEventListener("click", () => {
+        transformControls.setMode("translate");
+      });
+      modeRotate.addEventListener("click", () => {
+        transformControls.setMode("rotate");
+      });
+      modeScale.addEventListener("click", () => {
+        transformControls.setMode("scale");
+      });
+
+      projectSelect.addEventListener("change", (event) => {
+        setProject(event.target.value);
+      });
+    </script>
+  </body>
+</html>

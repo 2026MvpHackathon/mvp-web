@@ -1,11 +1,17 @@
-import { Outlet } from "react-router-dom";
+import { ThemeProvider } from 'styled-components';
+import { theme } from './shared/Theme';
+import { GlobalStyle } from './shared/GlobalStyle';
+import Layout from './shared/ui/Layout/Layout';
+
 
 function App() {
   return (
-    <>
-      <Outlet/>
-    </>
+    <ThemeProvider theme={theme}>
+      <GlobalStyle />
+      <Layout/>
+    </ThemeProvider>
   )
 }
 
 export default App
+
