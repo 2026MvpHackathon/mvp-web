@@ -158,7 +158,7 @@ export default function SimvexQuizPage() {
       return;
     }
     showToast("퀴즈가 시작되었습니다!", "success");
-    // 실제 이동 시: navigate("/quiz/during");
+      navigate("/quiz/during");
     console.log("Quiz Started with:", { category, numberOfProblems });
   };
 
