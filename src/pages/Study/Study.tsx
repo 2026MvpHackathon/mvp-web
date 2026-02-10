@@ -68,15 +68,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const navigate = useNavigate()
   const viewerRef = useRef<AssemblyViewerHandle | null>(null)
   const progressRef = useRef<HTMLInputElement | null>(null)
+  const aiBodyRef = useRef<HTMLDivElement | null>(null)
   const [progressWidth, setProgressWidth] = useState(0)
-  const projects = useMemo(
-    () =>
-      Object.entries(projectConfigs).map(([id, config]) => ({
-        id,
-        label: config.label,
-      })),
-    [],
-  )
 
   const [projectId, setProjectId] = useState(
     () => localStorage.getItem('assembly-last-project') || 'drone',
@@ -418,12 +411,6 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
 
   const handleExpenseToggle = () => {
     navigate(expanded ? '/study' : '/study/expense')
-  }
-
-  const handleProjectChange = (id: string) => {
-    setProjectId(id)
-    localStorage.setItem('assembly-last-project', id)
-    viewerRef.current?.setProject?.(id, { partOverrides: partOverridesByProject[id] })
   }
 
   const handleSelectPart = (index: number) => {
@@ -779,6 +766,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   }, [])
 
   useEffect(() => {
+    const el = aiBodyRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight - el.clientHeight
+  }, [aiMessages])
+
+  useEffect(() => {
     setViewMode('assembly')
     setSelectedIndex(-1)
   }, [])
@@ -1107,33 +1100,36 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         <span>AI Assistant</span>
         <S.AiBadge>AI</S.AiBadge>
       </S.AiHeader>
-      <S.AiBody>
-        {aiMessages.length === 0 ? (
-          <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
-        ) : (
-          aiMessages.map((message, index) =>
-            message.role === 'assistant' ? (
-              <S.AiChatBlock key={message.id}>
-                <S.AiChatBubble>
-                  <S.AiChatText>{message.text}</S.AiChatText>
-                </S.AiChatBubble>
-                <S.AiQuizAction
-                  type="button"
-                  disabled={quizSubmittingId === message.id || quizAddedIds.has(message.id)}
-                  onClick={() => handleRegisterQuiz(index)}
-                >
-                  {quizSubmittingId === message.id
-                    ? '추가 중...'
-                    : quizAddedIds.has(message.id)
-                      ? '추가됨'
-                      : '퀴즈에 추가하기'}
-                </S.AiQuizAction>
-              </S.AiChatBlock>
-            ) : (
-              <S.AiUserBubble key={message.id}>{message.text}</S.AiUserBubble>
-            ),
-          )
-        )}
+      <S.AiBody ref={aiBodyRef}>
+        <S.AiBodySpacer />
+        <S.AiBodyInner>
+          {aiMessages.length === 0 ? (
+            <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
+          ) : (
+            aiMessages.map((message, index) =>
+              message.role === 'assistant' ? (
+                <S.AiChatBlock key={message.id}>
+                  <S.AiChatBubble>
+                    <S.AiChatText>{message.text}</S.AiChatText>
+                  </S.AiChatBubble>
+                  <S.AiQuizAction
+                    type="button"
+                    disabled={quizSubmittingId === message.id || quizAddedIds.has(message.id)}
+                    onClick={() => handleRegisterQuiz(index)}
+                  >
+                    {quizSubmittingId === message.id
+                      ? '추가 중...'
+                      : quizAddedIds.has(message.id)
+                        ? '추가됨'
+                        : '퀴즈에 추가하기'}
+                  </S.AiQuizAction>
+                </S.AiChatBlock>
+              ) : (
+                <S.AiUserBubble key={message.id}>{message.text}</S.AiUserBubble>
+              ),
+            )
+          )}
+        </S.AiBodyInner>
       </S.AiBody>
       {showPrompt && (
         <S.AiPromptBar
@@ -1171,20 +1167,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                 <span>{projectLabel}</span>
                 <S.ViewerDivider />
                 <S.ViewerDescription>{projectDescription}</S.ViewerDescription>
-                {!expenseToggleOn ? (
-                  <S.ProjectSelect
-                    value={safeProjectId}
-                    onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                      handleProjectChange(event.target.value)
-                    }
-                  >
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.label}
-                      </option>
-                    ))}
-                  </S.ProjectSelect>
-                ) : (
+                {expenseToggleOn && (
                   <S.ExpandedViewModeToggle>
                     <S.ViewModeButton
                       $active={viewMode === 'single'}

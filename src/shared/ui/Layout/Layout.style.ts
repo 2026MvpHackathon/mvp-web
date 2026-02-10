@@ -6,9 +6,10 @@ import { colors } from '@/shared/values/_foundation'
 export const container = styled.div<{ $isExpense?: boolean }>`
     display: flex;
     flex-direction: column;
-    align-items: ${({ $isExpense }) => ($isExpense ? 'stretch' : 'center')};
-    justify-content: ${({ $isExpense }) => ($isExpense ? 'flex-start' : 'center')};
+    align-items: stretch;
+    justify-content: flex-start;
     width: 100vw;
+    height: 100vh;
     min-height: 100vh;
     position: relative;
     background: ${({ $isExpense }) => ($isExpense ? colors.background.Dark : 'transparent')};
@@ -16,9 +17,9 @@ export const container = styled.div<{ $isExpense?: boolean }>`
 
 export const body = styled.div<{ $isExpense?: boolean }>`
     width: 100%;
-    height: ${({ $isExpense }) => ($isExpense ? '100vh' : '100%')};
-    flex: ${({ $isExpense }) => ($isExpense ? 1 : 'none')};
-    min-height: ${({ $isExpense }) => ($isExpense ? '100vh' : '0')};
+    flex: 1;
+    min-height: 0;
+    ${({ $isExpense }) => $isExpense && 'height: 100vh; min-height: 100vh;'}
     padding: 2.25rem 2.5rem;
     background: ${({ $isExpense }) => ($isExpense ? colors.background.Dark : 'transparent')};
 `
