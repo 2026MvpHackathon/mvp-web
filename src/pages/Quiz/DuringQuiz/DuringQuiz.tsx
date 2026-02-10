@@ -15,6 +15,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 type LayoutContext = {
     setText: (v: string) => void;
     setIsBlur: (v: boolean) => void;
+    setLoadingAnimationType: (type: 'none' | 'backAndForth' | 'fillUp') => void;
 };
 
 type LocalQuizItem = Omit<QuizItem, 'options'> & {
@@ -39,11 +40,12 @@ const DuringQuizPage = () => {
 
     const currentQuiz: LocalQuizItem | undefined = quizItems[currentQuizIndex];
 
-    const { setText, setIsBlur } = useOutletContext<LayoutContext>();
+    const { setText, setIsBlur, setLoadingAnimationType } = useOutletContext<LayoutContext>();
     // 퀴즈 생성
     const handleCreateQuiz = async () => {
         setText("퀴즈를 생성 중..."); // Set loading text
         setIsBlur(true); // Show blur overlay
+        setLoadingAnimationType('backAndForth'); // Set animation type for quiz generation
         try {
         const res = await createQuiz({
             quizQuestionIds: [1, 2, 3],
@@ -71,6 +73,7 @@ const DuringQuizPage = () => {
         } finally {
             setIsBlur(false); // Hide blur overlay
             setText(""); // Clear loading text
+            setLoadingAnimationType('none'); // Reset animation type
         }
     };
 
@@ -228,10 +231,12 @@ const DuringQuizPage = () => {
         console.log('퀴즈가 끝났습니다.'); 
         setText(displayAccuracyRate);
         setIsBlur(true);
+        setLoadingAnimationType('fillUp'); // Set animation type for quiz completion
 
         setTimeout(() => {
             setText("")
             setIsBlur(false);
+            setLoadingAnimationType('none'); // Reset animation type
         }, 6000);
 
         navigate("/quiz");

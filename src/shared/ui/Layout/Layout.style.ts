@@ -76,6 +76,11 @@ const backAndForthAnimation = keyframes`
   100% { transform: translateX(-100%); }
 `;
 
+const fillUpAnimation = keyframes`
+  0% { width: 0%; }
+  100% { width: 100%; }
+`;
+
 export const LoadingBarWrapper = styled.div`
   width: 100%;
   max-width: 20rem; // 로딩바 최대 너비
@@ -86,10 +91,15 @@ export const LoadingBarWrapper = styled.div`
   position: relative; // Needed for transform to work correctly
 `;
 
-export const LoadingBarFill = styled.div`
+export const LoadingBarFill = styled.div<{ $animationType: 'backAndForth' | 'fillUp' }>`
   height: 100%;
-  width: 100%; // Fill the wrapper completely
   background-color: ${colors.main.normal}; // 로딩바 채우기 색상
   border-radius: 0.125rem;
-  animation: ${backAndForthAnimation} 2s ease-in-out infinite; 
+  ${({ $animationType }) => $animationType === 'backAndForth' ? `
+    width: 100%;
+    animation: ${backAndForthAnimation} 2s ease-in-out infinite;
+  ` : `
+    width: 0%;
+    animation: ${fillUpAnimation} 6s linear forwards; // 6초간 게이지 차오르듯이
+  `}
 `;
