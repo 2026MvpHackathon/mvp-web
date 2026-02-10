@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import * as THREE from 'three'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
@@ -66,52 +66,14 @@ type ViewerTransforms = Record<
 
 const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const urlMaterialId = searchParams.get('materialId')
-  const projectIdFromMaterial = useMemo(() => {
-    if (!urlMaterialId) return null
-    const mid = Number(urlMaterialId)
-    if (!Number.isFinite(mid)) return null
-    const entry = Object.entries(projectConfigs).find(
-      ([, config]) => config.materialId === mid,
-    )
-    return entry?.[0] ?? null
-  }, [urlMaterialId])
-
   const viewerRef = useRef<AssemblyViewerHandle | null>(null)
   const progressRef = useRef<HTMLInputElement | null>(null)
+  const aiBodyRef = useRef<HTMLDivElement | null>(null)
   const [progressWidth, setProgressWidth] = useState(0)
-  const projects = useMemo(
-    () =>
-      Object.entries(projectConfigs).map(([id, config]) => ({
-        id,
-        label: config.label,
-      })),
-    [],
+
+  const [projectId, setProjectId] = useState(
+    () => localStorage.getItem('assembly-last-project') || 'drone',
   )
-
-  const [projectId, setProjectId] = useState(() => {
-    const params = new URLSearchParams(window.location.search)
-    const mid = params.get('materialId')
-    if (mid) {
-      const num = Number(mid)
-      if (Number.isFinite(num)) {
-        const entry = Object.entries(projectConfigs).find(
-          ([, config]) => config.materialId === num,
-        )
-        if (entry) return entry[0]
-      }
-    }
-    return localStorage.getItem('assembly-last-project') || 'drone'
-  })
-
-  // URL에 materialId가 있으면 해당 material의 project로 전환 (직접 /study 접근 후 쿼리 변경 등)
-  useEffect(() => {
-    if (projectIdFromMaterial && projectIdFromMaterial !== projectId) {
-      setProjectId(projectIdFromMaterial)
-      localStorage.setItem('assembly-last-project', projectIdFromMaterial)
-    }
-  }, [projectIdFromMaterial, projectId])
   const safeProjectId = Object.prototype.hasOwnProperty.call(projectConfigs, projectId)
     ? projectId
     : 'drone'
@@ -451,12 +413,6 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     navigate(expanded ? '/study' : '/study/expense')
   }
 
-  const handleProjectChange = (id: string) => {
-    setProjectId(id)
-    localStorage.setItem('assembly-last-project', id)
-    viewerRef.current?.setProject?.(id, { partOverrides: partOverridesByProject[id] })
-  }
-
   const handleSelectPart = (index: number) => {
     setSelectedIndex(index)
     viewerRef.current?.setSelectedIndex?.(index)
@@ -708,7 +664,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         studySessionId,
         question: text,
         materialId: activeMaterialId,
-        modelId: selectedModelId || undefined,
+        modelId: selectedModelId,
       })
       const assistantMessage: AiMessage = {
         id: `assistant-${response.data.messageId}`,
@@ -808,6 +764,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     window.addEventListener('resize', updateWidth)
     return () => window.removeEventListener('resize', updateWidth)
   }, [])
+
+  useEffect(() => {
+    const el = aiBodyRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight - el.clientHeight
+  }, [aiMessages])
 
   useEffect(() => {
     setViewMode('assembly')
@@ -1138,33 +1100,36 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         <span>AI Assistant</span>
         <S.AiBadge>AI</S.AiBadge>
       </S.AiHeader>
-      <S.AiBody>
-        {aiMessages.length === 0 ? (
-          <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
-        ) : (
-          aiMessages.map((message, index) =>
-            message.role === 'assistant' ? (
-              <S.AiChatBlock key={message.id}>
-                <S.AiChatBubble>
-                  <S.AiChatText>{message.text}</S.AiChatText>
-                </S.AiChatBubble>
-                <S.AiQuizAction
-                  type="button"
-                  disabled={quizSubmittingId === message.id || quizAddedIds.has(message.id)}
-                  onClick={() => handleRegisterQuiz(index)}
-                >
-                  {quizSubmittingId === message.id
-                    ? '추가 중...'
-                    : quizAddedIds.has(message.id)
-                      ? '추가됨'
-                      : '퀴즈에 추가하기'}
-                </S.AiQuizAction>
-              </S.AiChatBlock>
-            ) : (
-              <S.AiUserBubble key={message.id}>{message.text}</S.AiUserBubble>
-            ),
-          )
-        )}
+      <S.AiBody ref={aiBodyRef}>
+        <S.AiBodySpacer />
+        <S.AiBodyInner>
+          {aiMessages.length === 0 ? (
+            <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
+          ) : (
+            aiMessages.map((message, index) =>
+              message.role === 'assistant' ? (
+                <S.AiChatBlock key={message.id}>
+                  <S.AiChatBubble>
+                    <S.AiChatText>{message.text}</S.AiChatText>
+                  </S.AiChatBubble>
+                  <S.AiQuizAction
+                    type="button"
+                    disabled={quizSubmittingId === message.id || quizAddedIds.has(message.id)}
+                    onClick={() => handleRegisterQuiz(index)}
+                  >
+                    {quizSubmittingId === message.id
+                      ? '추가 중...'
+                      : quizAddedIds.has(message.id)
+                        ? '추가됨'
+                        : '퀴즈에 추가하기'}
+                  </S.AiQuizAction>
+                </S.AiChatBlock>
+              ) : (
+                <S.AiUserBubble key={message.id}>{message.text}</S.AiUserBubble>
+              ),
+            )
+          )}
+        </S.AiBodyInner>
       </S.AiBody>
       {showPrompt && (
         <S.AiPromptBar

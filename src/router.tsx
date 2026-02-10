@@ -29,6 +29,10 @@ const router = createBrowserRouter([
                 element: <StudyPage />,
             },
             {
+                path: "study/expense",
+                element: <StudyExpensePage />,
+            },
+            {
                 path: "quiz",
                 element: <QuizPage />,
               },
@@ -59,14 +63,9 @@ const router = createBrowserRouter([
                     },
                     
                 ]
-            }],
-        
-              },
-            {
-              path: "study/expense",
-              element: <StudyExpensePage />,
-            },
+            }
         ],
-)
+    },
+])
   
 export default router;
