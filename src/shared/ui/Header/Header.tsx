@@ -5,7 +5,7 @@ import { getCookie, deleteCookie } from '@/features/Auth/cookies';
 import axiosInstance from '@/features/Auth/axiosInstance';
 // import { useEffect, useState } from 'react'; // Removed
 
-const SERVER_URL = import.meta.env.VITE_API_URL;
+// const SERVER_URL = import.meta.env.VITE_API_URL; // Removed
 
 interface ImageResponse {
     path: string;
@@ -61,7 +61,7 @@ const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure 
 
         if (refreshToken) {
             try {
-                const response = await axiosInstance.post(`${SERVER_URL}/api/auth/logout`, { refreshToken });
+                const response = await axiosInstance.post(`/api/auth/logout`, { refreshToken }); // Use relative path
                 console.log("로그아웃 API 응답 (성공):", response);
             } catch (error: any) {
                 console.error("로그아웃 API 호출 중 오류 발생:", error);
