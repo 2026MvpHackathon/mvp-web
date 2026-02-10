@@ -16,9 +16,12 @@ export const ContentGrid = styled.div<{ $expanded?: boolean }>`
   grid-template-columns: ${({ $expanded }) =>
     $expanded ? 'minmax(0, 1fr)' : '400px minmax(0, 1fr)'};
   gap: 18px;
+  /* 3D 카드가 오른쪽 벽에 붙도록 페이지 우측 패딩만큼 그리드를 오른쪽으로 확장 */
+  margin-right: -32px;
 
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
+    margin-right: -20px;
   }
 `
 
@@ -63,6 +66,17 @@ export const PartsCard = styled(Card)<{ $expanded?: boolean }>`
     height: ${({ $expanded }) => ($expanded ? 'auto' : '360px')};
     max-height: 70vh;
   }
+`
+
+export const PartsFetchError = styled.div`
+  padding: 10px 14px;
+  margin: 0 14px 8px;
+  border-radius: 8px;
+  background: rgba(220, 80, 80, 0.15);
+  border: 1px solid rgba(220, 80, 80, 0.4);
+  color: #f0a0a0;
+  font-size: 12px;
+  line-height: 1.4;
 `
 
 export const PartsList = styled.div<{ $expanded?: boolean }>`
@@ -697,6 +711,26 @@ export const NoteBody = styled.div`
   font-size: 22px;
   line-height: 1.4;
   color: #d9e4d6;
+`
+
+/** 선택된 부품 좌표 표시 (ViewerFooter 바로 위, 오른쪽 벽에 붙임 / expense 시 200px 좌측) */
+export const SelectedPartCoords = styled.div<{ $expanded?: boolean }>`
+  position: absolute;
+  left: auto;
+  right: ${({ $expanded }) => ($expanded ? '368px' : '18px')};
+  width: fit-content;
+  max-width: calc(100% - 36px);
+  /* ViewerFooter bottom 16px/45px + 푸터 콘텐츠 높이(~34px) 바로 위 */
+  bottom: ${({ $expanded }) => ($expanded ? '84px' : '52px')};
+  z-index: 3;
+  padding: 8px 8px 8px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #90ee90;
+  pointer-events: none;
 `
 
 export const ViewerFooter = styled.div<{ $expanded?: boolean }>`

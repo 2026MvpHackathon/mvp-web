@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import * as THREE from 'three'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
@@ -9,7 +9,7 @@ import toolChatIcon from '/src/assets/Study/viewer-tool-chat.png'
 import toolAiIcon from '/src/assets/Study/viewer-tool-ai.png'
 import noteEditIcon from '/src/assets/Study/note-edit.png'
 import noteDeleteIcon from '/src/assets/Study/note-delete.png'
-import { projectConfigs } from '../../data/projects'
+import { projectConfigs, materialIdToProjectId } from '../../data/projects'
 import {
   askChat,
   createStudySession,
@@ -25,7 +25,8 @@ import {
   deleteStudyNote,
   saveStudySession,
 } from '../../entities/study/api/studyApi'
-import type { MaterialPart, StudySession, StudySessionPart, StudyHomeItem, ChatMessage, StudyNote } from '../../entities/study/types'
+import type { MaterialPart, StudySession, StudySessionPart } from '../../entities/study/types'
+import { useToast } from '@/shared/ui/Toast/ToastContext'
 import './Study.css'
 import * as S from './Study.style'
 
@@ -65,20 +66,26 @@ type ViewerTransforms = Record<
   }
 >
 
-const DEFAULT_AI_MESSAGES: AiMessage[] = [
-  { id: 'ai-1', role: 'assistant', text: '무엇이 궁금한가요? 편하게 질문해 주세요.' },
-]
-
 const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { showToast } = useToast()
   const viewerRef = useRef<AssemblyViewerHandle | null>(null)
   const progressRef = useRef<HTMLInputElement | null>(null)
   const aiBodyRef = useRef<HTMLDivElement | null>(null)
   const [progressWidth, setProgressWidth] = useState(0)
 
-  const [projectId, setProjectId] = useState(
-    () => localStorage.getItem('assembly-last-project') || 'drone',
-  )
+  const [projectId, setProjectId] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    const midParam = params.get('materialId')
+    if (midParam) {
+      const mid = parseInt(midParam, 10)
+      if (Number.isFinite(mid) && materialIdToProjectId[mid]) {
+        return materialIdToProjectId[mid]
+      }
+    }
+    return localStorage.getItem('assembly-last-project') || 'drone'
+  })
   const safeProjectId = Object.prototype.hasOwnProperty.call(projectConfigs, projectId)
     ? projectId
     : 'drone'
@@ -112,9 +119,21 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const [notePanelOpen, setNotePanelOpen] = useState(true)
   const expenseToggleOn = expanded
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
+  const [selectedPartCoords, setSelectedPartCoords] = useState<{
+    name: string
+    position: [number, number, number]
+    rotation: [number, number, number]
+    scale: number
+  } | null>(null)
   const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
   const [aiPanelOpen, setAiPanelOpen] = useState(true)
-  const [aiMessages, setAiMessages] = useState<AiMessage[]>(DEFAULT_AI_MESSAGES)
+  const [aiMessages, setAiMessages] = useState<AiMessage[]>([
+    {
+      id: 'ai-1',
+      role: 'assistant',
+      text: '무엇이 궁금한가요? 편하게 질문해 주세요.',
+    },
+  ])
   const [quizSubmittingId, setQuizSubmittingId] = useState<string | null>(null)
   const [quizAddedIds, setQuizAddedIds] = useState<Set<string>>(new Set())
   const [aiPromptInput, setAiPromptInput] = useState('')
@@ -122,6 +141,10 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const [studySession, setStudySession] = useState<StudySession | null>(null)
   const [studySessionId, setStudySessionId] = useState<number | null>(null)
   const [materialPartsByBase, setMaterialPartsByBase] = useState<Record<string, MaterialPart>>({})
+  const [partsFetchError, setPartsFetchError] = useState<string | null>(null)
+  const [materialDescriptionFromServer, setMaterialDescriptionFromServer] = useState<string | null>(
+    null,
+  )
   const [sessionPartsByBase, setSessionPartsByBase] = useState<
     Record<string, StudySessionPart>
   >({})
@@ -141,6 +164,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     zoom: number
   } | null>(null)
   const saveTimerRef = useRef<number | null>(null)
+  const studySessionIdRef = useRef<number | null>(null)
+  const viewModeRef = useRef<'single' | 'assembly'>('assembly')
+  const explodePercentRef = useRef<number>(0)
+  studySessionIdRef.current = studySessionId
+  viewModeRef.current = viewMode
+  explodePercentRef.current = explodePercent
 
   const storageKey = `assembly-layout-${safeProjectId}`
   const defaultStorageKey = `assembly-default-layout-${safeProjectId}`
@@ -149,10 +178,54 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const projectDescriptions: Record<string, string> = {
     drone:
       '드론(Drone)은 조종사가 탑승하지 않고 무선전파 유도를 통해 원격 제어하거나 자율 비행하는 무인 항공기(UAV) 또는 무인 항공 시스템(UAS)을 의미합니다. 초기엔 군사용으로 개발되었으나 현재는 촬영, 방제, 물류 배송, 취미용 등 다양한 분야에 활용되는 4차 산업 핵심 기기입니다.',
+    suspension:
+      '서스펜션(Suspension)은 차량이 노면의 요철을 지날 때 발생하는 충격을 흡수하고, 타이어가 노면을 안정적으로 잡을 수 있도록 하는 장치입니다. 베이스, 로드, 스프링, 너트 등으로 구성되어 있습니다.',
+    robotArm:
+      '로봇 팔(Robot Arm)은 산업 현장에서 반복 작업, 용접, 조립, 픽앤플레이스 등에 사용되는 다관절 메커니즘입니다. 베이스, 링크, 관절, 그리퍼 등으로 구성됩니다.',
+    robotGripper:
+      '로봇 그리퍼(Robot Gripper)는 로봇 팔 끝에 장착되어 물체를 잡고 놓는 역할을 하는 장치입니다. 기어, 링크, 그리퍼 손가락 등으로 구성됩니다.',
+    leafSpring:
+      '판스프링(Leaf Spring)은 여러 겹의 강철 판을 겹쳐 만든 탄성 부품으로, 주로 상용차·트럭의 현가 장치에 사용됩니다. 클램프, 리프 레이어, 서포트 등으로 구성됩니다.',
+    v4Engine:
+      'V4 엔진은 실린더가 V자형으로 4개 배치된 내연기관입니다. 크랭크축, 피스톤, 커넥팅 로드, 피스톤 링·핀 등으로 구성되어 있습니다.',
   }
   const projectDescription =
-    projectDescriptions[safeProjectId] ?? '프로젝트 설명이 준비 중입니다.'
-  const partDescription = '드론의 주요 부품으로 기능 설명이 제공됩니다.'
+    materialDescriptionFromServer?.trim() ||
+    projectDescriptions[safeProjectId] ||
+    '프로젝트 설명이 준비 중입니다.'
+  const partDescriptions: Record<string, string> = {
+    drone: '드론의 주요 부품으로 기능 설명이 제공됩니다.',
+    robotArm: '로봇 팔의 주요 부품으로 기능 설명이 제공됩니다.',
+    robotGripper: '로봇 그리퍼의 주요 부품으로 기능 설명이 제공됩니다.',
+    suspension: '서스펜션의 주요 부품으로 기능 설명이 제공됩니다.',
+    leafSpring: '판스프링의 주요 부품으로 기능 설명이 제공됩니다.',
+    v4Engine: 'V4 엔진의 주요 부품으로 기능 설명이 제공됩니다.',
+  }
+  const partDescription = partDescriptions[safeProjectId] ?? '해당 프로젝트의 주요 부품으로 기능 설명이 제공됩니다.'
+
+  /** API가 description/detail 외 다른 필드명·중첩 구조로 넘길 수 있음 (스펙: detail이 상세 설명) */
+  const getPartDescriptionText = (part: MaterialPart | undefined): string => {
+    if (!part || typeof part !== 'object') return ''
+    const p = part as Record<string, unknown>
+    const candidates = [
+      p.detail,
+      p.description,
+      p.partDescription,
+      p.part_description,
+      p.content,
+      p.explanation,
+      p.desc,
+      p.summary,
+      p.text,
+      p.info,
+      (p.partInfo as Record<string, unknown> | undefined)?.description,
+      (p.partInfo as Record<string, unknown> | undefined)?.detail,
+    ]
+    for (const v of candidates) {
+      if (typeof v === 'string' && v.trim()) return v.trim()
+    }
+    return ''
+  }
 
   const normalizePartName = (name: string) => {
     if (safeProjectId === 'robotArm') {
@@ -169,6 +242,25 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const activeMaterialId = studySession?.materialId ?? materialId
 
   const resolveBaseName = (name: string) => normalizePartName(name)
+
+  /** API 부품명(예: "Robot Base", "Suspension Base")을 뷰어에서 쓰는 키(예: "base", "BASE")로 변환 */
+  const apiNameToViewerKey = (apiName: string, projectId: string): string => {
+    const lower = apiName.toLowerCase().trim()
+    const noSpace = apiName.replace(/\s+/g, '')
+    if (projectId === 'robotArm') {
+      if (lower === 'robot base' || lower === 'base') return 'base'
+      const partNum = apiName.match(/Part\s*(\d+)/i)
+      if (partNum) return `Part${partNum[1]}`
+      if (noSpace.toLowerCase().startsWith('part8')) return 'Part8'
+    }
+    if (projectId === 'suspension') {
+      if (lower.includes('base')) return 'BASE'
+      if (lower.includes('nut')) return 'NUT'
+      if (lower.includes('rod')) return 'ROD'
+      if (lower.includes('spring')) return 'SPRING'
+    }
+    return noSpace || apiName
+  }
 
   const resolveSessionPartId = (parentName?: string | null) => {
     if (!parentName) return null
@@ -232,25 +324,84 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     return [0, 0, 0] as [number, number, number]
   }
 
-  const queueSaveSession = () => {
-    if (!studySessionId || !latestCameraRef.current) return
-    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = window.setTimeout(async () => {
-      const cameraState = latestCameraRef.current
-      if (!cameraState) return
-      try {
-        await saveStudySession(studySessionId, {
-          view: viewMode === 'single' ? 'SINGLE_VIEW' : 'ASSEMBLY_VIEW',
-          position: cameraState.position,
-          quaternion: cameraState.quaternion,
-          target: cameraState.target,
-          zoom: cameraState.zoom,
-        })
-      } catch (error) {
-        console.error('학습 세션 저장 실패', error)
-      }
-    }, 600)
+  const saveSessionNow = async () => {
+    const sid = studySessionIdRef.current
+    const cameraState = latestCameraRef.current
+    if (!sid || !cameraState) return
+    const view = viewModeRef.current
+    const position: [number, number, number] = Array.isArray(cameraState.position) && cameraState.position.length === 3
+      ? [cameraState.position[0], cameraState.position[1], cameraState.position[2]]
+      : [0, 60, 0]
+    const target: [number, number, number] = Array.isArray(cameraState.target) && cameraState.target.length === 3
+      ? [cameraState.target[0], cameraState.target[1], cameraState.target[2]]
+      : [0, 0, 0]
+    const quaternion: [number, number, number, number] = Array.isArray(cameraState.quaternion) && cameraState.quaternion.length === 4
+      ? [cameraState.quaternion[0], cameraState.quaternion[1], cameraState.quaternion[2], cameraState.quaternion[3]]
+      : [0, 0, 0, 1]
+    const zoom = Number.isFinite(cameraState.zoom) ? cameraState.zoom : 1.5
+    const percent = Math.min(100, Math.max(0, explodePercentRef.current))
+    try {
+      await saveStudySession(sid, {
+        view: view === 'single' ? 'PART_VIEW' : 'ASSEMBLY_VIEW',
+        position,
+        quaternion,
+        target,
+        zoom,
+        percent,
+      })
+    } catch (error) {
+      console.error('학습 세션 저장 실패', error)
+      showToast('진행 상황 저장에 실패했습니다.', 'error')
+    }
   }
+
+  const queueSaveSession = () => {
+    if (!latestCameraRef.current) return
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = window.setTimeout(() => {
+      saveTimerRef.current = null
+      saveSessionNow()
+    }, 800)
+  }
+
+  // 페이지 이탈/언마운트 시 대기 중인 저장 즉시 실행 (카메라 위치 유지)
+  useEffect(() => {
+    const flushSave = () => {
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = null
+      }
+      const sid = studySessionIdRef.current
+      const cam = latestCameraRef.current
+      const view = viewModeRef.current
+      if (sid && cam) {
+        const position: [number, number, number] = Array.isArray(cam.position) && cam.position.length === 3
+          ? [cam.position[0], cam.position[1], cam.position[2]]
+          : [0, 60, 0]
+        const target: [number, number, number] = Array.isArray(cam.target) && cam.target.length === 3
+          ? [cam.target[0], cam.target[1], cam.target[2]]
+          : [0, 0, 0]
+        const quaternion: [number, number, number, number] = Array.isArray(cam.quaternion) && cam.quaternion.length === 4
+          ? [cam.quaternion[0], cam.quaternion[1], cam.quaternion[2], cam.quaternion[3]]
+          : [0, 0, 0, 1]
+        const zoom = Number.isFinite(cam.zoom) ? cam.zoom : 1.5
+        const percent = Math.min(100, Math.max(0, explodePercentRef.current))
+        saveStudySession(sid, {
+          view: view === 'single' ? 'PART_VIEW' : 'ASSEMBLY_VIEW',
+          position,
+          quaternion,
+          target,
+          zoom,
+          percent,
+        }).catch((err) => console.error('학습 세션 저장 실패', err))
+      }
+    }
+    window.addEventListener('beforeunload', flushSave)
+    return () => {
+      window.removeEventListener('beforeunload', flushSave)
+      flushSave()
+    }
+  }, [])
 
   const uniqueParts = parts.reduce(
     (acc, name) => {
@@ -409,7 +560,13 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const partOverrides = partOverridesByProject[safeProjectId] ?? projectConfig?.defaultOverrides
 
   const handleExpenseToggle = () => {
-    navigate(expanded ? '/study' : '/study/expense')
+    const materialId = projectConfig?.materialId
+    const query = typeof materialId === 'number' ? `?materialId=${materialId}` : ''
+    if (expanded) {
+      navigate(`/study${query}`)
+    } else {
+      navigate(`/study/expense${query}`)
+    }
   }
 
   const handleSelectPart = (index: number) => {
@@ -431,6 +588,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     const scale = percentToScale(nextPercent)
     setExplodePercent(nextPercent)
     viewerRef.current?.setExplodeScale?.(scale)
+    const amount = nextPercent <= 0 ? 0 : 1
+    viewerRef.current?.setExplodeCurrent?.(amount)
     if (nextPercent <= 1) {
       setIsAssemble(true)
       viewerRef.current?.setTarget?.(0)
@@ -438,6 +597,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       setIsAssemble(false)
       viewerRef.current?.setTarget?.(1)
     }
+    queueSaveSession()
   }
 
   const handleSwipeMode = () => {
@@ -783,6 +943,19 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     prevViewModeRef.current = viewMode
   }, [viewMode])
 
+  // URL의 materialId가 바뀌면 해당 프로젝트로 전환 (홈에서 다른 오브젝트 클릭 시)
+  useEffect(() => {
+    const midParam = searchParams.get('materialId')
+    if (!midParam) return
+    const mid = parseInt(midParam, 10)
+    if (!Number.isFinite(mid)) return
+    const key = materialIdToProjectId[mid]
+    if (key && key !== projectId) {
+      setProjectId(key)
+      localStorage.setItem('assembly-last-project', key)
+    }
+  }, [searchParams, projectId])
+
   useEffect(() => {
     if (safeProjectId !== projectId) {
       setProjectId(safeProjectId)
@@ -802,8 +975,14 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       try {
         const response = await createStudySession(materialId)
         if (cancelled) return
-        setStudySession(response.data)
-        setStudySessionId(response.data.sessionId)
+        // API: { status, message, data: { sessionId, position, quaternion, target, zoom, ... } }
+        const session = (response && typeof response === 'object' && 'data' in response)
+          ? (response as { data: StudySession }).data
+          : (response as StudySession)
+        if (session && typeof session === 'object' && 'sessionId' in session) {
+          setStudySession(session as StudySession)
+          setStudySessionId((session as StudySession).sessionId)
+        }
       } catch (error) {
         if (cancelled) return
         if (axios.isAxiosError(error)) {
@@ -817,14 +996,26 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           if (error.response?.status === 409) {
             try {
               const homeResponse = await getStudyHomeAll()
-              const match = homeResponse.data.find((item: StudyHomeItem) => item.materialId === materialId)
+              const match = homeResponse.data.find((item) => item.materialId === materialId)
               if (match) {
                 setStudySessionId(match.sessionId)
                 try {
+                  console.log('[세션 조회] sessionId로 GET 요청:', match.sessionId)
                   const sessionRes = await getStudySession(match.sessionId)
-                  if (sessionRes?.data) setStudySession(sessionRes.data)
-                } catch {
-                  // 세션 상세만 실패한 경우 sessionId만 있어도 채팅/파츠 로드는 됨
+                  console.log('[세션 조회] API 응답 전체:', sessionRes)
+                  // API: { status, message, data: { position, quaternion, target, zoom, ... } }
+                  const session = (sessionRes && typeof sessionRes === 'object' && 'data' in sessionRes)
+                    ? (sessionRes as { data: StudySession }).data
+                    : (sessionRes as StudySession)
+                  console.log('[세션 조회] 파싱된 session (카메라 복원용):', session ? { position: session.position, quaternion: session.quaternion, target: session.target, zoom: session.zoom, sessionId: session.sessionId } : null)
+                  if (session && typeof session === 'object' && 'sessionId' in session) {
+                    setStudySession(session as StudySession)
+                    console.log('[세션 조회] setStudySession 완료, 카메라 복원 예정')
+                  } else {
+                    console.warn('[세션 조회] session이 없거나 sessionId 없음, setStudySession 스킵')
+                  }
+                } catch (err) {
+                  console.warn('GET /api/study/session/{id} 조회 실패:', err)
                 }
               } else {
                 console.warn('세션이 이미 존재하지만 sessionId를 찾지 못했습니다.', responseData)
@@ -846,37 +1037,85 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }, [materialId])
 
+  // 학습 기계(프로젝트) 설명은 서버 study/home 목록에서 받아와 표시
+  useEffect(() => {
+    let cancelled = false
+    const fetchMaterialDescription = async () => {
+      if (!materialId) {
+        setMaterialDescriptionFromServer(null)
+        return
+      }
+      try {
+        const res = await getStudyHomeAll()
+        if (cancelled) return
+        const item = res.data?.find((x) => x.materialId === materialId)
+        setMaterialDescriptionFromServer(item?.description?.trim() ?? null)
+      } catch {
+        if (!cancelled) setMaterialDescriptionFromServer(null)
+      }
+    }
+    fetchMaterialDescription()
+    return () => {
+      cancelled = true
+    }
+  }, [materialId])
+
+  // 부품 설명/이미지는 현재 보고 있는 프로젝트 기준으로 조회 (세션 materialId 사용 시 드론만 조회되는 문제 방지)
   useEffect(() => {
     let cancelled = false
     const fetchMaterialParts = async () => {
-      if (!activeMaterialId) {
+      if (!materialId) {
         setMaterialPartsByBase({})
         return
       }
       try {
-        const response = await getMaterialParts(activeMaterialId)
+        setPartsFetchError(null)
+        const response = await getMaterialParts(materialId)
         if (cancelled) return
+        const raw = response?.data
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray((raw as { list?: MaterialPart[] })?.list)
+            ? (raw as { list: MaterialPart[] }).list
+            : Array.isArray((raw as { parts?: MaterialPart[] })?.parts)
+              ? (raw as { parts: MaterialPart[] }).parts
+              : []
         const next: Record<string, MaterialPart> = {}
-        response.data.forEach((part: MaterialPart) => {
-          next[resolveBaseName(part.name)] = part
+        list.forEach((part) => {
+          const key = resolveBaseName(part.name)
+          const keyNoSpace = key.replace(/\s+/g, '')
+          const viewerKey = apiNameToViewerKey(part.name, safeProjectId)
+          next[key] = part
+          next[key.toLowerCase()] = part
+          next[keyNoSpace] = part
+          next[keyNoSpace.toLowerCase()] = part
+          next[viewerKey] = part
+          next[viewerKey.toLowerCase()] = part
+          next[part.name] = part
+          next[part.name.toLowerCase()] = part
+          next[part.name.replace(/\s+/g, '')] = part
+          next[part.name.replace(/\s+/g, '').toLowerCase()] = part
         })
+        if (import.meta.env.DEV && list.length > 0) {
+          console.log('[부품 API 응답 샘플] 첫 번째 부품 구조:', list[0])
+        }
         setMaterialPartsByBase(next)
       } catch (error) {
         console.error('부품 목록 조회 실패', error)
+        if (!cancelled) {
+          const message =
+            axios.isAxiosError(error) && error.response?.status === 401
+              ? '로그인이 필요합니다. 로그인 후 다시 시도해 주세요.'
+              : '서버에 연결되지 않아 부품 설명을 불러올 수 없습니다. .env의 VITE_API_URL과 서버 상태를 확인해 주세요.'
+          setPartsFetchError(message)
+        }
       }
     }
     fetchMaterialParts()
     return () => {
       cancelled = true
     }
-  }, [activeMaterialId])
-
-  // 세션이 없으면(로그아웃/계정 전환 등) AI 채팅도 초기화 → 계정마다 채팅 내역 분리
-  useEffect(() => {
-    if (!studySessionId) {
-      setAiMessages(DEFAULT_AI_MESSAGES)
-    }
-  }, [studySessionId])
+  }, [materialId, safeProjectId])
 
   useEffect(() => {
     let cancelled = false
@@ -889,7 +1128,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         ])
         if (cancelled) return
         const nextParts: Record<string, StudySessionPart> = {}
-        partsResponse.data.forEach((part: StudySessionPart) => {
+        partsResponse.data.forEach((part) => {
           const base = resolveBaseName(part.name)
           const lower = part.name.toLowerCase()
           const baseLower = base.toLowerCase()
@@ -902,14 +1141,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         })
         setSessionPartsByBase(nextParts)
         if (chatResponse.data.length > 0) {
-          const nextMessages: AiMessage[] = chatResponse.data.map((message: ChatMessage) => ({
+          const nextMessages: AiMessage[] = chatResponse.data.map((message) => ({
             id: `${message.messageId}`,
             role: toRole(message.messageType),
             text: message.messageContent,
           }))
           setAiMessages(nextMessages)
-        } else {
-          setAiMessages(DEFAULT_AI_MESSAGES)
         }
       } catch (error) {
         console.error('세션 데이터 조회 실패', error)
@@ -928,7 +1165,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       try {
         const response = await getStudyNotes(studySessionId)
         if (cancelled) return
-        const mappedNotes = response.data.map((note: StudyNote) => ({
+        const mappedNotes = response.data.map((note) => ({
           id: note.noteId,
           text: note.text,
           position: note.position,
@@ -936,7 +1173,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         }))
         isHydratingNotesRef.current = true
         viewerRef.current?.setNotesFromServer?.(mappedNotes)
-        noteIdMapRef.current = response.data.reduce<Record<number, number>>((acc: Record<number, number>, note: StudyNote) => {
+        noteIdMapRef.current = response.data.reduce<Record<number, number>>((acc, note) => {
           acc[note.noteId] = note.noteId
           return acc
         }, {})
@@ -952,15 +1189,101 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }, [studySessionId, sessionPartNameById])
 
+  // 서버에서 받은 카메라 상태를 ref에 보관 → onPartsChange 또는 effect에서 적용 (뷰어 초기화 뒤에 적용)
+  const pendingCameraRef = useRef<{
+    position: [number, number, number]
+    quaternion: [number, number, number, number]
+    target: [number, number, number]
+    zoom: number
+    percent?: number
+    sessionId: number
+  } | null>(null)
+  const appliedCameraSessionIdRef = useRef<number | null>(null)
+
   useEffect(() => {
-    if (!studySession || !viewerRef.current?.setCameraState) return
+    if (!studySessionId || !studySession) return
+    if (appliedCameraSessionIdRef.current === studySessionId) return
+    const s = studySession as StudySession & Record<string, unknown>
+    const pos = s.position ?? (typeof s.position_x === 'number' ? [s.position_x, s.position_y, s.position_z] : null)
+    const quat = s.quaternion ?? (typeof s.quaternion_x === 'number' ? [s.quaternion_x, s.quaternion_y, s.quaternion_z, s.quaternion_w] : null)
+    const tgt = s.target ?? (typeof s.target_x === 'number' ? [s.target_x, s.target_y, s.target_z] : null)
+    const zm = s.zoom ?? s.zoom_value
+    if (!Array.isArray(pos) || pos.length !== 3 || !Array.isArray(tgt) || tgt.length !== 3 || !Number.isFinite(Number(zm))) {
+      console.warn('[세션 조회] 카메라 복원 스킵 (필수 필드 부족):', { pos: !!pos, posLen: Array.isArray(pos) ? pos.length : 0, tgt: !!tgt, tgtLen: Array.isArray(tgt) ? tgt.length : 0, zoom: zm })
+      pendingCameraRef.current = null
+      return
+    }
+    const q = Array.isArray(quat) && quat.length >= 3
+      ? [Number(quat[0]), Number(quat[1]), Number(quat[2]), quat.length === 4 ? Number(quat[3]) : 1]
+      : [0, 0, 0, 1]
+    pendingCameraRef.current = {
+      position: [Number(pos[0]), Number(pos[1]), Number(pos[2])],
+      quaternion: q as [number, number, number, number],
+      target: [Number(tgt[0]), Number(tgt[1]), Number(tgt[2])],
+      zoom: Number(zm),
+      percent: studySession.percent ?? ((studySession as Record<string, unknown>).explodePercent as number | undefined),
+      sessionId: studySessionId,
+    }
+  }, [studySession, studySessionId])
+
+  const applyPendingCamera = () => {
+    const pending = pendingCameraRef.current
+    if (!pending || !viewerRef.current?.setCameraState || appliedCameraSessionIdRef.current === pending.sessionId) return
+    console.log('[세션 조회] 저장된 카메라 적용:', { position: pending.position, target: pending.target, zoom: pending.zoom })
     viewerRef.current.setCameraState({
-      position: studySession.position,
-      quaternion: studySession.quaternion,
-      target: studySession.target,
-      zoom: studySession.zoom,
+      position: pending.position,
+      quaternion: pending.quaternion,
+      target: pending.target,
+      zoom: pending.zoom,
     })
-  }, [studySession])
+    const pct = pending.percent
+    if (typeof pct === 'number' && Number.isFinite(pct) && pct >= 0 && pct <= 100) {
+      const actualPct: number = pct; // Explicitly narrow type
+      setExplodePercent(actualPct)
+      const scale = percentToScale(actualPct)
+      viewerRef.current?.setExplodeScale?.(scale)
+      // 분해량이 반영되려면 target/current를 1로 두어야 함 (current가 0이면 scale만 있어도 분해 0)
+      const amount = actualPct <= 0 ? 0 : 1
+      viewerRef.current?.setExplodeCurrent?.(amount)
+      setIsAssemble(actualPct <= 0)
+    }
+    appliedCameraSessionIdRef.current = pending.sessionId
+  }
+
+  useEffect(() => {
+    if (parts.length === 0 || !pendingCameraRef.current) return
+    applyPendingCamera()
+    const t1 = window.setTimeout(applyPendingCamera, 350)
+    const t2 = window.setTimeout(applyPendingCamera, 700)
+    return () => {
+      window.clearTimeout(t1)
+      window.clearTimeout(t2)
+    }
+  }, [studySession, studySessionId, parts.length])
+
+  // 선택된 부품 좌표 갱신 (분해도 변경 시 위치가 바뀌므로 explodePercent 포함)
+  useEffect(() => {
+    if (selectedIndex < 0 || !parts[selectedIndex]) {
+      setSelectedPartCoords(null)
+      return
+    }
+    const name = parts[selectedIndex]
+    const timeout = window.setTimeout(() => {
+      const transforms = viewerRef.current?.getCurrentTransforms?.() as ViewerTransforms | undefined
+      if (!transforms?.[name]) return
+      const t = transforms[name]
+      const pos = t.pos ?? [0, 0, 0]
+      const rot = t.rot ?? [0, 0, 0]
+      const scale = t.scale ?? (t.scaleX ?? 1)
+      setSelectedPartCoords({
+        name,
+        position: pos as [number, number, number],
+        rotation: rot as [number, number, number],
+        scale,
+      })
+    }, 100)
+    return () => window.clearTimeout(timeout)
+  }, [selectedIndex, parts, explodePercent])
 
   useEffect(() => {
     if (!parts.length || Object.keys(sessionPartsByBase).length === 0) return
@@ -1041,13 +1364,17 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
             const selectedPart =
               uniqueParts.find((item) => item.base === selectedBase) || uniqueParts[0]
             const selectedLabel = selectedPart?.base || 'Main Frame'
-            const selectedMeta = materialPartsByBase[selectedLabel]
+            const selectedMeta =
+              materialPartsByBase[selectedLabel] ||
+              materialPartsByBase[selectedLabel.toLowerCase()] ||
+              materialPartsByBase[selectedLabel.replace(/\s+/g, '')] ||
+              materialPartsByBase[selectedLabel.replace(/\s+/g, '').toLowerCase()]
             const selectedThumb =
               selectedMeta?.imageUrl ||
               partThumbnails[selectedLabel] ||
               getPartIconSvg(selectedLabel)
             const selectedDesc =
-              selectedMeta?.detail || selectedMeta?.description || partDescription
+              getPartDescriptionText(selectedMeta) || partDescription
             return (
               <S.PartsDetail>
                 <S.PartsDetailLabel>Detail</S.PartsDetailLabel>
@@ -1062,6 +1389,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         </S.PartsDetailSection>
       ) : (
         <S.CardHeader>Parts</S.CardHeader>
+      )}
+      {partsFetchError && (
+        <S.PartsFetchError role="alert">{partsFetchError}</S.PartsFetchError>
       )}
       <S.PartsList $expanded={expanded}>
         {uniqueParts.map((part) => (
@@ -1089,6 +1419,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               style={{
                 backgroundImage: `url(${
                   materialPartsByBase[part.base]?.imageUrl ||
+                  materialPartsByBase[part.base.toLowerCase()]?.imageUrl ||
+                  materialPartsByBase[part.base.replace(/\s+/g, '')]?.imageUrl ||
+                  materialPartsByBase[part.base.replace(/\s+/g, '').toLowerCase()]?.imageUrl ||
                   partThumbnails[part.base] ||
                   getPartIconSvg(part.base)
                 })`,
@@ -1098,7 +1431,11 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               <S.PartTitle>{part.base}</S.PartTitle>
               {!expanded && (
                 <S.PartDesc>
-                  {materialPartsByBase[part.base]?.description || partDescription}
+                  {getPartDescriptionText(materialPartsByBase[part.base]) ||
+                    getPartDescriptionText(materialPartsByBase[part.base.toLowerCase()]) ||
+                    getPartDescriptionText(materialPartsByBase[part.base.replace(/\s+/g, '')]) ||
+                    getPartDescriptionText(materialPartsByBase[part.base.replace(/\s+/g, '').toLowerCase()]) ||
+                    partDescription}
                 </S.PartDesc>
               )}
             </S.PartMeta>
@@ -1108,7 +1445,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     </S.PartsCard>
   )
 
-  const renderAiCard = (expanded: boolean, compact = false, showPrompt = false) => (
+  const renderAiCard = (expanded: boolean, compact: boolean = false, showPrompt: boolean = false) => (
     <S.AiCard $expanded={expanded} $compact={compact}>
       <S.AiHeader>
         <span>AI Assistant</span>
@@ -1423,6 +1760,10 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                         }
                       }
                     }
+                    if (nextParts.length) {
+                      setTimeout(applyPendingCamera, 100)
+                      setTimeout(applyPendingCamera, 450)
+                    }
                   }}
                   onSelectedChange={(index: number) => {
                     setSelectedIndex(index)
@@ -1430,6 +1771,19 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                   onNotesChange={(nextNotes: unknown[]) => handleNotesChange(nextNotes as Note[])}
                   onActiveNoteChange={handleActiveNote}
                 />
+
+                {selectedPartCoords && (
+                  <S.SelectedPartCoords $expanded={expenseToggleOn}>
+                    <div>name : {selectedPartCoords.name}</div>
+                    <div>
+                      position : [{selectedPartCoords.position.map((n) => n.toFixed(2)).join(', ')}]
+                    </div>
+                    <div>
+                      rotation : [{selectedPartCoords.rotation.map((n) => n.toFixed(0)).join(', ')}]
+                    </div>
+                    <div>scale : {selectedPartCoords.scale.toFixed(2)}</div>
+                  </S.SelectedPartCoords>
+                )}
 
                 <S.ViewerFooter $expanded={expenseToggleOn}>
                   <S.ProgressRow $expanded={expenseToggleOn}>

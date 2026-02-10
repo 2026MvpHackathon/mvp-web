@@ -3,16 +3,21 @@ import * as S from './VerifyStep.style';
 import AuthBtn from '@/widgets/Auth/ui/AuthBtn/AuthBtn';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useToast } from '@/shared/ui/Toast/ToastContext';
 
 const VerifyStep = () => {
     const navigate = useNavigate();
     const [isActive, setIsActive] = useState(false);
+     const { showToast } = useToast();
 
     function Btnhandler() {
         if (isActive) {
             navigate('/auth/login');
+            showToast('성공적으로 회원가입이 되었습니다.', 'success')
         } else {
             console.warn("checkBox 비활성화"); // Changed to warn, as it might be an intentional UI state
+            showToast('개인정보 수집 및 이용에 동의가 필요합니다.', 'error');
+            
         }
     }
 

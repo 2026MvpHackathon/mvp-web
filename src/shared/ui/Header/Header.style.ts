@@ -31,16 +31,23 @@ export const header_menu = styled.span<{ $active?: boolean }>`
     }
 `
 
+interface HeaderBtnProps {
+    $isAuthPage: boolean;
+}
 
-export const header_btn = styled.button`
+export const header_btn = styled.button<HeaderBtnProps>`
     padding: 10px 20px;
 
     border-radius: ${shapes.xsmall};
     border: 1px solid ${colors.main.assistive};
     background: ${colors.background.Dark};
 
-    color: ${colors.main.normal};
+    color: ${props => props.$isAuthPage ? colors.text.strong : colors.main.normal};
     ${typography("caption", "md", "medium")};
+
+    &:hover, :focus {
+        color: ${colors.text.strong};  
+    }
 `
 
 export const styled_link = styled(Link)`

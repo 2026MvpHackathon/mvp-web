@@ -7,6 +7,7 @@ import { setAccessToken, setEmail, setRefreshToken, setUserId } from '@/features
 import { publicInstance } from '@/features/Auth/axiosInstance';
 import type { InputConfig } from '@/widgets/Auth/ui/AuthInputField/AuthInputField';
 import { useAuthStatus } from '@/shared/ui/Layout/Layout'; // Import useAuthStatus
+import { useToast } from '@/shared/ui/Toast/ToastContext';
 
 
 
@@ -18,6 +19,7 @@ export type LoginInputs = {
 const LoginStep = () => {
     const navigate = useNavigate();
     const { setIsLoggedIn } = useAuthStatus(); // Use the context
+    const { showToast } = useToast();
 
     useEffect(() => {
       loggedInUserRedirect();
@@ -42,30 +44,33 @@ const LoginStep = () => {
         setRefreshToken(response.data.data.refreshToken); 
         setEmail(response.data.data.email); 
         setUserId(response.data.data.userId)
-        setIsLoggedIn(true); // Set isLoggedIn to true after successful login
+        setIsLoggedIn(true); // Set isLoggedIn to true after successful login 
         navigate("/home");
+        showToast('성공적으로 로그인되었습니다.', 'success');
       })
       .catch(function (error) {
         if (error.response && error.response.status) {
           switch(error.response.status) {
             case (400):
+              showToast('이메일 형식이 옮지 않습니다.', 'error');
+              setGeneralError("이메일 형식이 옮지 않습니다");
               sessionStorage.clear();
-              navigate("/verify", {
-                state: data.email
-              })
+
               break;
             case (401):
+              showToast('이메일 또는 비밀번호를 확인해 주십시오.', 'error');
               setGeneralError("이메일 또는 비밀번호를 확인해 주십시오.");
               break;
             case (500):
-              alert("서버 에러, 잠시 후 다시 시도해주세요.");
+              showToast('서버 에러, 잠시 후 다시 시도해주세요.', 'error');
               break;
             default:
-              alert(`${error.status}, 잠시 후 다시 시도해주세요.`);
+              showToast(`${error.status}, 잠시 후 다시 시도해주세요.`, 'error');
               break;
           }
         } else {
             alert("네트워크 오류가 발생헀습니다. 잠시 후 다시 시도해주세요.");
+            showToast(`네트워크 오류가 발생헀습니다. 잠시 후 다시 시도해주세요.`, 'error');
         }
       });
     }

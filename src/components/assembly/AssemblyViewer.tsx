@@ -1930,6 +1930,7 @@ type AssemblyViewerProps = {
 }
 
 export type AssemblyViewerHandle = {
+  setExplodeCurrent(amount: number): unknown;
   setProject?: (id: string, options?: { partOverrides?: Record<string, number> }) => void
   setTarget?: (value: number) => void
   setExplodeScale?: (value: number) => void
