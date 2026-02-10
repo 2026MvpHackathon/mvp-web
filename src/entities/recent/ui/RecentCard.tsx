@@ -24,7 +24,7 @@ const RecentCard = ({ item, onOpen }: Props) => {
           <S.openButtonContainer>
             <S.openButton onClick={onOpen}>열기</S.openButton>
           </S.openButtonContainer>
-          <S.img src={`/src/assets${item.image}`} alt={item.title} />
+          <S.img src={`${item.image}`} alt={item.title} />
         </S.bottom>
       </S.item>
     </S.container>
