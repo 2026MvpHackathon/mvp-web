@@ -1,4 +1,4 @@
-import styled, { keyframes } from 'styled-components'
+import styled, { keyframes, css } from 'styled-components'
 import { flexColumnCenter } from '@/shared/values/_flex'
 import { typography } from '@/shared/values/typography.mixin'
 import { colors } from '@/shared/values/_foundation'
@@ -95,10 +95,10 @@ export const LoadingBarFill = styled.div<{ $animationType: 'backAndForth' | 'fil
   height: 100%;
   background-color: ${colors.main.normal}; // 로딩바 채우기 색상
   border-radius: 0.125rem;
-  ${({ $animationType }) => $animationType === 'backAndForth' ? `
+  ${({ $animationType }) => $animationType === 'backAndForth' ? css`
     width: 100%;
     animation: ${backAndForthAnimation} 2s ease-in-out infinite;
-  ` : `
+  ` : css`
     width: 0%;
     animation: ${fillUpAnimation} 6s linear forwards; // 6초간 게이지 차오르듯이
   `}
