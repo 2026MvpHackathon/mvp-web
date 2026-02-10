@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import * as S from "./ProblemDropdown.style";
 
-const ProblemDropdown = () => {
+interface ProblemDropdownProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const ProblemDropdown = ({ value, onChange }: ProblemDropdownProps) => {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<string[]>([]);
-  const [selected, setSelected] = useState<string>("");
 
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -14,10 +18,12 @@ const ProblemDropdown = () => {
   }, []);
 
   useEffect(() => {
-    if (options.length > 0) {
-      setSelected(options[options.length - 1]);
+    // If the options load after the initial render, ensure the value is set to a valid option.
+    // If the provided value is not in options, default to the last option.
+    if (options.length > 0 && !options.includes(value)) {
+      onChange(options[options.length - 1]);
     }
-  }, [options]);
+  }, [options, value, onChange]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -39,7 +45,7 @@ const ProblemDropdown = () => {
     <S.Wrapper ref={wrapperRef}>
       <S.DropdownWrapper>
         <S.DropdownBox onClick={() => setOpen(prev => !prev)}>
-          <S.Value>{selected}</S.Value>
+          <S.Value>{value}</S.Value>
           <S.Arrow $open={open}>▾</S.Arrow>
         </S.DropdownBox>
 
@@ -49,7 +55,7 @@ const ProblemDropdown = () => {
             <S.Option
               key={option}
               onClick={() => {
-                setSelected(option);
+                onChange(option);
                 setOpen(false);
               }}
             >

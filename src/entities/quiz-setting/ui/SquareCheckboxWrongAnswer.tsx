@@ -1,12 +1,14 @@
-import { useState } from "react";
 import * as S from "./SquareCheckbox.style";
 import icon from '@/assets/check.png'
 
-const WrongAnswerCheckbox = () => {
-  const [checked, setChecked] = useState(false);
+interface WrongAnswerCheckboxProps {
+  checked: boolean;
+  onToggle: () => void;
+}
 
+const WrongAnswerCheckbox = ({ checked, onToggle }: WrongAnswerCheckboxProps) => {
   return (
-    <S.Wrapper $checked={checked} onClick={() => setChecked(!checked)}>
+    <S.Wrapper $checked={checked} onClick={onToggle}>
       <S.Box $checked={checked}>
         {checked && (
           <S.CheckIcon src={icon} />

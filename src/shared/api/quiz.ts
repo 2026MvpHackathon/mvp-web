@@ -72,3 +72,17 @@ export const generateQuiz = async (generationData: any): Promise<any> => {
   const response = await apiClient.post(`/api/quiz/generate`, generationData);
   return response.data;
 };
+
+export interface QuizStartSettings {
+  category: QuizCategory;
+  productIds: string[];
+  aiAnswerIds: string[];
+  isFavoriteIncluded: boolean;
+  isWrongAnswerIncluded: boolean;
+  numberOfProblems: number;
+}
+
+export const startQuizSession = async (settings: QuizStartSettings): Promise<any> => {
+  const response = await apiClient.post(`/api/quiz/start`, settings);
+  return response.data;
+};
