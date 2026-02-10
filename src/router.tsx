@@ -27,11 +27,11 @@ const router = createBrowserRouter([
             },
             {
                 path: "study",
-                element: <StudyPage />,
+                element: <ProtectedRoute><StudyPage /></ProtectedRoute>, // Protected
             },
             {
                 path: "study/expense",
-                element: <StudyExpensePage />,
+                element: <ProtectedRoute><StudyExpensePage /></ProtectedRoute>, // Protected
             },
             {
                 path: "quiz",
