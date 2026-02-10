@@ -46,6 +46,9 @@ const QuizPage = () => {
   const [aiQuizAnswers, setAiQuizAnswers] =
     useState<SelectableAIQuizAnswerItem[]>([]);
 
+
+
+
   const [favoriteItems, setFavoriteItems] = useState<QuizListItem[]>([]);
   const [wrongAnswerItems, setWrongAnswerItems] = useState<QuizListItem[]>([]);
 
@@ -69,28 +72,56 @@ const QuizPage = () => {
       setAverageCorrectRate("N/A");
     }
 
-    const favorites = JSON.parse(
-      localStorage.getItem("quiz_favorites") || "[]"
-    ) as number[];
+  //   const favorites = JSON.parse(
+  //     localStorage.getItem("quiz_favorites") || "[]"
+  //   ) as number[];
+  //   setFavoriteItems(
+  //     favorites.map((id) => ({
+  //       id: id.toString(),
+  //       label: `즐겨찾는 문제 ${id}`,
+  //       category: "db",
+  //     }))
+  //   );
+
+  //   const wrongs = JSON.parse(
+  //     localStorage.getItem("quiz_wrong_answers") || "[]"
+  //   ) as number[];
+  //   set
+  // ems(
+  //     wrongs.map((id) => ({
+  //       id: id.toString(),
+  //       label: `틀린 문제 ${id}`,
+  //       category: "db",
+  //     }))
+  //   );
+  }, []
+  );
+  /** 초기 데이터 및 더미 데이터 설정 */
+  useEffect(() => {
+    // 1. 평균 정답률 로드
+    const storedAverageRate = localStorage.getItem("averageQuizAccuracy");
+    setAverageCorrectRate(storedAverageRate ? `${storedAverageRate}%` : "N/A");
+
+    // 2. 즐겨찾기 더미 데이터
+    const Favorites = [101, 102, 105];
     setFavoriteItems(
-      favorites.map((id) => ({
+      Favorites.map((id) => ({
         id: id.toString(),
         label: `즐겨찾는 문제 ${id}`,
         category: "db",
       }))
     );
 
-    const wrongs = JSON.parse(
-      localStorage.getItem("quiz_wrong_answers") || "[]"
-    ) as number[];
+    // 3. 틀린 문제 더미 데이터
+    const Wrongs = [201, 203, 210, 215];
     setWrongAnswerItems(
-      wrongs.map((id) => ({
+      Wrongs.map((id) => ({
         id: id.toString(),
         label: `틀린 문제 ${id}`,
         category: "db",
       }))
     );
-  }, []);
+  }, []); // 의존성 배열 확인: 한 번만 실행됨
 
   /** 카테고리별 로딩 */
   useEffect(() => {
