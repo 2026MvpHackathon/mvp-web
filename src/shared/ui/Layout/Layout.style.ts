@@ -70,9 +70,10 @@ export const evaluation = styled.p`
 `
 
 // 로딩바 스타일 추가
-const loadingAnimation = keyframes`
-  0% { width: 0%; }
-  100% { width: 100%; } // 0%에서 100%로 한 번만 채워지도록 변경
+const backAndForthAnimation = keyframes`
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
 `;
 
 export const LoadingBarWrapper = styled.div`
@@ -82,11 +83,13 @@ export const LoadingBarWrapper = styled.div`
   background-color: ${colors.main.assistive}; // 로딩바 배경색
   border-radius: 0.125rem;
   overflow: hidden;
+  position: relative; // Needed for transform to work correctly
 `;
 
 export const LoadingBarFill = styled.div`
   height: 100%;
+  width: 100%; // Fill the wrapper completely
   background-color: ${colors.main.normal}; // 로딩바 채우기 색상
   border-radius: 0.125rem;
-  animation: ${loadingAnimation} 5s ease-out forwards; 
+  animation: ${backAndForthAnimation} 2s ease-in-out infinite; 
 `;

@@ -42,6 +42,8 @@ const DuringQuizPage = () => {
     const { setText, setIsBlur } = useOutletContext<LayoutContext>();
     // 퀴즈 생성
     const handleCreateQuiz = async () => {
+        setText("퀴즈를 생성 중..."); // Set loading text
+        setIsBlur(true); // Show blur overlay
         try {
         const res = await createQuiz({
             quizQuestionIds: [1, 2, 3],
@@ -66,6 +68,9 @@ const DuringQuizPage = () => {
         setCurrentQuizIndex(0);
         } catch (e) {
         console.error(e);
+        } finally {
+            setIsBlur(false); // Hide blur overlay
+            setText(""); // Clear loading text
         }
     };
 
