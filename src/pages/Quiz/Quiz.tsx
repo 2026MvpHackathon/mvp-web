@@ -18,8 +18,10 @@ import {
   fetchFavoriteItems,
   fetchWrongAnswerItems,
   fetchAverageCorrectRate,
+  startQuizSession,
   type ProductItemResponse,
   type AIQuizAnswerItemResponse,
+  type QuizStartSettings,
 } from "@/shared/api/quiz";
 
 interface SelectableProductItem extends ProductItemResponse { selected: boolean; }
@@ -31,12 +33,20 @@ const QuizPage = () => {
   const [isQuizStarted, setIsQuizStarted] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<QuizCategory>("db");
   const [products, setProducts] = useState<SelectableProductItem[]>([]);
-  const [aiQuizAnswers, setAiQuizAnswers] = useState<SelectableAIQuizAnswerItem[]>([]);
+  const [aiQuizAnswers, setAiQuizAnswers] = useState<
+    SelectableAIQuizAnswerItem[]
+  >([]);
   const [favoriteItems, setFavoriteItems] = useState<QuizListItem[]>([]);
   const [wrongAnswerItems, setWrongAnswerItems] = useState<QuizListItem[]>([]);
-  const [averageCorrectRate, setAverageCorrectRate] = useState<string | null>(null);
+  const [averageCorrectRate, setAverageCorrectRate] = useState<string | null>(
+    null,
+  );
+
   const [, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFavoriteIncluded, setIsFavoriteIncluded] = useState(false);
+  const [isWrongAnswerIncluded, setIsWrongAnswerIncluded] = useState(false);
+  const [numberOfProblems, setNumberOfProblems] = useState("10");
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -68,15 +78,20 @@ const QuizPage = () => {
         setError(null);
         if (selectedCategory === "db") {
           const fetchedProducts = await fetchProducts(selectedCategory);
-          setProducts(fetchedProducts.map(p => ({ ...p, selected: false })));
+          setProducts(fetchedProducts.map((p) => ({ ...p, selected: false })));
           setAiQuizAnswers([]);
         } else {
           const fetchedAnswers = await fetchAIQuizAnswers(selectedCategory);
-          setAiQuizAnswers(fetchedAnswers.map(a => ({ ...a, selected: false })));
+          setAiQuizAnswers(
+            fetchedAnswers.map((a) => ({ ...a, selected: false })),
+          );
           setProducts([]);
         }
       } catch (err) {
-        console.error(`Failed to fetch data for category ${selectedCategory}:`, err);
+        console.error(
+          `Failed to fetch data for category ${selectedCategory}:`,
+          err,
+        );
         setError("카테고리 데이터를 불러오지 못했습니다.");
       } finally {
         setIsLoading(false);
@@ -85,8 +100,11 @@ const QuizPage = () => {
     loadCategoryData();
   }, [selectedCategory]);
 
-  const isAllSelected = products.every(p => p.selected) && products.length > 0;
-  const isAllAIAnswersSelected = aiQuizAnswers.every(a => a.selected) && aiQuizAnswers.length > 0;
+  const isAllSelected =
+    products.every((product) => product.selected) && products.length > 0;
+  const isAllAIAnswersSelected =
+    aiQuizAnswers.every((answer) => answer.selected) &&
+    aiQuizAnswers.length > 0;
 
   const handleProductToggle = (id: string) => {
     setProducts(prev => prev.map(p => p.id === id ? { ...p, selected: !p.selected } : p));
@@ -98,28 +116,49 @@ const QuizPage = () => {
   };
 
   const handleAIAnswerToggle = (id: string) => {
-    setAiQuizAnswers(prev => prev.map(a => a.id === id ? { ...a, selected: !a.selected } : a));
+    setAiQuizAnswers((prevAnswers) =>
+      prevAnswers.map((answer) =>
+        answer.id === id ? { ...answer, selected: !answer.selected } : answer,
+      ),
+    );
   };
 
   const handleSelectAllAIAnswersToggle = () => {
-    const newState = !isAllAIAnswersSelected;
-    setAiQuizAnswers(prev => prev.map(a => ({ ...a, selected: newState })));
+    const newSelectAllState = !isAllAIAnswersSelected;
+    setAiQuizAnswers((prevAnswers) =>
+      prevAnswers.map((answer) => ({ ...answer, selected: newSelectAllState })),
+    );
   };
 
-  const handleStartQuiz = () => {
-    const selectedProducts = products.filter(p => p.selected);
-    const selectedAIAnswers = aiQuizAnswers.filter(a => a.selected);
+  const handleStartQuiz = async () => {
+    // Make function async
+    const selectedProducts = products.filter((p) => p.selected);
+    const selectedAIAnswers = aiQuizAnswers.filter((a) => a.selected);
 
     if (selectedProducts.length === 0 && selectedAIAnswers.length === 0) {
       showToast("Object를 선택해 주세요", "info");
       return;
     }
 
-    setIsQuizStarted(true);
-    console.log("Quiz Started!");
-    console.log("Selected Category:", selectedCategory);
-    console.log("Selected Products:", selectedProducts);
-    console.log("Selected AI Answers:", selectedAIAnswers);
+    const quizSettings: QuizStartSettings = {
+      category: selectedCategory,
+      productIds: selectedProducts.map((p) => p.id),
+      aiAnswerIds: selectedAIAnswers.map((a) => a.id),
+      isFavoriteIncluded,
+      isWrongAnswerIncluded,
+      numberOfProblems: parseInt(numberOfProblems, 10),
+    };
+
+    try {
+      // Call the new API function to start the quiz session
+      await startQuizSession(quizSettings);
+      setIsQuizStarted(true);
+      console.log("Quiz Started with settings:", quizSettings);
+      showToast("퀴즈가 시작되었습니다!", "success");
+    } catch (error) {
+      console.error("Failed to start quiz:", error);
+      showToast("퀴즈 시작에 실패했습니다.", "error");
+    }
   };
 
   if (error) return <div>오류: {error}</div>;
@@ -129,8 +168,10 @@ const QuizPage = () => {
     <S.Layout>
       <S.LeftPanel>
         <S.AverageRateContainer>
-          <S.AverageRateValue>{averageCorrectRate || 'N/A'}</S.AverageRateValue>
-          <S.AverageRateDescription>평균 정답률이에요!</S.AverageRateDescription>
+          <S.AverageRateValue>{averageCorrectRate || "N/A"}</S.AverageRateValue>
+          <S.AverageRateDescription>
+            평균 정답률이에요!
+          </S.AverageRateDescription>
         </S.AverageRateContainer>
         <FavoritesList items={favoriteItems} />
         <WrongAnswerList items={wrongAnswerItems} />
@@ -161,7 +202,7 @@ const QuizPage = () => {
                 ))}
               </S.ProductGridContainer>
             </>
-          ) : (
+          ) : ( // selectedCategory === "ai"
             <>
               <S.SelectAllWrapper>
                 <SelectCircle
@@ -186,12 +227,23 @@ const QuizPage = () => {
         </S.ProductSelectionContainer>
 
         <S.CheckboxRow>
-          <FavoriteCheckbox />
-          <WrongAnswerCheckbox />
+          <FavoriteCheckbox
+            checked={isFavoriteIncluded}
+            onToggle={() => setIsFavoriteIncluded((prev) => !prev)}
+          />
+          <WrongAnswerCheckbox
+            checked={isWrongAnswerIncluded}
+            onToggle={() => setIsWrongAnswerIncluded((prev) => !prev)}
+          />
         </S.CheckboxRow>
-        <ProblemDropdown />
+        <ProblemDropdown
+          value={numberOfProblems}
+          onChange={setNumberOfProblems}
+        />
         <S.StartQuizButtonWrapper>
-          <S.StartQuizButton onClick={handleStartQuiz}>퀴즈 시작</S.StartQuizButton>
+          <S.StartQuizButton onClick={handleStartQuiz}>
+            퀴즈 시작
+          </S.StartQuizButton>
         </S.StartQuizButtonWrapper>
       </S.Main>
     </S.Layout>
@@ -199,3 +251,4 @@ const QuizPage = () => {
 };
 
 export default QuizPage;
+
