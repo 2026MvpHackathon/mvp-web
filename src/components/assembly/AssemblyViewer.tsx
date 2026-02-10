@@ -12,15 +12,16 @@ class AssemblyEngine {
     this.canvas = canvas;
     this.callbacks = callbacks;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0b0e14);
+    this.scene.background = new THREE.Color(0x111111);
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
     this.camera.position.set(260, 180, 260);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.7;
+    this.renderer.toneMappingExposure = 1.1;
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.environmentTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environment = this.environmentTexture;
@@ -92,15 +93,23 @@ class AssemblyEngine {
     });
     // Keep transform controls hidden; do not add helper to scene.
 
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
-    keyLight.position.set(200, 300, 120);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.42);
+    this.scene.add(ambientLight);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 4.9);
+    keyLight.position.set(260, 320, 140);
     keyLight.castShadow = true;
     this.scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0x9bbcff, 0.6);
-    rimLight.position.set(-200, 120, -160);
-    this.scene.add(rimLight);
+    this.lightDefaults = {
+      exposure: this.renderer.toneMappingExposure,
+      ambient: ambientLight.intensity,
+      key: keyLight.intensity
+    };
+
+    this.lights = {
+      ambient: ambientLight,
+      key: keyLight
+    };
 
     const grid = new THREE.GridHelper(400, 20, 0xd0d4db, 0xe6e8ee);
     grid.position.y = -1;
@@ -225,6 +234,20 @@ class AssemblyEngine {
     if (this.callbacks?.onActiveNoteChange) {
       this.callbacks.onActiveNoteChange(id);
     }
+  }
+
+  buildNeutralEnvironment() {
+    const envScene = new THREE.Scene();
+    envScene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x2a2a2a, 0.5);
+    envScene.add(hemi);
+    const dirA = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirA.position.set(1, 1, 1);
+    envScene.add(dirA);
+    const dirB = new THREE.DirectionalLight(0xffffff, 0.35);
+    dirB.position.set(-1, 0.6, -0.8);
+    envScene.add(dirB);
+    return envScene;
   }
 
   setHoveredNote(noteId) {
@@ -826,41 +849,70 @@ class AssemblyEngine {
         }
         if (!child.material) {
           const hasVertexColors = Boolean(child.geometry?.attributes?.color);
-          child.material = new THREE.MeshStandardMaterial({
+          child.material = new THREE.MeshPhysicalMaterial({
             color: 0x9bbcff,
             vertexColors: hasVertexColors,
-            metalness: 0.2,
-            roughness: 0.6
+            metalness: 0.25,
+            roughness: 0.5,
+            clearcoat: 0.35,
+            clearcoatRoughness: 0.25
           });
           child.material.side = THREE.DoubleSide;
+          if ("envMapIntensity" in child.material) {
+            child.material.envMapIntensity = 0.2;
+          }
         } else if (
           !["v4Engine", "leafSpring"].includes(this.currentProjectId) &&
           Array.isArray(child.material)
         ) {
           child.material.forEach((mat) => {
-            if ("envMapIntensity" in mat) {
-              mat.envMapIntensity = 0.15;
-            }
-            if ("metalness" in mat && "roughness" in mat && mat.metalness <= 0.2) {
-              mat.roughness = Math.max(mat.roughness ?? 0, 0.7);
+            if ("metalness" in mat && "roughness" in mat) {
+              const metalness = mat.metalness ?? 0;
+              const isMetal = metalness >= 0.4;
+              mat.roughness = Math.min(mat.roughness ?? 1, isMetal ? 0.25 : 0.85);
+              mat.metalness = Math.max(metalness, isMetal ? 0.5 : 0.05);
+              if ("envMapIntensity" in mat) {
+                mat.envMapIntensity = isMetal ? 0.4 : 0.08;
+              }
+              if ("clearcoat" in mat) {
+                mat.clearcoat = isMetal ? Math.max(mat.clearcoat ?? 0, 0.35) : 0;
+                mat.clearcoatRoughness = isMetal
+                  ? Math.min(mat.clearcoatRoughness ?? 1, 0.25)
+                  : 1;
+              }
+            } else if ("envMapIntensity" in mat) {
+              mat.envMapIntensity = 0.2;
             }
           });
         } else if (!["v4Engine", "leafSpring"].includes(this.currentProjectId)) {
-          if ("envMapIntensity" in child.material) {
-            child.material.envMapIntensity = 0.15;
-          }
-          if (
-            "metalness" in child.material &&
-            "roughness" in child.material &&
-            child.material.metalness <= 0.2
-          ) {
-            child.material.roughness = Math.max(child.material.roughness ?? 0, 0.7);
+          if ("metalness" in child.material && "roughness" in child.material) {
+            const metalness = child.material.metalness ?? 0;
+            const isMetal = metalness >= 0.4;
+            child.material.roughness = Math.min(
+              child.material.roughness ?? 1,
+              isMetal ? 0.25 : 0.85
+            );
+            child.material.metalness = Math.max(metalness, isMetal ? 0.5 : 0.05);
+            if ("envMapIntensity" in child.material) {
+              child.material.envMapIntensity = isMetal ? 0.4 : 0.08;
+            }
+            if ("clearcoat" in child.material) {
+              child.material.clearcoat = isMetal
+                ? Math.max(child.material.clearcoat ?? 0, 0.35)
+                : 0;
+              child.material.clearcoatRoughness = isMetal
+                ? Math.min(child.material.clearcoatRoughness ?? 1, 0.25)
+                : 1;
+            }
+          } else if ("envMapIntensity" in child.material) {
+            child.material.envMapIntensity = 0.2;
           }
         }
       }
     });
 
     this.applyMaterialOverrides(part, object);
+    this.applyFinishOverrides(part, object);
 
     let objectBox = new THREE.Box3().setFromObject(object);
     let objectSize = objectBox.getSize(new THREE.Vector3());
@@ -978,6 +1030,82 @@ class AssemblyEngine {
     });
   }
 
+  applyFinishOverrides(part, object) {
+    if (this.currentProjectId === "v4Engine") {
+      object.traverse((child) => {
+        if (!child.isMesh) return;
+        const lambert = new THREE.MeshLambertMaterial({
+          color: 0xd8d8d8,
+          transparent: false,
+          opacity: 1
+        });
+        lambert.side = THREE.DoubleSide;
+        child.material?.dispose?.();
+        child.material = lambert;
+      });
+      return;
+    }
+    if (this.currentProjectId === "leafSpring") return;
+    const blockEnvMap = ["Main frame", "Main frame MIR"].includes(part?.name || "");
+    object.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      const materials = Array.isArray(child.material) ? [...child.material] : [child.material];
+      let mutated = false;
+      const nextMaterials = materials.map((mat) => {
+        let target = mat;
+        const isStandard = mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial;
+        if (!isStandard) {
+          target = new THREE.MeshStandardMaterial({
+            color: mat.color ?? new THREE.Color(0xffffff),
+            map: mat.map ?? null,
+            normalMap: mat.normalMap ?? null,
+            metalnessMap: mat.metalnessMap ?? null,
+            roughnessMap: mat.roughnessMap ?? null,
+            emissiveMap: mat.emissiveMap ?? null,
+            transparent: mat.transparent,
+            opacity: mat.opacity
+          });
+          target.side = mat.side ?? THREE.FrontSide;
+          mutated = true;
+        }
+        const metalness = target.metalness ?? 0;
+        const isMetal = metalness >= 0.4;
+        if (blockEnvMap && "envMap" in target) {
+          target.envMap = null;
+        }
+        if (!isMetal) {
+          const lambert = new THREE.MeshLambertMaterial({
+            color: target.color ?? new THREE.Color(0xffffff),
+            map: target.map ?? null,
+            emissive: target.emissive ?? new THREE.Color(0x000000),
+            emissiveMap: target.emissiveMap ?? null,
+            transparent: target.transparent,
+            opacity: target.opacity,
+            side: target.side ?? THREE.FrontSide
+          });
+          lambert.needsUpdate = true;
+          mutated = true;
+          return lambert;
+        }
+        target.metalness = Math.max(metalness, 0.5);
+        target.roughness = Math.min(target.roughness ?? 1, 0.25);
+        if ("envMapIntensity" in target) {
+          target.envMapIntensity = 0.4;
+        }
+        if ("clearcoat" in target) {
+          target.clearcoat = Math.max(target.clearcoat ?? 0, 0.3);
+          target.clearcoatRoughness = Math.min(target.clearcoatRoughness ?? 1, 0.25);
+        }
+        target.needsUpdate = true;
+        return target;
+      });
+      if (mutated) {
+        materials.forEach((mat) => mat.dispose?.());
+      }
+      child.material = Array.isArray(child.material) ? nextMaterials : nextMaterials[0];
+    });
+  }
+
   loadPart(part, token) {
     if (part.factory) {
       return new Promise((resolve, reject) => {
@@ -1065,6 +1193,21 @@ class AssemblyEngine {
       this.scene.environment = null;
     } else {
       this.scene.environment = this.environmentTexture;
+    }
+    if (this.lights && this.lightDefaults) {
+      if (projectId === "v4Engine") {
+        this.renderer.toneMappingExposure = 0.85;
+        this.lights.ambient.intensity = 0.1;
+        this.lights.key.intensity = 1.4;
+      } else if (projectId === "drone") {
+        this.renderer.toneMappingExposure = 1.32;
+        this.lights.ambient.intensity = 0.45;
+        this.lights.key.intensity = 5.1;
+      } else {
+        this.renderer.toneMappingExposure = this.lightDefaults.exposure;
+        this.lights.ambient.intensity = this.lightDefaults.ambient;
+        this.lights.key.intensity = this.lightDefaults.key;
+      }
     }
     this.loadToken += 1;
     const token = this.loadToken;
