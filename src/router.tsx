@@ -9,6 +9,7 @@ import SelectLoginOrSignupStep from './pages/Auth/ui/SelectLoginOrSignupStep/Sel
 import { StudyExpensePage, StudyPage } from './pages/Study/Study';
 import QuizPage from './pages/Quiz/Quiz';
 import DuringQuizPage from './pages/Quiz/DuringQuiz/DuringQuiz';
+import ProtectedRoute from './shared/ui/ProtectedRoute/ProtectedRoute'; // Import ProtectedRoute
 
 
 const router = createBrowserRouter([
@@ -22,19 +23,23 @@ const router = createBrowserRouter([
             },        
             {
               path: "home",
-              element: <HomePage />,
+              element: <ProtectedRoute><HomePage /></ProtectedRoute>, // Protected
             },
             {
                 path: "study",
-                element: <StudyPage />,
+                element: <ProtectedRoute><StudyPage /></ProtectedRoute>, // Protected
+            },
+            {
+                path: "study/expense",
+                element: <ProtectedRoute><StudyExpensePage /></ProtectedRoute>, // Protected
             },
             {
                 path: "quiz",
-                element: <QuizPage />,
+                element: <ProtectedRoute><QuizPage /></ProtectedRoute>, // Protected
               },
               {
-                path: "quiz/:id",
-                element: <DuringQuizPage/>,
+                path: "quiz/during",
+                element: <ProtectedRoute><DuringQuizPage/></ProtectedRoute>, // Protected
               },
   
             {
@@ -59,14 +64,9 @@ const router = createBrowserRouter([
                     },
                     
                 ]
-            }],
-        
-              },
-            {
-              path: "study/expense",
-              element: <StudyExpensePage />,
-            },
+            }
         ],
-)
+    },
+])
   
 export default router;

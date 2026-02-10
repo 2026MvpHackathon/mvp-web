@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { setAccessToken, setEmail, setRefreshToken, setUserId } from '@/features/Auth/cookies';
 import { publicInstance } from '@/features/Auth/axiosInstance';
-import type { InputConfig } from '@/widgets/Auth/ui/AuthInputField/AuthInputField'; 
+import type { InputConfig } from '@/widgets/Auth/ui/AuthInputField/AuthInputField';
+import { useAuthStatus } from '@/shared/ui/Layout/Layout'; // Import useAuthStatus
 
 const SERVER_URL = import.meta.env.VITE_API_URL;
 
@@ -16,6 +17,7 @@ export type LoginInputs = {
 
 const LoginStep = () => {
     const navigate = useNavigate();
+    const { setIsLoggedIn } = useAuthStatus(); // Use the context
 
     useEffect(() => {
       loggedInUserRedirect();
@@ -40,6 +42,7 @@ const LoginStep = () => {
         setRefreshToken(response.data.data.refreshToken); 
         setEmail(response.data.data.email); 
         setUserId(response.data.data.userId)
+        setIsLoggedIn(true); // Set isLoggedIn to true after successful login
         navigate("/home");
       })
       .catch(function (error) {

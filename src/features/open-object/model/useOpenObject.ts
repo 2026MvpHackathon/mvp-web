@@ -10,12 +10,8 @@ export const useOpenObject = () => {
   return (target: OpenTarget) => {
     switch (target.type) {
       case "recent":
-        // console.log("openObject 호출됨", target);
-        navigate(`/study`);
-        break;
       case "object":
-        // console.log("openObject 호출됨", target);
-        navigate(`/study`);
+        navigate(`/study?materialId=${target.id}`);
         break;
     }
   };

@@ -7,11 +7,10 @@ import ProblemDropdown from "@/entities/quiz-setting/ui/ProblemDropdown";
 import FavoritesList from "@/entities/quiz-setting/ui/FavoritesList";
 import WrongAnswerList from "@/entities/quiz-setting/ui/WrongAnswerList";
 import type { QuizListItem } from "@/entities/quiz-setting/types";
-import QuizCategorySelect, {
-  type QuizCategory,
-} from "@/features/quiz/quiz-category-select/QuizCategorySelect";
+import QuizCategorySelect, { type QuizCategory } from "@/features/quiz/quiz-category-select/QuizCategorySelect";
 import AIQuizAnswerObject from "@/entities/quiz-setting/ui/AIQuizAnswerObject";
 import * as S from "./Quiz.style";
+import { useToast } from "@/shared/ui/Toast/ToastContext";
 
 import {
   fetchProducts,
@@ -23,24 +22,19 @@ import {
   type AIQuizAnswerItemResponse,
 } from "@/shared/api/quiz";
 
-interface SelectableProductItem extends ProductItemResponse {
-  selected: boolean;
-}
-
-interface SelectableAIQuizAnswerItem extends AIQuizAnswerItemResponse {
-  selected: boolean;
-}
+interface SelectableProductItem extends ProductItemResponse { selected: boolean; }
+interface SelectableAIQuizAnswerItem extends AIQuizAnswerItemResponse { selected: boolean; }
 
 const QuizPage = () => {
+  const { showToast } = useToast();
+
   const [isQuizStarted, setIsQuizStarted] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<QuizCategory>("db");
-
   const [products, setProducts] = useState<SelectableProductItem[]>([]);
   const [aiQuizAnswers, setAiQuizAnswers] = useState<SelectableAIQuizAnswerItem[]>([]);
   const [favoriteItems, setFavoriteItems] = useState<QuizListItem[]>([]);
   const [wrongAnswerItems, setWrongAnswerItems] = useState<QuizListItem[]>([]);
   const [averageCorrectRate, setAverageCorrectRate] = useState<string | null>(null);
-
   const [, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +69,7 @@ const QuizPage = () => {
         if (selectedCategory === "db") {
           const fetchedProducts = await fetchProducts(selectedCategory);
           setProducts(fetchedProducts.map(p => ({ ...p, selected: false })));
-          setAiQuizAnswers([]); 
+          setAiQuizAnswers([]);
         } else {
           const fetchedAnswers = await fetchAIQuizAnswers(selectedCategory);
           setAiQuizAnswers(fetchedAnswers.map(a => ({ ...a, selected: false })));
@@ -91,61 +85,45 @@ const QuizPage = () => {
     loadCategoryData();
   }, [selectedCategory]);
 
-  const isAllSelected = products.every((product) => product.selected) && products.length > 0;
-  const isAllAIAnswersSelected = aiQuizAnswers.every(answer => answer.selected) && aiQuizAnswers.length > 0;
+  const isAllSelected = products.every(p => p.selected) && products.length > 0;
+  const isAllAIAnswersSelected = aiQuizAnswers.every(a => a.selected) && aiQuizAnswers.length > 0;
 
   const handleProductToggle = (id: string) => {
-    setProducts((prevProducts) =>
-      prevProducts.map((product) =>
-        product.id === id
-          ? { ...product, selected: !product.selected }
-          : product,
-      ),
-    );
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, selected: !p.selected } : p));
   };
 
   const handleSelectAllToggle = () => {
-    const newSelectAllState = !isAllSelected;
-    setProducts((prevProducts) =>
-      prevProducts.map((product) => ({
-        ...product,
-        selected: newSelectAllState,
-      })),
-    );
+    const newState = !isAllSelected;
+    setProducts(prev => prev.map(p => ({ ...p, selected: newState })));
   };
 
   const handleAIAnswerToggle = (id: string) => {
-    setAiQuizAnswers(prevAnswers =>
-      prevAnswers.map(answer =>
-        answer.id === id ? { ...answer, selected: !answer.selected } : answer
-      )
-    );
+    setAiQuizAnswers(prev => prev.map(a => a.id === id ? { ...a, selected: !a.selected } : a));
   };
 
   const handleSelectAllAIAnswersToggle = () => {
-    const newSelectAllState = !isAllAIAnswersSelected;
-    setAiQuizAnswers(prevAnswers =>
-      prevAnswers.map(answer => ({ ...answer, selected: newSelectAllState }))
-    );
+    const newState = !isAllAIAnswersSelected;
+    setAiQuizAnswers(prev => prev.map(a => ({ ...a, selected: newState })));
   };
 
   const handleStartQuiz = () => {
+    const selectedProducts = products.filter(p => p.selected);
+    const selectedAIAnswers = aiQuizAnswers.filter(a => a.selected);
+
+    if (selectedProducts.length === 0 && selectedAIAnswers.length === 0) {
+      showToast("Object를 선택해 주세요", "info");
+      return;
+    }
+
     setIsQuizStarted(true);
     console.log("Quiz Started!");
     console.log("Selected Category:", selectedCategory);
-    console.log("Selected Products:", products.filter(p => p.selected));
-    console.log("Selected AI Answers:", aiQuizAnswers.filter(a => a.selected));
+    console.log("Selected Products:", selectedProducts);
+    console.log("Selected AI Answers:", selectedAIAnswers);
   };
 
-
-
-  if (error) {
-    return <div>오류: {error}</div>;
-  }
-
-  if (isQuizStarted) {
-    return <div>퀴즈 진행 중...</div>;
-  }
+  if (error) return <div>오류: {error}</div>;
+  if (isQuizStarted) return <div>퀴즈 진행 중...</div>;
 
   return (
     <S.Layout>
@@ -171,7 +149,7 @@ const QuizPage = () => {
                 />
               </S.SelectAllWrapper>
               <S.ProductGridContainer>
-                {products.map((product) => (
+                {products.map(product => (
                   <SelectObject
                     key={product.id}
                     id={product.id}
@@ -183,7 +161,7 @@ const QuizPage = () => {
                 ))}
               </S.ProductGridContainer>
             </>
-          ) : ( // selectedCategory === "ai"
+          ) : (
             <>
               <S.SelectAllWrapper>
                 <SelectCircle
@@ -193,7 +171,7 @@ const QuizPage = () => {
                 />
               </S.SelectAllWrapper>
               <S.ProductGridContainer>
-                {aiQuizAnswers.map((answer) => (
+                {aiQuizAnswers.map(answer => (
                   <AIQuizAnswerObject
                     key={answer.id}
                     id={answer.id}
@@ -206,6 +184,7 @@ const QuizPage = () => {
             </>
           )}
         </S.ProductSelectionContainer>
+
         <S.CheckboxRow>
           <FavoriteCheckbox />
           <WrongAnswerCheckbox />
