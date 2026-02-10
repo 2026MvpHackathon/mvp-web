@@ -61,7 +61,6 @@ const QuizPage = () => {
 
   /** 초기 데이터 */
   useEffect(() => {
-    // 🔥 여러 퀴즈 세션들의 평균 정답률 표시
     const storedAverageRate = localStorage.getItem("averageQuizAccuracy");
     if (storedAverageRate) {
       setAverageCorrectRate(`${storedAverageRate}%`);
@@ -152,14 +151,14 @@ const QuizPage = () => {
       return;
     }
 
-    // 🔍 선택된 교재/답변 정보 확인
+    // 선택된 교재/답변 정보 확인
     const selectedProducts = products.filter((p) => p.selected);
     const selectedAIAnswers = aiQuizAnswers.filter((a) => a.selected);
     
-    console.log("🔍 선택된 교재:", selectedProducts);
-    console.log("🔍 선택된 AI 답변:", selectedAIAnswers);
-    console.log("🔍 총 문제 수:", getMaxNumberOfProblems());
-    console.log("🔍 요청할 문제 수:", numberOfProblems);
+    console.log("선택된 교재:", selectedProducts);
+    console.log("선택된 AI 답변:", selectedAIAnswers);
+    console.log("총 문제 수:", getMaxNumberOfProblems());
+    console.log("요청할 문제 수:", numberOfProblems);
 
     const payload: StartQuizPayload = {
       category: selectedCategory,
@@ -170,7 +169,7 @@ const QuizPage = () => {
       numberOfProblems,
     };
 
-    console.log("🔍 저장할 퀴즈 설정:", payload);
+    console.log("저장할 퀴즈 설정:", payload);
 
     localStorage.setItem("quizSettings", JSON.stringify(payload));
     navigate("/quiz/during");
