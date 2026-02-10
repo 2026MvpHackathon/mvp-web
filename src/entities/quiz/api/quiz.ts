@@ -1,5 +1,5 @@
 import axiosInstance from "@/features/Auth/axiosInstance";
-import type { QuizRequest, QuizResponse, SubmitResultRequest, SubmitResultResponse } from "../types/createQuiz"
+import type { QuizRequest, QuizResponse, SubmitResultRequest, SubmitResultResponse } from "../types/createQuiz";
 
 export const createQuiz = async (
   payload: QuizRequest
