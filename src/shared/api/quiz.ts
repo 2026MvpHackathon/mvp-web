@@ -1,4 +1,4 @@
-import axiosInstance from '../../features/Auth/axiosInstance'; // Use axiosInstance for authenticated calls
+import axiosInstance from '@/features/Auth/axiosInstance'; // Use axiosInstance for authenticated calls
 import type { QuizCategory } from '@/features/quiz/quiz-category-select/QuizCategorySelect';
 import type { QuizListItem } from '@/entities/quiz-setting/types';
 
@@ -68,8 +68,8 @@ export const registerQuiz = async (registrationData: any): Promise<any> => {
   return response.data;
 };
 
-export const generateQuiz = async (generationData: any): Promise<any> => {
-  const response = await axiosInstance.post(`/api/quiz/generate`, generationData);
+export const generateQuiz = async (settings: QuizStartSettings): Promise<any> => {
+  const response = await axiosInstance.post(`/api/quiz/generate`, settings);
   console.log("Quiz Generation Response:", response); // Log the response
   return response.data;
 };
@@ -82,8 +82,3 @@ export interface QuizStartSettings {
   isWrongAnswerIncluded: boolean;
   numberOfProblems: number;
 }
-
-export const startQuizSession = async (settings: QuizStartSettings): Promise<any> => {
-  const response = await axiosInstance.post(`/api/quiz/start`, settings);
-  return response.data;
-};

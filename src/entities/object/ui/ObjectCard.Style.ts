@@ -3,7 +3,7 @@ import * as token from "@/shared/values/token"
 
 export const container = styled.div`
   width: 15.4375rem;
-  height: 12.1875rem;
+  height: 15.1875rem;
   background-color: ${token.colors.fill.alternative4};
   padding: 0.875rem 1.25rem;
   border-radius: ${token.shapes.small};
@@ -11,6 +11,7 @@ export const container = styled.div`
   align-items: center;
   gap: 1rem;
   cursor: pointer;
+  overflow: hidden;
 `;
 
 export const infoContainer = styled.div`
