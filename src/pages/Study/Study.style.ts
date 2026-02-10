@@ -4,6 +4,11 @@ export const PageBody = styled.div`
   flex: 1;
   padding: 0 32px 32px;
   margin-top: -10px;
+
+  @media (max-width: 1200px) {
+    padding: 0 20px 24px;
+    margin-top: 0;
+  }
 `
 
 export const ContentGrid = styled.div<{ $expanded?: boolean }>`
@@ -11,6 +16,10 @@ export const ContentGrid = styled.div<{ $expanded?: boolean }>`
   grid-template-columns: ${({ $expanded }) =>
     $expanded ? 'minmax(0, 1fr)' : '400px minmax(0, 1fr)'};
   gap: 18px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
 `
 
 export const LeftColumn = styled.div`
@@ -44,6 +53,11 @@ export const PartsCard = styled(Card)<{ $expanded?: boolean }>`
   height: ${({ $expanded }) => ($expanded ? '760px' : '400px')};
   display: grid;
   grid-template-rows: auto 1fr;
+
+  @media (max-width: 1200px) {
+    height: ${({ $expanded }) => ($expanded ? 'auto' : '360px')};
+    max-height: 70vh;
+  }
 `
 
 export const PartsList = styled.div<{ $expanded?: boolean }>`
@@ -53,6 +67,12 @@ export const PartsList = styled.div<{ $expanded?: boolean }>`
   grid-template-columns: ${({ $expanded }) =>
     $expanded ? 'repeat(2, minmax(0, 1fr))' : '1fr'};
   overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 `
 
 export const PartRow = styled.button<{ $active?: boolean; $expanded?: boolean }>`
@@ -168,6 +188,11 @@ export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
   display: flex;
   flex-direction: column;
   padding-bottom: 0;
+
+  @media (max-width: 1200px) {
+    height: ${({ $compact, $expanded }) =>
+      $compact ? '360px' : $expanded ? '320px' : '360px'};
+  }
 `
 
 export const AiHeader = styled(CardHeader)`
@@ -187,6 +212,12 @@ export const AiBody = styled.div`
   font-size: 12px;
   overflow-y: auto;
   flex: 1;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 `
 
 export const AiPromptBar = styled.form`
@@ -226,6 +257,44 @@ export const AiChatBubble = styled.div`
   font-size: 11px;
   line-height: 1.4;
   align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
+
+export const AiChatText = styled.div`
+  white-space: pre-wrap;
+`
+
+export const AiQuizAction = styled.button`
+  font-size: 10px;
+  color: rgba(207, 224, 214, 0.7);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  align-self: flex-start;
+  text-decoration: underline;
+
+  &:hover {
+    color: rgba(207, 224, 214, 0.95);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+`
+
+export const AiChatBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-self: flex-start;
 `
 
 export const AiUserBubble = styled.div`
@@ -242,14 +311,23 @@ export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
   position: relative;
   width: ${({ $expanded }) => ($expanded ? 'calc(100% + 40px)' : '100%')};
   margin: ${({ $expanded }) => ($expanded ? '0 -20px' : '0')};
-  height: ${({ $expanded }) => ($expanded ? '920px' : 'auto')};
-  min-height: ${({ $expanded }) => ($expanded ? '920px' : '520px')};
+  height: ${({ $expanded }) => ($expanded ? '920px' : 'clamp(560px, 72vh, 820px)')};
+  min-height: ${({ $expanded }) => ($expanded ? '920px' : '0')};
   max-height: ${({ $expanded }) => ($expanded ? '920px' : 'none')};
   border: ${({ $expanded }) => ($expanded ? '1px solid #104912' : 'none')};
   box-shadow: ${({ $expanded }) => ($expanded ? '0 0 0 1px #104912' : 'none')};
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
+
+  @media (max-width: 1200px) {
+    width: 100%;
+    margin: 0;
+    height: ${({ $expanded }) =>
+      $expanded ? 'clamp(520px, 70vh, 820px)' : 'clamp(500px, 70vh, 680px)'};
+    min-height: ${({ $expanded }) => ($expanded ? '520px' : '0')};
+    max-height: none;
+  }
 `
 
 export const ViewerHeader = styled.div`
@@ -285,6 +363,7 @@ export const ProjectSelect = styled.select`
 export const ViewerBody = styled.div`
   position: relative;
   height: 100%;
+  min-height: 0;
 `
 
 export const ExpandedPanels = styled.div`
@@ -292,6 +371,15 @@ export const ExpandedPanels = styled.div`
   inset: 20px 18px 20px 18px;
   pointer-events: none;
   z-index: 3;
+
+  @media (max-width: 1200px) {
+    position: static;
+    inset: auto;
+    display: grid;
+    gap: 12px;
+    margin: 12px 12px 0;
+    pointer-events: auto;
+  }
 `
 
 export const ExpandedLeftPanel = styled.div`
@@ -300,6 +388,11 @@ export const ExpandedLeftPanel = styled.div`
   top: 0;
   width: 300px;
   pointer-events: auto;
+
+  @media (max-width: 1200px) {
+    position: static;
+    width: 100%;
+  }
 `
 
 
@@ -311,6 +404,11 @@ export const ExpandedRightPanel = styled.div`
   display: grid;
   gap: 12px;
   pointer-events: auto;
+
+  @media (max-width: 1200px) {
+    position: static;
+    width: 100%;
+  }
 `
 
 export const ViewerToolbar = styled.div`
@@ -324,6 +422,11 @@ export const ViewerToolbar = styled.div`
   border-radius: 12px;
   border: 1px solid #505050;
   z-index: 3;
+
+  @media (max-width: 1200px) {
+    left: 12px;
+    top: 12px;
+  }
 `
 
 export const ViewModeToggle = styled.div`
@@ -338,6 +441,11 @@ export const ViewModeToggle = styled.div`
   border: 1px solid rgba(109, 167, 117, 0.45);
   background: #1b1b1b;
   z-index: 3;
+
+  @media (max-width: 1200px) {
+    left: 72px;
+    top: 12px;
+  }
 `
 
 export const ExpandedViewModeToggle = styled(ViewModeToggle)`
@@ -396,6 +504,12 @@ export const NotePanel = styled.div<{ $shifted?: boolean }>`
   flex-direction: column;
   gap: 16px;
   z-index: 3;
+
+  @media (max-width: 1200px) {
+    right: 20px;
+    top: 80px;
+    width: min(280px, 80vw);
+  }
 `
 
 export const NoteHeader = styled.div`
@@ -425,6 +539,10 @@ export const NoteToggleOutside = styled.button<{ $shifted?: boolean }>`
   place-items: center;
   cursor: pointer;
   z-index: 4;
+
+  @media (max-width: 1200px) {
+    right: 10px;
+  }
 `
 
 export const NoteToggleIcon = styled.span`
@@ -435,7 +553,7 @@ export const NoteToggleIcon = styled.span`
 export const ExpenseToggleOutside = styled.button<{ $shifted?: boolean }>`
   position: ${({ $shifted }) => ($shifted ? 'static' : 'absolute')};
   right: ${({ $shifted }) => ($shifted ? 'auto' : '15px')};
-  top: ${({ $shifted }) => ($shifted ? 'auto' : '590px')};
+  top: ${({ $shifted }) => ($shifted ? 'auto' : 'clamp(360px, 60vh, 590px)')};
   width: 39px;
   height: 39px;
   border-radius: 50%;
@@ -468,6 +586,44 @@ export const NoteSearch = styled.input`
   font-size: 13px;
 `
 
+export const NoteEditorPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #2a2f2d;
+  background: #232323;
+`
+
+export const NoteEditorInput = styled.textarea`
+  width: 100%;
+  min-height: 64px;
+  border: none;
+  background: transparent;
+  color: #e6e8ee;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: vertical;
+  outline: none;
+`
+
+export const NoteEditorActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`
+
+export const NoteEditorButton = styled.button`
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(109, 167, 117, 0.6);
+  background: rgba(109, 167, 117, 0.2);
+  color: #d9e4d6;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+`
+
 export const NoteList = styled.div`
   display: flex;
   flex-direction: column;
@@ -491,9 +647,38 @@ export const NoteEmpty = styled.div`
 
 export const NoteMeta = styled.div`
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 16px;
   color: #8b8f94;
+
+  span {
+    flex: 1;
+    min-width: 0;
+  }
+`
+
+export const NoteActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`
+
+export const NoteActionButton = styled.button<{ $icon: string }>`
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  background-image: url(${({ $icon }) => $icon});
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
 `
 
 export const NoteBody = styled.div`
@@ -515,6 +700,11 @@ export const ViewerFooter = styled.div<{ $expanded?: boolean }>`
   color: #aeb8cc;
   z-index: 4;
   transform: ${({ $expanded }) => ($expanded ? 'translateX(-175px)' : 'none')};
+
+  @media (max-width: 1200px) {
+    transform: none;
+    bottom: 16px;
+  }
 `
 
 export const ProgressRow = styled.div<{ $expanded?: boolean }>`
@@ -524,6 +714,11 @@ export const ProgressRow = styled.div<{ $expanded?: boolean }>`
   width: ${({ $expanded }) => ($expanded ? 'calc(100% - 500px)' : '100%')};
   min-width: ${({ $expanded }) => ($expanded ? '360px' : 'auto')};
   margin: 0;
+
+  @media (max-width: 1200px) {
+    width: 100%;
+    min-width: 0;
+  }
 `
 
 export const ProgressWrap = styled.div`

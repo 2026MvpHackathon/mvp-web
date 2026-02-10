@@ -12,15 +12,16 @@ class AssemblyEngine {
     this.canvas = canvas;
     this.callbacks = callbacks;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0b0e14);
+    this.scene.background = new THREE.Color(0x111111);
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
     this.camera.position.set(260, 180, 260);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.7;
+    this.renderer.toneMappingExposure = 1.1;
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.environmentTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environment = this.environmentTexture;
@@ -30,13 +31,18 @@ class AssemblyEngine {
     this.controls.target.set(0, 60, 0);
     this.controls.minDistance = 10;
     this.controls.maxDistance = 2000000;
+    this.controls.addEventListener("change", () => {
+      if (this.callbacks?.onCameraChange) {
+        this.callbacks.onCameraChange(this.getCameraState());
+      }
+    });
 
     this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
     this.transformControls.setMode("translate");
     this.transformControls.setSpace("local");
     this.transformControls.size = 1.6;
-    this.transformControls.visible = true;
-    this.transformControls.enabled = true;
+    this.transformControls.visible = false;
+    this.transformControls.enabled = false;
     this.transformControls.addEventListener("dragging-changed", (event) => {
       this.controls.enabled = !event.value;
     });
@@ -85,17 +91,25 @@ class AssemblyEngine {
     this.transformControls.addEventListener("mouseUp", () => {
       this.controls.enabled = true;
     });
-    this.scene.add(this.transformControls);
+    // Keep transform controls hidden; do not add helper to scene.
 
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
-    keyLight.position.set(200, 300, 120);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.42);
+    this.scene.add(ambientLight);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 4.9);
+    keyLight.position.set(260, 320, 140);
     keyLight.castShadow = true;
     this.scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0x9bbcff, 0.6);
-    rimLight.position.set(-200, 120, -160);
-    this.scene.add(rimLight);
+    this.lightDefaults = {
+      exposure: this.renderer.toneMappingExposure,
+      ambient: ambientLight.intensity,
+      key: keyLight.intensity
+    };
+
+    this.lights = {
+      ambient: ambientLight,
+      key: keyLight
+    };
 
     const grid = new THREE.GridHelper(400, 20, 0xd0d4db, 0xe6e8ee);
     grid.position.y = -1;
@@ -220,6 +234,20 @@ class AssemblyEngine {
     if (this.callbacks?.onActiveNoteChange) {
       this.callbacks.onActiveNoteChange(id);
     }
+  }
+
+  buildNeutralEnvironment() {
+    const envScene = new THREE.Scene();
+    envScene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x2a2a2a, 0.5);
+    envScene.add(hemi);
+    const dirA = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirA.position.set(1, 1, 1);
+    envScene.add(dirA);
+    const dirB = new THREE.DirectionalLight(0xffffff, 0.35);
+    dirB.position.set(-1, 0.6, -0.8);
+    envScene.add(dirB);
+    return envScene;
   }
 
   setHoveredNote(noteId) {
@@ -403,7 +431,7 @@ class AssemblyEngine {
     this.emitNotes();
   }
 
-  clearNotes() {
+  clearNotes(silent = false) {
     this.notes.forEach((note) => {
       if (note.sprite?.parent) {
         note.sprite.parent.remove(note.sprite);
@@ -419,8 +447,73 @@ class AssemblyEngine {
     this.notes = [];
     this.hoveredNoteId = null;
     this.activeNoteId = null;
-    this.emitActiveNote(null);
+    if (!silent) {
+      this.emitActiveNote(null);
+      this.emitNotes();
+    }
+  }
+
+  addNoteFromServer({ id, text, position, parentName }) {
+    if (!Array.isArray(position) || position.length !== 3) return;
+    const point = new THREE.Vector3(position[0], position[1], position[2]);
+    const part = parentName
+      ? this.parts.find((item) => item.name === parentName)?.object
+      : null;
+    const target = part ? this.resolveNoteTarget(part) : null;
+    const sprite = this.createNoteSprite(text);
+    if (target) {
+      const localPoint = target.worldToLocal(point.clone());
+      sprite.position.copy(localPoint);
+      target.add(sprite);
+    } else {
+      sprite.position.copy(point);
+      this.scene.add(sprite);
+    }
+    sprite.renderOrder = 10;
+    sprite.userData.noteId = id;
+    const note = {
+      id,
+      text,
+      parentName: parentName || null,
+      sprite,
+      compact: this.createNoteTexture(text, "compact"),
+      full: this.createNoteTexture(text, "full")
+    };
+    this.notes.push(note);
+    this.noteId = Math.max(this.noteId, id + 1);
+  }
+
+  setNotesFromServer(notes = []) {
+    this.clearNotes(true);
+    notes.forEach((note) => this.addNoteFromServer(note));
     this.emitNotes();
+  }
+
+  replaceNoteId(oldId, newId) {
+    if (oldId === newId) return;
+    const note = this.notes.find((item) => item.id === oldId);
+    if (!note) return;
+    note.id = newId;
+    if (note.sprite?.userData) {
+      note.sprite.userData.noteId = newId;
+    }
+    if (this.activeNoteId === oldId) {
+      this.activeNoteId = newId;
+      this.emitActiveNote(newId);
+    }
+    if (this.hoveredNoteId === oldId) {
+      this.hoveredNoteId = newId;
+    }
+    this.noteId = Math.max(this.noteId, newId + 1);
+    this.emitNotes();
+  }
+
+  getNoteWorldPosition(noteId) {
+    const note = this.notes.find((item) => item.id === noteId);
+    if (!note?.sprite) return null;
+    const position = new THREE.Vector3();
+    note.sprite.getWorldPosition(position);
+    return [position.x, position.y, position.z];
   }
 
   buildSimpleParts(files) {
@@ -756,41 +849,70 @@ class AssemblyEngine {
         }
         if (!child.material) {
           const hasVertexColors = Boolean(child.geometry?.attributes?.color);
-          child.material = new THREE.MeshStandardMaterial({
+          child.material = new THREE.MeshPhysicalMaterial({
             color: 0x9bbcff,
             vertexColors: hasVertexColors,
-            metalness: 0.2,
-            roughness: 0.6
+            metalness: 0.25,
+            roughness: 0.5,
+            clearcoat: 0.35,
+            clearcoatRoughness: 0.25
           });
           child.material.side = THREE.DoubleSide;
+          if ("envMapIntensity" in child.material) {
+            child.material.envMapIntensity = 0.2;
+          }
         } else if (
           !["v4Engine", "leafSpring"].includes(this.currentProjectId) &&
           Array.isArray(child.material)
         ) {
           child.material.forEach((mat) => {
-            if ("envMapIntensity" in mat) {
-              mat.envMapIntensity = 0.15;
-            }
-            if ("metalness" in mat && "roughness" in mat && mat.metalness <= 0.2) {
-              mat.roughness = Math.max(mat.roughness ?? 0, 0.7);
+            if ("metalness" in mat && "roughness" in mat) {
+              const metalness = mat.metalness ?? 0;
+              const isMetal = metalness >= 0.4;
+              mat.roughness = Math.min(mat.roughness ?? 1, isMetal ? 0.25 : 0.85);
+              mat.metalness = Math.max(metalness, isMetal ? 0.5 : 0.05);
+              if ("envMapIntensity" in mat) {
+                mat.envMapIntensity = isMetal ? 0.4 : 0.08;
+              }
+              if ("clearcoat" in mat) {
+                mat.clearcoat = isMetal ? Math.max(mat.clearcoat ?? 0, 0.35) : 0;
+                mat.clearcoatRoughness = isMetal
+                  ? Math.min(mat.clearcoatRoughness ?? 1, 0.25)
+                  : 1;
+              }
+            } else if ("envMapIntensity" in mat) {
+              mat.envMapIntensity = 0.2;
             }
           });
         } else if (!["v4Engine", "leafSpring"].includes(this.currentProjectId)) {
-          if ("envMapIntensity" in child.material) {
-            child.material.envMapIntensity = 0.15;
-          }
-          if (
-            "metalness" in child.material &&
-            "roughness" in child.material &&
-            child.material.metalness <= 0.2
-          ) {
-            child.material.roughness = Math.max(child.material.roughness ?? 0, 0.7);
+          if ("metalness" in child.material && "roughness" in child.material) {
+            const metalness = child.material.metalness ?? 0;
+            const isMetal = metalness >= 0.4;
+            child.material.roughness = Math.min(
+              child.material.roughness ?? 1,
+              isMetal ? 0.25 : 0.85
+            );
+            child.material.metalness = Math.max(metalness, isMetal ? 0.5 : 0.05);
+            if ("envMapIntensity" in child.material) {
+              child.material.envMapIntensity = isMetal ? 0.4 : 0.08;
+            }
+            if ("clearcoat" in child.material) {
+              child.material.clearcoat = isMetal
+                ? Math.max(child.material.clearcoat ?? 0, 0.35)
+                : 0;
+              child.material.clearcoatRoughness = isMetal
+                ? Math.min(child.material.clearcoatRoughness ?? 1, 0.25)
+                : 1;
+            }
+          } else if ("envMapIntensity" in child.material) {
+            child.material.envMapIntensity = 0.2;
           }
         }
       }
     });
 
     this.applyMaterialOverrides(part, object);
+    this.applyFinishOverrides(part, object);
 
     let objectBox = new THREE.Box3().setFromObject(object);
     let objectSize = objectBox.getSize(new THREE.Vector3());
@@ -908,6 +1030,82 @@ class AssemblyEngine {
     });
   }
 
+  applyFinishOverrides(part, object) {
+    if (this.currentProjectId === "v4Engine") {
+      object.traverse((child) => {
+        if (!child.isMesh) return;
+        const lambert = new THREE.MeshLambertMaterial({
+          color: 0xd8d8d8,
+          transparent: false,
+          opacity: 1
+        });
+        lambert.side = THREE.DoubleSide;
+        child.material?.dispose?.();
+        child.material = lambert;
+      });
+      return;
+    }
+    if (this.currentProjectId === "leafSpring") return;
+    const blockEnvMap = ["Main frame", "Main frame MIR"].includes(part?.name || "");
+    object.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      const materials = Array.isArray(child.material) ? [...child.material] : [child.material];
+      let mutated = false;
+      const nextMaterials = materials.map((mat) => {
+        let target = mat;
+        const isStandard = mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial;
+        if (!isStandard) {
+          target = new THREE.MeshStandardMaterial({
+            color: mat.color ?? new THREE.Color(0xffffff),
+            map: mat.map ?? null,
+            normalMap: mat.normalMap ?? null,
+            metalnessMap: mat.metalnessMap ?? null,
+            roughnessMap: mat.roughnessMap ?? null,
+            emissiveMap: mat.emissiveMap ?? null,
+            transparent: mat.transparent,
+            opacity: mat.opacity
+          });
+          target.side = mat.side ?? THREE.FrontSide;
+          mutated = true;
+        }
+        const metalness = target.metalness ?? 0;
+        const isMetal = metalness >= 0.4;
+        if (blockEnvMap && "envMap" in target) {
+          target.envMap = null;
+        }
+        if (!isMetal) {
+          const lambert = new THREE.MeshLambertMaterial({
+            color: target.color ?? new THREE.Color(0xffffff),
+            map: target.map ?? null,
+            emissive: target.emissive ?? new THREE.Color(0x000000),
+            emissiveMap: target.emissiveMap ?? null,
+            transparent: target.transparent,
+            opacity: target.opacity,
+            side: target.side ?? THREE.FrontSide
+          });
+          lambert.needsUpdate = true;
+          mutated = true;
+          return lambert;
+        }
+        target.metalness = Math.max(metalness, 0.5);
+        target.roughness = Math.min(target.roughness ?? 1, 0.25);
+        if ("envMapIntensity" in target) {
+          target.envMapIntensity = 0.4;
+        }
+        if ("clearcoat" in target) {
+          target.clearcoat = Math.max(target.clearcoat ?? 0, 0.3);
+          target.clearcoatRoughness = Math.min(target.clearcoatRoughness ?? 1, 0.25);
+        }
+        target.needsUpdate = true;
+        return target;
+      });
+      if (mutated) {
+        materials.forEach((mat) => mat.dispose?.());
+      }
+      child.material = Array.isArray(child.material) ? nextMaterials : nextMaterials[0];
+    });
+  }
+
   loadPart(part, token) {
     if (part.factory) {
       return new Promise((resolve, reject) => {
@@ -995,6 +1193,21 @@ class AssemblyEngine {
       this.scene.environment = null;
     } else {
       this.scene.environment = this.environmentTexture;
+    }
+    if (this.lights && this.lightDefaults) {
+      if (projectId === "v4Engine") {
+        this.renderer.toneMappingExposure = 0.85;
+        this.lights.ambient.intensity = 0.1;
+        this.lights.key.intensity = 1.4;
+      } else if (projectId === "drone") {
+        this.renderer.toneMappingExposure = 1.32;
+        this.lights.ambient.intensity = 0.45;
+        this.lights.key.intensity = 5.1;
+      } else {
+        this.renderer.toneMappingExposure = this.lightDefaults.exposure;
+        this.lights.ambient.intensity = this.lightDefaults.ambient;
+        this.lights.key.intensity = this.lightDefaults.key;
+      }
     }
     this.loadToken += 1;
     const token = this.loadToken;
@@ -1563,8 +1776,8 @@ class AssemblyEngine {
 
   setEditMode(value) {
     this.editMode = value;
-    this.transformControls.visible = value;
-    this.transformControls.enabled = value;
+    this.transformControls.visible = false;
+    this.transformControls.enabled = false;
   }
 
   setNoteMode(value) {
@@ -1646,6 +1859,47 @@ class AssemblyEngine {
     this.emitSelection(this.state.selectedIndex);
   }
 
+  getCameraState() {
+    return {
+      position: [
+        Number(this.camera.position.x.toFixed(2)),
+        Number(this.camera.position.y.toFixed(2)),
+        Number(this.camera.position.z.toFixed(2))
+      ],
+      quaternion: [
+        Number(this.camera.quaternion.x.toFixed(4)),
+        Number(this.camera.quaternion.y.toFixed(4)),
+        Number(this.camera.quaternion.z.toFixed(4)),
+        Number(this.camera.quaternion.w.toFixed(4))
+      ],
+      target: [
+        Number(this.controls.target.x.toFixed(2)),
+        Number(this.controls.target.y.toFixed(2)),
+        Number(this.controls.target.z.toFixed(2))
+      ],
+      zoom: Number(this.camera.zoom.toFixed(2))
+    };
+  }
+
+  setCameraState(state) {
+    if (!state) return;
+    const { position, quaternion, target, zoom } = state;
+    if (Array.isArray(position) && position.length === 3) {
+      this.camera.position.set(position[0], position[1], position[2]);
+    }
+    if (Array.isArray(quaternion) && quaternion.length === 4) {
+      this.camera.quaternion.set(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+    }
+    if (Array.isArray(target) && target.length === 3) {
+      this.controls.target.set(target[0], target[1], target[2]);
+    }
+    if (Number.isFinite(zoom)) {
+      this.camera.zoom = zoom;
+      this.camera.updateProjectionMatrix();
+    }
+    this.controls.update();
+  }
+
   animate() {
     if (this.isDisposed) return;
     this.rafId = requestAnimationFrame(this.animate);
@@ -1665,8 +1919,14 @@ type AssemblyViewerProps = {
   onPartsChange?: (parts: string[]) => void
   onSelectedChange?: (index: number, values?: unknown) => void
   onNotesChange?: (notes: unknown[]) => void
-  onActiveNoteChange?: (id: string | null) => void
+  onActiveNoteChange?: (id: string | number | null) => void
   onGroupTransformChange?: (values: { posX: number; posY: number; posZ: number }) => void
+  onCameraChange?: (state: {
+    position: [number, number, number]
+    quaternion: [number, number, number, number]
+    target: [number, number, number]
+    zoom: number
+  }) => void
 }
 
 export type AssemblyViewerHandle = {
@@ -1684,13 +1944,30 @@ export type AssemblyViewerHandle = {
   applySelectedTransform?: (values: unknown) => void
   setNoteMode?: (value: boolean) => void
   setNoteText?: (value: string) => void
-  updateNote?: (id: string, text: string) => void
-  deleteNote?: (id: string) => void
-  getNoteScreenPosition?: (id: string) => { x: number; y: number; visible: boolean } | null
+  updateNote?: (id: string | number, text: string) => void
+  deleteNote?: (id: string | number) => void
+  setNotesFromServer?: (
+    notes: { id: number; text: string; position: [number, number, number]; parentName?: string | null }[],
+  ) => void
+  replaceNoteId?: (oldId: number, newId: number) => void
+  getNoteScreenPosition?: (id: string | number) => { x: number; y: number; visible: boolean } | null
+  getNoteWorldPosition?: (id: number) => [number, number, number] | null
   getCurrentTransforms?: () => unknown
   applyTransformsByName?: (transforms: Record<string, unknown>) => void
   focusOnPart?: (name: string) => void
   focusOnScene?: () => void
+  getCameraState?: () => {
+    position: [number, number, number]
+    quaternion: [number, number, number, number]
+    target: [number, number, number]
+    zoom: number
+  }
+  setCameraState?: (state: {
+    position?: [number, number, number]
+    quaternion?: [number, number, number, number]
+    target?: [number, number, number]
+    zoom?: number
+  }) => void
 }
 
 const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(function AssemblyViewer(
@@ -1702,7 +1979,8 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
     onSelectedChange,
     onNotesChange,
     onActiveNoteChange,
-    onGroupTransformChange
+    onGroupTransformChange,
+    onCameraChange
   },
   ref
 ) {
@@ -1717,7 +1995,8 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
       onSelectedChange,
       onNotesChange,
       onActiveNoteChange,
-      onGroupTransformChange
+      onGroupTransformChange,
+      onCameraChange
     });
     return () => {
       engineRef.current?.dispose();
@@ -1746,11 +2025,16 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
     setNoteText: (value) => engineRef.current?.setNoteText(value),
     updateNote: (id, text) => engineRef.current?.updateNote(id, text),
     deleteNote: (id) => engineRef.current?.deleteNote(id),
+    setNotesFromServer: (notes) => engineRef.current?.setNotesFromServer(notes),
+    replaceNoteId: (oldId, newId) => engineRef.current?.replaceNoteId(oldId, newId),
     getNoteScreenPosition: (id) => engineRef.current?.getNoteScreenPosition(id),
+    getNoteWorldPosition: (id) => engineRef.current?.getNoteWorldPosition(id),
     getCurrentTransforms: () => engineRef.current?.getCurrentTransforms(),
     applyTransformsByName: (transforms) => engineRef.current?.applyTransformsByName(transforms),
     focusOnPart: (name) => engineRef.current?.focusOnPart(name),
-    focusOnScene: () => engineRef.current?.focusOnScene()
+    focusOnScene: () => engineRef.current?.focusOnScene(),
+    getCameraState: () => engineRef.current?.getCameraState(),
+    setCameraState: (state) => engineRef.current?.setCameraState(state)
   }));
 
   return <canvas ref={canvasRef} id="canvas" />;

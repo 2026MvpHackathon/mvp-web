@@ -1,22 +1,41 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import * as THREE from 'three'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
 import toolSelectIcon from '/src/assets/Study/viewer-tool-select.png'
 import toolHandIcon from '/src/assets/Study/viewer-tool-hand.png'
 import toolChatIcon from '/src/assets/Study/viewer-tool-chat.png'
 import toolAiIcon from '/src/assets/Study/viewer-tool-ai.png'
+import noteEditIcon from '/src/assets/Study/note-edit.png'
+import noteDeleteIcon from '/src/assets/Study/note-delete.png'
 import { projectConfigs } from '../../data/projects'
+import {
+  askChat,
+  createStudySession,
+  createStudyNote,
+  getChatHistory,
+  getMaterialParts,
+  getStudyNotes,
+  getStudyHomeAll,
+  getStudySessionParts,
+  registerQuiz,
+  updateStudyNote,
+  deleteStudyNote,
+  saveStudySession,
+} from '../../entities/study/api/studyApi'
+import type { MaterialPart, StudySession, StudySessionPart } from '../../entities/study/types'
 import './Study.css'
 import * as S from './Study.style'
 
 type Note = {
-  id: string
+  id: string | number
   text: string
   parentName?: string | null
 }
 
 type NoteEditorState = {
-  id: string | null
+  id: string | number | null
   text: string
   x: number
   y: number
@@ -27,6 +46,9 @@ type AiMessage = {
   id: string
   role: 'user' | 'assistant'
   text: string
+  materialId?: number
+  modelId?: number
+  userQuestion?: string
 }
 type PartOverridesByProject = Record<string, Record<string, number>>
 
@@ -86,6 +108,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     y: 0,
     visible: false,
   })
+  const noteIdMapRef = useRef<Record<number, number>>({})
+  const prevNotesRef = useRef<Note[]>([])
+  const isHydratingNotesRef = useRef(false)
   const [notePanelOpen, setNotePanelOpen] = useState(true)
   const expenseToggleOn = expanded
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
@@ -98,8 +123,32 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       text: '무엇이 궁금한가요? 편하게 질문해 주세요.',
     },
   ])
+  const [quizSubmittingId, setQuizSubmittingId] = useState<string | null>(null)
+  const [quizAddedIds, setQuizAddedIds] = useState<Set<string>>(new Set())
   const [aiPromptInput, setAiPromptInput] = useState('')
   const [bottomPromptInput, setBottomPromptInput] = useState('')
+  const [studySession, setStudySession] = useState<StudySession | null>(null)
+  const [studySessionId, setStudySessionId] = useState<number | null>(null)
+  const [materialPartsByBase, setMaterialPartsByBase] = useState<Record<string, MaterialPart>>({})
+  const [sessionPartsByBase, setSessionPartsByBase] = useState<
+    Record<string, StudySessionPart>
+  >({})
+  const sessionPartNameById = useMemo(() => {
+    const map = new Map<number, string>()
+    Object.values(sessionPartsByBase).forEach((part) => {
+      if (!map.has(part.sessionPartId)) {
+        map.set(part.sessionPartId, part.name)
+      }
+    })
+    return map
+  }, [sessionPartsByBase])
+  const latestCameraRef = useRef<{
+    position: [number, number, number]
+    quaternion: [number, number, number, number]
+    target: [number, number, number]
+    zoom: number
+  } | null>(null)
+  const saveTimerRef = useRef<number | null>(null)
 
   const storageKey = `assembly-layout-${safeProjectId}`
   const defaultStorageKey = `assembly-default-layout-${safeProjectId}`
@@ -122,6 +171,93 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       if (name.toLowerCase().startsWith('gear link')) return name
     }
     return name.replace(/\s*\d+$/, '').trim()
+  }
+
+  const materialId = projectConfig?.materialId
+  const activeMaterialId = studySession?.materialId ?? materialId
+
+  const resolveBaseName = (name: string) => normalizePartName(name)
+
+  const resolveSessionPartId = (parentName?: string | null) => {
+    if (!parentName) return null
+    const base = resolveBaseName(parentName)
+    return (
+      sessionPartsByBase[parentName]?.sessionPartId ||
+      sessionPartsByBase[base]?.sessionPartId ||
+      sessionPartsByBase[parentName.toLowerCase()]?.sessionPartId ||
+      sessionPartsByBase[base.toLowerCase()]?.sessionPartId ||
+      null
+    )
+  }
+
+  const resolveSelectedModelId = () => {
+    const selectedPartName = parts[selectedIndex] || ''
+    const selectedBase = selectedPartName ? resolveBaseName(selectedPartName) : ''
+    if (!selectedBase) return undefined
+    return (
+      sessionPartsByBase[selectedBase]?.modelId || materialPartsByBase[selectedBase]?.modelId
+    )
+  }
+
+  const resolveFallbackModelId = () => {
+    const direct = resolveSelectedModelId()
+    if (Number.isFinite(direct)) return direct
+    const sessionCandidate = Object.values(sessionPartsByBase).find((part) =>
+      Number.isFinite(part.modelId),
+    )?.modelId
+    if (Number.isFinite(sessionCandidate)) return sessionCandidate
+    const materialCandidate = Object.values(materialPartsByBase).find((part) =>
+      Number.isFinite(part.modelId),
+    )?.modelId
+    return materialCandidate
+  }
+
+  const toRole = (messageType?: string) =>
+    messageType?.toLowerCase().includes('user') ? 'user' : 'assistant'
+
+  const quaternionToEulerDegrees = (rotation: [number, number, number, number]) => {
+    const [x, y, z, w] = rotation
+    const quaternion = new THREE.Quaternion(x, y, z, w)
+    const euler = new THREE.Euler().setFromQuaternion(quaternion, 'XYZ')
+    return [
+      Math.round(THREE.MathUtils.radToDeg(euler.x)),
+      Math.round(THREE.MathUtils.radToDeg(euler.y)),
+      Math.round(THREE.MathUtils.radToDeg(euler.z)),
+    ] as [number, number, number]
+  }
+
+  const resolveRotationDegrees = (rotation: number[]) => {
+    if (rotation.length === 4) {
+      const maxAbs = Math.max(...rotation.map((value) => Math.abs(value)))
+      if (maxAbs > 1.1) {
+        return [rotation[0], rotation[1], rotation[2]] as [number, number, number]
+      }
+      return quaternionToEulerDegrees(rotation as [number, number, number, number])
+    }
+    if (rotation.length === 3) {
+      return [rotation[0], rotation[1], rotation[2]] as [number, number, number]
+    }
+    return [0, 0, 0] as [number, number, number]
+  }
+
+  const queueSaveSession = () => {
+    if (!studySessionId || !latestCameraRef.current) return
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = window.setTimeout(async () => {
+      const cameraState = latestCameraRef.current
+      if (!cameraState) return
+      try {
+        await saveStudySession(studySessionId, {
+          view: viewMode === 'single' ? 'SINGLE_VIEW' : 'ASSEMBLY_VIEW',
+          position: cameraState.position,
+          quaternion: cameraState.quaternion,
+          target: cameraState.target,
+          zoom: cameraState.zoom,
+        })
+      } catch (error) {
+        console.error('학습 세션 저장 실패', error)
+      }
+    }, 600)
   }
 
   const uniqueParts = parts.reduce(
@@ -318,17 +454,17 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }
 
+  const handleSwipeMode = () => {
+    if (viewMode === 'single') return
+    setEditMode(false)
+    viewerRef.current?.setEditMode?.(false)
+  }
+
   const handleSelectMode = () => {
     if (viewMode === 'single') return
     setEditMode(true)
     viewerRef.current?.setEditMode?.(true)
     viewerRef.current?.setTransformMode?.('translate')
-  }
-
-  const handleSwipeMode = () => {
-    if (viewMode === 'single') return
-    setEditMode(false)
-    viewerRef.current?.setEditMode?.(false)
   }
 
   const handleToggleNote = () => {
@@ -340,7 +476,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }
 
-  const handleActiveNote = (id: string | null) => {
+  const handleActiveNote = (id: string | number | null) => {
     if (!id) {
       setNoteEditor((prev) => ({ ...prev, visible: false, id: null }))
       return
@@ -355,6 +491,30 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }))
   }
 
+  const handleEditNote = (id: string | number) => {
+    if (!noteMode) {
+      setNoteMode(true)
+      viewerRef.current?.setNoteMode?.(true)
+    }
+    handleActiveNote(id)
+  }
+
+  const handleDeleteNote = async (id: string | number) => {
+    viewerRef.current?.deleteNote?.(id)
+    if (noteEditor.id === id) {
+      setNoteEditor((prev) => ({ ...prev, visible: false, id: null }))
+    }
+    const localId = Number(id)
+    const serverId = noteIdMapRef.current[localId]
+    if (!studySessionId || !Number.isFinite(localId) || !serverId) return
+    try {
+      await deleteStudyNote(studySessionId, serverId)
+      delete noteIdMapRef.current[localId]
+    } catch (error) {
+      console.error('노트 삭제 실패', error)
+    }
+  }
+
   const handleNoteEditorChange = (value: string) => {
     setNoteEditor((prev) => ({ ...prev, text: value }))
     if (noteEditor.id) {
@@ -362,20 +522,133 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }
 
-  const handleNoteSubmit = () => {
+  const handleNoteSubmit = async () => {
     if (!noteEditor.id) return
     viewerRef.current?.updateNote?.(noteEditor.id, noteEditor.text)
     setNoteEditor((prev) => ({ ...prev, visible: false }))
-  }
-
-  const buildAiResponse = (question: string) => {
-    if (question.includes('드론')) {
-      return '드론은 무인 항공기로, 원격 제어나 자율 비행으로 다양한 작업을 수행합니다.'
+    const localId = Number(noteEditor.id)
+    const mappedId = noteIdMapRef.current[localId]
+    if (!studySessionId || !Number.isFinite(localId)) return
+    if (!mappedId) {
+      const note = notes.find((item) => item.id === noteEditor.id)
+      const sessionPartId = resolveSessionPartId(note?.parentName)
+      const position = viewerRef.current?.getNoteWorldPosition?.(localId)
+      if (!sessionPartId || !position) return
+      try {
+        const response = await createStudyNote(studySessionId, {
+          sessionPartId,
+          x: position[0],
+          y: position[1],
+          z: position[2],
+          text: noteEditor.text || '',
+        })
+        const serverId = response.data.noteId
+        noteIdMapRef.current[localId] = serverId
+        isHydratingNotesRef.current = true
+        viewerRef.current?.replaceNoteId?.(localId, serverId)
+      } catch (error) {
+        console.error('노트 생성 실패', error)
+      } finally {
+        isHydratingNotesRef.current = false
+      }
+      return
     }
-    return '현재 데모 모드라 간단 응답만 제공해요. 다른 질문도 해볼까요?'
+    try {
+      await updateStudyNote(studySessionId, mappedId, noteEditor.text)
+    } catch (error) {
+      console.error('노트 수정 실패', error)
+    }
   }
 
-  const handleSendAiMessage = (rawText: string, source: 'ai' | 'bottom') => {
+  const resolveQuizQuestion = (messageIndex: number) => {
+    const direct = aiMessages[messageIndex]?.userQuestion
+    if (direct) return direct
+    for (let i = messageIndex - 1; i >= 0; i -= 1) {
+      if (aiMessages[i]?.role === 'user') {
+        return aiMessages[i].text
+      }
+    }
+    return ''
+  }
+
+  const handleRegisterQuiz = async (messageIndex: number) => {
+    const message = aiMessages[messageIndex]
+    if (!message || message.role !== 'assistant') return
+    const userQuestion = resolveQuizQuestion(messageIndex)
+    const aiAnswer = message.text
+    const materialIdForQuiz = message.materialId ?? activeMaterialId
+    const resolvedModelId = message.modelId ?? resolveFallbackModelId()
+    const modelIdForQuiz = Number.isFinite(resolvedModelId) ? resolvedModelId : null
+    if (!materialIdForQuiz || !userQuestion || !aiAnswer || !modelIdForQuiz) return
+    if (quizSubmittingId === message.id) return
+    try {
+      setQuizSubmittingId(message.id)
+      await registerQuiz({
+        materialId: materialIdForQuiz,
+        modelId: modelIdForQuiz,
+        userQuestion,
+        aiAnswer,
+        isFavorite: false,
+      })
+      setQuizAddedIds((prev) => new Set(prev).add(message.id))
+    } catch (error) {
+      console.error('퀴즈 등록 실패', error)
+    } finally {
+      setQuizSubmittingId(null)
+    }
+  }
+
+  const handleNotesChange = async (nextNotes: Note[]) => {
+    setNotes(nextNotes)
+    if (isHydratingNotesRef.current) {
+      prevNotesRef.current = nextNotes
+      return
+    }
+    const prevIds = new Set(prevNotesRef.current.map((note) => note.id))
+    const addedNotes = nextNotes.filter((note) => !prevIds.has(note.id))
+    prevNotesRef.current = nextNotes
+    if (!addedNotes.length) return
+    if (!studySessionId) return
+    for (const note of addedNotes) {
+      const localId = Number(note.id)
+      if (!Number.isFinite(localId)) continue
+      const sessionPartId = resolveSessionPartId(note.parentName)
+      const position = viewerRef.current?.getNoteWorldPosition?.(localId)
+      if (!sessionPartId || !position) continue
+      try {
+        const response = await createStudyNote(studySessionId, {
+          sessionPartId,
+          x: position[0],
+          y: position[1],
+          z: position[2],
+          text: note.text || '',
+        })
+        const serverId = response.data.noteId
+        noteIdMapRef.current[localId] = serverId
+        isHydratingNotesRef.current = true
+        viewerRef.current?.replaceNoteId?.(localId, serverId)
+        if (noteEditor.id === note.id) {
+          setNoteEditor((prev) => ({ ...prev, id: serverId }))
+        }
+      } catch (error) {
+        console.error('노트 생성 실패', error)
+      } finally {
+        isHydratingNotesRef.current = false
+      }
+    }
+  }
+
+  const handleCameraChange = (state: {
+    position: [number, number, number]
+    quaternion: [number, number, number, number]
+    target: [number, number, number]
+    zoom: number
+  }) => {
+    latestCameraRef.current = state
+    queueSaveSession()
+  }
+
+  const handleSendAiMessage = async (rawText: string, source: 'ai' | 'bottom') => {
     const text = rawText.trim()
     if (!text) return
     const userMessage: AiMessage = {
@@ -383,16 +656,46 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       role: 'user',
       text,
     }
-    const assistantMessage: AiMessage = {
-      id: `assistant-${Date.now() + 1}`,
-      role: 'assistant',
-      text: buildAiResponse(text),
-    }
-    setAiMessages((prev) => [...prev, userMessage, assistantMessage])
+    setAiMessages((prev) => [...prev, userMessage])
     if (source === 'ai') {
       setAiPromptInput('')
     } else {
       setBottomPromptInput('')
+    }
+    if (!studySessionId || !activeMaterialId) {
+      const fallbackMessage: AiMessage = {
+        id: `assistant-${Date.now() + 1}`,
+        role: 'assistant',
+        text: '세션 정보가 아직 준비되지 않았어요. 잠시 후 다시 시도해 주세요.',
+      }
+      setAiMessages((prev) => [...prev, fallbackMessage])
+      return
+    }
+    const selectedModelId = resolveSelectedModelId()
+    try {
+      const response = await askChat({
+        studySessionId,
+        question: text,
+        materialId: activeMaterialId,
+        modelId: selectedModelId,
+      })
+      const assistantMessage: AiMessage = {
+        id: `assistant-${response.data.messageId}`,
+        role: toRole(response.data.messageType),
+        text: response.data.messageContent,
+        materialId: activeMaterialId,
+        modelId: selectedModelId,
+        userQuestion: text,
+      }
+      setAiMessages((prev) => [...prev, assistantMessage])
+    } catch (error) {
+      console.error('AI 질문 실패', error)
+      const fallbackMessage: AiMessage = {
+        id: `assistant-${Date.now() + 1}`,
+        role: 'assistant',
+        text: '지금은 답변을 가져올 수 없어요. 잠시 후 다시 시도해 주세요.',
+      }
+      setAiMessages((prev) => [...prev, fallbackMessage])
     }
   }
   useEffect(() => {
@@ -496,6 +799,198 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   }, [projectId, safeProjectId])
 
   useEffect(() => {
+    let cancelled = false
+    const createSession = async () => {
+      if (!materialId) {
+        console.warn('materialId가 없어 학습 세션을 생성하지 않습니다.')
+        setStudySession(null)
+        setStudySessionId(null)
+        return
+      }
+      try {
+        const response = await createStudySession(materialId)
+        if (cancelled) return
+        setStudySession(response.data)
+        setStudySessionId(response.data.sessionId)
+      } catch (error) {
+        if (cancelled) return
+        if (axios.isAxiosError(error)) {
+          const responseData = error.response?.data
+          const candidate = (responseData?.data ?? responseData) as StudySession | undefined
+          if (candidate && typeof candidate === 'object' && 'sessionId' in candidate) {
+            setStudySession(candidate)
+            setStudySessionId(candidate.sessionId)
+            return
+          }
+          if (error.response?.status === 409) {
+            try {
+              const homeResponse = await getStudyHomeAll()
+              const match = homeResponse.data.find((item) => item.materialId === materialId)
+              if (match) {
+                setStudySessionId(match.sessionId)
+              } else {
+                console.warn('세션이 이미 존재하지만 sessionId를 찾지 못했습니다.', responseData)
+              }
+            } catch (homeError) {
+              console.warn('세션이 이미 존재하지만 sessionId를 조회하지 못했습니다.', homeError)
+            }
+            return
+          }
+        }
+        console.error('학습 세션 생성 실패', error)
+      } finally {
+        // no-op
+      }
+    }
+    createSession()
+    return () => {
+      cancelled = true
+    }
+  }, [materialId])
+
+  useEffect(() => {
+    let cancelled = false
+    const fetchMaterialParts = async () => {
+      if (!activeMaterialId) {
+        setMaterialPartsByBase({})
+        return
+      }
+      try {
+        const response = await getMaterialParts(activeMaterialId)
+        if (cancelled) return
+        const next: Record<string, MaterialPart> = {}
+        response.data.forEach((part) => {
+          next[resolveBaseName(part.name)] = part
+        })
+        setMaterialPartsByBase(next)
+      } catch (error) {
+        console.error('부품 목록 조회 실패', error)
+      }
+    }
+    fetchMaterialParts()
+    return () => {
+      cancelled = true
+    }
+  }, [activeMaterialId])
+
+  useEffect(() => {
+    let cancelled = false
+    const fetchSessionData = async () => {
+      if (!studySessionId) return
+      try {
+        const [partsResponse, chatResponse] = await Promise.all([
+          getStudySessionParts(studySessionId),
+          getChatHistory(studySessionId),
+        ])
+        if (cancelled) return
+        const nextParts: Record<string, StudySessionPart> = {}
+        partsResponse.data.forEach((part) => {
+          const base = resolveBaseName(part.name)
+          const lower = part.name.toLowerCase()
+          const baseLower = base.toLowerCase()
+          nextParts[part.name] = part
+          nextParts[base] = part
+          nextParts[lower] = part
+          nextParts[baseLower] = part
+          nextParts[part.name.replace(/\s+/g, '').toLowerCase()] = part
+          nextParts[base.replace(/\s+/g, '').toLowerCase()] = part
+        })
+        setSessionPartsByBase(nextParts)
+        if (chatResponse.data.length > 0) {
+          const nextMessages: AiMessage[] = chatResponse.data.map((message) => ({
+            id: `${message.messageId}`,
+            role: toRole(message.messageType),
+            text: message.messageContent,
+          }))
+          setAiMessages(nextMessages)
+        }
+      } catch (error) {
+        console.error('세션 데이터 조회 실패', error)
+      }
+    }
+    fetchSessionData()
+    return () => {
+      cancelled = true
+    }
+  }, [studySessionId])
+
+  useEffect(() => {
+    let cancelled = false
+    const fetchNotes = async () => {
+      if (!studySessionId) return
+      try {
+        const response = await getStudyNotes(studySessionId)
+        if (cancelled) return
+        const mappedNotes = response.data.map((note) => ({
+          id: note.noteId,
+          text: note.text,
+          position: note.position,
+          parentName: sessionPartNameById.get(note.sessionPartId) ?? null,
+        }))
+        isHydratingNotesRef.current = true
+        viewerRef.current?.setNotesFromServer?.(mappedNotes)
+        noteIdMapRef.current = response.data.reduce<Record<number, number>>((acc, note) => {
+          acc[note.noteId] = note.noteId
+          return acc
+        }, {})
+      } catch (error) {
+        console.error('노트 목록 조회 실패', error)
+      } finally {
+        isHydratingNotesRef.current = false
+      }
+    }
+    fetchNotes()
+    return () => {
+      cancelled = true
+    }
+  }, [studySessionId, sessionPartNameById])
+
+  useEffect(() => {
+    if (!studySession || !viewerRef.current?.setCameraState) return
+    viewerRef.current.setCameraState({
+      position: studySession.position,
+      quaternion: studySession.quaternion,
+      target: studySession.target,
+      zoom: studySession.zoom,
+    })
+  }, [studySession])
+
+  useEffect(() => {
+    if (!parts.length || Object.keys(sessionPartsByBase).length === 0) return
+    const transforms: ViewerTransforms = {}
+    const hiddenParts: string[] = []
+    parts.forEach((partName) => {
+      const base = resolveBaseName(partName)
+      const keyCandidates = [
+        partName,
+        base,
+        partName.toLowerCase(),
+        base.toLowerCase(),
+        partName.replace(/\s+/g, '').toLowerCase(),
+        base.replace(/\s+/g, '').toLowerCase(),
+      ]
+      const sessionPart = keyCandidates
+        .map((key) => sessionPartsByBase[key])
+        .find((value) => value)
+      if (!sessionPart) return
+      const rot = resolveRotationDegrees(sessionPart.rotation as unknown as number[])
+      const scale = Array.isArray(sessionPart.scale) ? sessionPart.scale : []
+      transforms[partName] = {
+        pos: sessionPart.position,
+        rot,
+        scaleX: scale[0],
+        scaleY: scale[1],
+        scaleZ: scale[2],
+      }
+      if (!sessionPart.isVisible) hiddenParts.push(partName)
+    })
+    viewerRef.current?.applyTransformsByName?.(transforms)
+    if (hiddenParts.length) {
+      viewerRef.current?.setHiddenParts?.(hiddenParts)
+    }
+  }, [parts, sessionPartsByBase])
+
+  useEffect(() => {
     if (!parts.length) return
     viewerRef.current?.setViewMode?.(viewMode)
     if (viewMode === 'single') {
@@ -539,14 +1034,19 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
             const selectedPart =
               uniqueParts.find((item) => item.base === selectedBase) || uniqueParts[0]
             const selectedLabel = selectedPart?.base || 'Main Frame'
+            const selectedMeta = materialPartsByBase[selectedLabel]
             const selectedThumb =
-              partThumbnails[selectedLabel] || getPartIconSvg(selectedLabel)
+              selectedMeta?.imageUrl ||
+              partThumbnails[selectedLabel] ||
+              getPartIconSvg(selectedLabel)
+            const selectedDesc =
+              selectedMeta?.detail || selectedMeta?.description || partDescription
             return (
               <S.PartsDetail>
                 <S.PartsDetailLabel>Detail</S.PartsDetailLabel>
                 <S.PartsDetailImage style={{ backgroundImage: `url(${selectedThumb})` }} />
                 <S.PartsDetailTitle>{selectedLabel}</S.PartsDetailTitle>
-                <S.PartsDetailDesc>{partDescription}</S.PartsDetailDesc>
+                <S.PartsDetailDesc>{selectedDesc}</S.PartsDetailDesc>
               </S.PartsDetail>
             )
           })()}
@@ -581,13 +1081,19 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               $expanded={expanded}
               style={{
                 backgroundImage: `url(${
-                  partThumbnails[part.base] || getPartIconSvg(part.base)
+                  materialPartsByBase[part.base]?.imageUrl ||
+                  partThumbnails[part.base] ||
+                  getPartIconSvg(part.base)
                 })`,
               }}
             />
             <S.PartMeta $expanded={expanded}>
               <S.PartTitle>{part.base}</S.PartTitle>
-              {!expanded && <S.PartDesc>{partDescription}</S.PartDesc>}
+              {!expanded && (
+                <S.PartDesc>
+                  {materialPartsByBase[part.base]?.description || partDescription}
+                </S.PartDesc>
+              )}
             </S.PartMeta>
           </S.PartRow>
         ))}
@@ -605,9 +1111,24 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         {aiMessages.length === 0 ? (
           <S.PartDesc>무엇이 궁금한가요?</S.PartDesc>
         ) : (
-          aiMessages.map((message) =>
+          aiMessages.map((message, index) =>
             message.role === 'assistant' ? (
-              <S.AiChatBubble key={message.id}>{message.text}</S.AiChatBubble>
+              <S.AiChatBlock key={message.id}>
+                <S.AiChatBubble>
+                  <S.AiChatText>{message.text}</S.AiChatText>
+                </S.AiChatBubble>
+                <S.AiQuizAction
+                  type="button"
+                  disabled={quizSubmittingId === message.id || quizAddedIds.has(message.id)}
+                  onClick={() => handleRegisterQuiz(index)}
+                >
+                  {quizSubmittingId === message.id
+                    ? '추가 중...'
+                    : quizAddedIds.has(message.id)
+                      ? '추가됨'
+                      : '퀴즈에 추가하기'}
+                </S.AiQuizAction>
+              </S.AiChatBlock>
             ) : (
               <S.AiUserBubble key={message.id}>{message.text}</S.AiUserBubble>
             ),
@@ -772,15 +1293,43 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       <span>note</span>
                       <S.NoteSearch placeholder="검색" />
                     </S.NoteHeader>
+                    {noteEditor.visible && noteMode && (
+                      <S.NoteEditorPanel>
+                        <S.NoteEditorInput
+                          placeholder="메모 입력"
+                          value={noteEditor.text}
+                          onChange={(event) => handleNoteEditorChange(event.target.value)}
+                        />
+                        <S.NoteEditorActions>
+                          <S.NoteEditorButton type="button" onClick={handleNoteSubmit}>
+                            저장
+                          </S.NoteEditorButton>
+                        </S.NoteEditorActions>
+                      </S.NoteEditorPanel>
+                    )}
                     <S.NoteList>
                     {notes.slice(0, 4).map((note) => (
-                        <S.NoteItem key={note.id}>
+                      <S.NoteItem key={note.id}>
                         <S.NoteMeta>
                           <span>{note.parentName || '알 수 없는 부품'}</span>
+                          <S.NoteActions>
+                            <S.NoteActionButton
+                              type="button"
+                              aria-label="note edit"
+                              $icon={noteEditIcon}
+                              onClick={() => handleEditNote(note.id)}
+                            />
+                            <S.NoteActionButton
+                              type="button"
+                              aria-label="note delete"
+                              $icon={noteDeleteIcon}
+                              onClick={() => handleDeleteNote(note.id)}
+                            />
+                          </S.NoteActions>
                         </S.NoteMeta>
-                          <S.NoteBody>{note.text || '메모 show 메모 show 메모 show'}</S.NoteBody>
-                        </S.NoteItem>
-                      ))}
+                        <S.NoteBody>{note.text ? note.text : '메모가 없습니다.'}</S.NoteBody>
+                      </S.NoteItem>
+                    ))}
                     {!notes.length && (
                       <S.NoteEmpty>
                         <S.NoteBody>메모가 없습니다.</S.NoteBody>
@@ -806,42 +1355,45 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                   projectId={safeProjectId}
                   partOverrides={partOverrides}
                   onStatusChange={setStatus}
+                  onCameraChange={handleCameraChange}
                   onPartsChange={(nextParts: string[]) => {
                     setParts(nextParts)
                     if (nextParts.length) {
                       setSelectedIndex(-1)
                       viewerRef.current?.setSelectedIndex?.(-1)
                     }
-                    const raw =
-                      localStorage.getItem(storageKey) ||
-                      localStorage.getItem(defaultStorageKey)
-                    if (raw) {
-                      try {
-                        const transforms = JSON.parse(raw)
-                        if (safeProjectId === 'leafSpring') {
-                          const remapped: ViewerTransforms = {}
-                          Object.entries(transforms).forEach(([name, values]) => {
-                            if (name.startsWith('Pin ')) {
-                              remapped[`Spring Pin ${name.replace('Pin ', '')}`] =
-                                values as ViewerTransforms[string]
-                            } else {
-                              remapped[name] = values as ViewerTransforms[string]
-                            }
-                          })
-                          viewerRef.current?.applyTransformsByName?.(remapped)
-                        } else if (safeProjectId === 'robotGripper') {
-                          const filtered: ViewerTransforms = {}
-                          Object.entries(transforms).forEach(([name, values]) => {
-                            if (name.startsWith('Spring Pin ')) return
-                            filtered[name] = values as ViewerTransforms[string]
-                          })
-                          viewerRef.current?.applyTransformsByName?.(filtered)
-                        } else {
-                          viewerRef.current?.applyTransformsByName?.(transforms)
+                    if (Object.keys(sessionPartsByBase).length === 0) {
+                      const raw =
+                        localStorage.getItem(storageKey) ||
+                        localStorage.getItem(defaultStorageKey)
+                      if (raw) {
+                        try {
+                          const transforms = JSON.parse(raw)
+                          if (safeProjectId === 'leafSpring') {
+                            const remapped: ViewerTransforms = {}
+                            Object.entries(transforms).forEach(([name, values]) => {
+                              if (name.startsWith('Pin ')) {
+                                remapped[`Spring Pin ${name.replace('Pin ', '')}`] =
+                                  values as ViewerTransforms[string]
+                              } else {
+                                remapped[name] = values as ViewerTransforms[string]
+                              }
+                            })
+                            viewerRef.current?.applyTransformsByName?.(remapped)
+                          } else if (safeProjectId === 'robotGripper') {
+                            const filtered: ViewerTransforms = {}
+                            Object.entries(transforms).forEach(([name, values]) => {
+                              if (name.startsWith('Spring Pin ')) return
+                              filtered[name] = values as ViewerTransforms[string]
+                            })
+                            viewerRef.current?.applyTransformsByName?.(filtered)
+                          } else {
+                            viewerRef.current?.applyTransformsByName?.(transforms)
+                          }
+                          setStatus('로컬 저장값 적용')
+                        } catch (error) {
+                          console.error('레이아웃 자동 불러오기 실패', error)
                         }
-                        setStatus('로컬 저장값 적용')
-                      } catch (error) {
-                        console.error('레이아웃 자동 불러오기 실패', error)
                       }
                     }
                     if (safeProjectId === 'drone') {
@@ -878,47 +1430,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                   onSelectedChange={(index: number) => {
                     setSelectedIndex(index)
                   }}
-                  onNotesChange={(nextNotes: unknown[]) => setNotes(nextNotes as Note[])}
+                  onNotesChange={(nextNotes: unknown[]) => handleNotesChange(nextNotes as Note[])}
                   onActiveNoteChange={handleActiveNote}
                 />
-
-                {noteEditor.visible && noteMode && (
-                  <div
-                    className="note-editor"
-                    style={{ left: `${noteEditor.x}px`, top: `${noteEditor.y}px` }}
-                    onMouseDown={(event) => event.stopPropagation()}
-                  >
-                    <div className="note-editor__avatar" />
-                    <div className="note-editor__bubble">
-                      <textarea
-                        className="note-editor__input"
-                        placeholder="메모 생성"
-                        rows={1}
-                        value={noteEditor.text}
-                        onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                          handleNoteEditorChange(event.target.value)
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' && !event.shiftKey) {
-                            event.preventDefault()
-                            handleNoteSubmit()
-                          }
-                          if (event.key === 'Escape') {
-                            event.preventDefault()
-                            setNoteEditor((prev) => ({ ...prev, visible: false }))
-                          }
-                        }}
-                      />
-                      <button
-                        className="note-editor__send"
-                        type="button"
-                        onClick={handleNoteSubmit}
-                      >
-                        ↗
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 <S.ViewerFooter $expanded={expenseToggleOn}>
                   <S.ProgressRow $expanded={expenseToggleOn}>

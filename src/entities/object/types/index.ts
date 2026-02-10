@@ -1,6 +1,13 @@
 export interface ObjectItem {
-  id: number;
   title: string;
-  detail: string;
-  imageUrl: string;
+  description: string;
+  thumbnailUrl: string;
+  materialId: number;
+  sessionId: number;
+  lastAccessAt: string;
+}
+
+export interface ObjectApiResponse {
+  status: number;
+  data: ObjectItem[];
 }
