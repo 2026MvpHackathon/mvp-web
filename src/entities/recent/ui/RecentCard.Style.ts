@@ -43,7 +43,7 @@ export const time = styled.span`
 
 export const detail = styled.span`
   ${token.typography("caption", "sm", "regular")}
-  color: ${token.colors.line.neutral};
+  color: ${token.colors.secondary.alternative};
 `;
 
 export const bottom = styled.div`
