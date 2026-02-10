@@ -72,3 +72,11 @@ export type StudyHomeItem = {
   lastAccessAt: string
 }
 
+export type QuizRegisterResult = {
+  createdAt: string
+  updatedAt: string
+  id: number
+  favorite: boolean
+  incorrect: boolean
+}
+

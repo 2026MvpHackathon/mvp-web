@@ -8,22 +8,22 @@ import QuizFavoritesOff from '@/assets/icons/Quiz/QuizFavoritesOff';
 interface QuizHeader {
     type: "AI" | "DB";
     rangeText: string;
-    isActive?: boolean;
+    isFavorite: boolean; // isActive 대신 isFavorite 사용
+    onToggleFavorite: () => void; // 즐겨찾기 토글 함수
     title: string;
-    currentQuestion?: number; 
-    totalQuestions?: number; 
+    currentQuestionText: string;
+    progressPercent: number;
 }
 
 const DuringQuizHeader = ({
     type, 
     rangeText, 
-    isActive, 
+    isFavorite, 
+    onToggleFavorite, 
     title,
-    currentQuestion = 8,  // test
-    totalQuestions = 10   // 기본값
+    currentQuestionText,
+    progressPercent
 }: QuizHeader) => {
-    const progress = Math.round((currentQuestion / totalQuestions) * 100);
-
     return(
         <S.header_container>
             <S.header_top_container>
@@ -33,7 +33,9 @@ const DuringQuizHeader = ({
                         <QuizDB color={colors.text.strong}/>}
                     <S.header_top_range_text>{rangeText}</S.header_top_range_text>
                 </S.header_top_front_wrapper>
-                {isActive? <QuizFavoritesOn/>: <QuizFavoritesOff/>}
+                    <div onClick={onToggleFavorite}>
+                        {isFavorite ? <QuizFavoritesOn /> : <QuizFavoritesOff />}
+                    </div>
             </S.header_top_container>
 
             <S.header_Quiz_title>{title}</S.header_Quiz_title>
@@ -41,10 +43,11 @@ const DuringQuizHeader = ({
             <S.header_bottom_container>
                 <S.ProgressBarWrapper>
                     <S.ProgressBarBackground />
-                    <S.ProgressBarFill progress={progress} />
+                    <S.ProgressBarFill progress={progressPercent} />
                 </S.ProgressBarWrapper>
                 <S.header_bottom_progress_percent_wrapper>
-                    <S.header_bottom_progress_percent_numb>{progress}</S.header_bottom_progress_percent_numb>
+                    <S.header_bottom_question_status>{currentQuestionText}</S.header_bottom_question_status>
+                    <S.header_bottom_progress_percent_numb>{progressPercent}</S.header_bottom_progress_percent_numb>
                     <S.header_bottom_progress_percent>%</S.header_bottom_progress_percent>
                 </S.header_bottom_progress_percent_wrapper>
             </S.header_bottom_container>

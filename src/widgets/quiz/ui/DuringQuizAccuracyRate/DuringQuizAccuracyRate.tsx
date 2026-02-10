@@ -1,16 +1,15 @@
 import * as S from './DuringQuizAccuracyRate.style';
 
-const DuringQuizAccuracyRate = () => {
+interface DuringQuizAccuracyRateProps {
+    accuracyRate: string;
+    smallText: string;
+}
 
-    const accuracyRate = {
-        accuracyRate: '66.7%',
-        smallText: '3 문제 중 2 문제 맞췄어요!'
-    }
-
+const DuringQuizAccuracyRate = ({ accuracyRate, smallText }: DuringQuizAccuracyRateProps) => {
     return(
         <S.container>
-            <S.accuracy_rate>{accuracyRate.accuracyRate}</S.accuracy_rate>
-            <S.small_text>{accuracyRate.smallText}</S.small_text>
+            <S.accuracy_rate>{accuracyRate}</S.accuracy_rate>
+            <S.small_text>{smallText}</S.small_text>
         </S.container>
     );
 }

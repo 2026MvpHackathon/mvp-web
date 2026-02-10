@@ -1,10 +1,10 @@
-import { loggedInUserRedirect } from '@/features/Auth/authApi';
+import { loggedInUserRedirect } from '@/features/auth/authApi';
 import AuthInputField from '@/widgets/Auth/ui/AuthInputField/AuthInputField';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { setAccessToken, setEmail, setRefreshToken, setUserId } from '@/features/Auth/cookies';
-import { publicInstance } from '@/features/Auth/axiosInstance';
+import { setAccessToken, setEmail, setRefreshToken, setUserId } from '@/features/auth/cookies';
+import { publicInstance } from '@/features/auth/axiosInstance';
 import type { InputConfig } from '@/widgets/Auth/ui/AuthInputField/AuthInputField'; 
 
 const SERVER_URL = import.meta.env.VITE_API_URL;
