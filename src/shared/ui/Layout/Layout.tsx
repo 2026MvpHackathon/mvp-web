@@ -3,6 +3,8 @@ import Header from '../Header/Header';
 import * as S from './Layout.style';
 import { useEffect, useState } from 'react';
 import { ToastProvider } from '@/shared/ui/Toast/ToastContext';
+import { colors } from '@/shared/values/_foundation';
+
 
 interface LayoutContextType {
   setText: (v: string) => void;
@@ -16,6 +18,28 @@ const Layout = () => {
   const [text, setText] = useState('');
   const [isBlur, setIsBlur] = useState(false);
   const [evaluation, setEvaluation] = useState('');
+
+const EXPENSE_BG = colors.background.Dark;
+
+
+    // expense: 흰 배경 없이 아래까지 채우기 (66ac796처럼)
+    useEffect(() => {
+        if (!hideHeader) return;
+        const html = document.documentElement;
+        const bodyEl = document.body;
+        const root = document.getElementById('root');
+        const prevHtml = html.style.backgroundColor;
+        const prevBody = bodyEl.style.backgroundColor;
+        const prevRoot = root?.style.backgroundColor ?? '';
+        html.style.backgroundColor = EXPENSE_BG;
+        bodyEl.style.backgroundColor = EXPENSE_BG;
+        if (root) root.style.backgroundColor = EXPENSE_BG;
+        return () => {
+            html.style.backgroundColor = prevHtml;
+            bodyEl.style.backgroundColor = prevBody;
+            if (root) root.style.backgroundColor = prevRoot;
+        };
+    }, [hideHeader]);
 
   const setEvaluationByScore = (text: string) => {
     const score = Number(text);
@@ -47,29 +71,33 @@ const Layout = () => {
     setEvaluationByScore(text);
   }, [text]);
 
-  return (
-    <ToastProvider>
-      <S.container>
-        {isBlur && <S.blur_overlay />}
+    return (
+        <ToastProvider>
+            
+            <S.container $isExpense={hideHeader}>
+            {isBlur && <S.blur_overlay/>}
 
-        {isBlur && (
-          <S.top_ui>
-            <S.accuracy_rate>{text}</S.accuracy_rate>
-            <S.evaluation>{evaluation}</S.evaluation>
-            <S.LoadingBarWrapper>
-              <S.LoadingBarFill />
-            </S.LoadingBarWrapper>
-          </S.top_ui>
-        )}
+            {isBlur && (
+            <S.top_ui>
+                <S.accuracy_rate>{text}</S.accuracy_rate>
+                <S.evaluation>{evaluation}</S.evaluation>
+                <S.LoadingBarWrapper>
+                <S.LoadingBarFill />
+                </S.LoadingBarWrapper>
+            </S.top_ui>
+            )}
 
-        {!hideHeader && <Header />}
+            {!hideHeader && <Header />}
 
-        <S.body style={location.pathname.includes('/auth') ? { padding: '0px' } : {}}>
-          <Outlet context={{ setText, setIsBlur } satisfies LayoutContextType} />
-        </S.body>
-      </S.container>
-    </ToastProvider>
-  );
+            <S.body
+            $isExpense={hideHeader}
+            style={location.pathname.includes('/auth') ? { padding: '0px' } : undefined}
+            >
+                <Outlet context={{ setText, setIsBlur }} />
+            </S.body>
+        </S.container>
+        </ToastProvider>
+    );
 };
 
 export default Layout;

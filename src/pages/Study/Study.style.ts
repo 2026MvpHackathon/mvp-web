@@ -32,6 +32,9 @@ export const CenterColumn = styled.div`
   gap: 14px;
 `
 
+const cardBorderStyle = '1px solid #104912'
+const cardBoxShadowStyle = '0 0 0 1px #104912'
+
 export const Card = styled.section`
   background: #202020;
   border-radius: 18px;
@@ -50,6 +53,8 @@ export const CardHeader = styled.div`
 `
 
 export const PartsCard = styled(Card)<{ $expanded?: boolean }>`
+  border: ${({ $expanded }) => ($expanded ? 'none' : cardBorderStyle)};
+  box-shadow: ${({ $expanded }) => ($expanded ? 'none' : cardBoxShadowStyle)};
   height: ${({ $expanded }) => ($expanded ? '760px' : '400px')};
   display: grid;
   grid-template-rows: auto 1fr;
@@ -183,11 +188,15 @@ export const PartsSectionLabel = styled.div`
 `
 
 export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
+  border: ${({ $expanded }) => ($expanded ? 'none' : cardBorderStyle)};
+  box-shadow: ${({ $expanded }) => ($expanded ? 'none' : cardBoxShadowStyle)};
   height: ${({ $compact, $expanded }) =>
     $compact ? '410px' : $expanded ? '360px' : '400px'};
   display: flex;
   flex-direction: column;
   padding-bottom: 0;
+  min-height: 0;
+  overflow: hidden;
 
   @media (max-width: 1200px) {
     height: ${({ $compact, $expanded }) =>
@@ -208,16 +217,28 @@ export const AiBody = styled.div`
   padding: 0 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
   font-size: 12px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
     width: 0;
     height: 0;
   }
+`
+
+export const AiBodySpacer = styled.div`
+  flex: 1 1 0;
+  min-height: 0;
+`
+
+export const AiBodyInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
 `
 
 export const AiPromptBar = styled.form`
@@ -314,8 +335,8 @@ export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
   height: ${({ $expanded }) => ($expanded ? '920px' : 'clamp(560px, 72vh, 820px)')};
   min-height: ${({ $expanded }) => ($expanded ? '920px' : '0')};
   max-height: ${({ $expanded }) => ($expanded ? '920px' : 'none')};
-  border: ${({ $expanded }) => ($expanded ? '1px solid #104912' : 'none')};
-  box-shadow: ${({ $expanded }) => ($expanded ? '0 0 0 1px #104912' : 'none')};
+  border: ${cardBorderStyle};
+  box-shadow: ${cardBoxShadowStyle};
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
@@ -349,15 +370,6 @@ export const ViewerDescription = styled.div`
   color: #aeb8cc;
   line-height: 1.4;
   flex: 1;
-`
-
-export const ProjectSelect = styled.select`
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(109, 167, 117, 0.35);
-  background: #141414;
-  color: #cfe0d6;
-  font-size: 11px;
 `
 
 export const ViewerBody = styled.div`
