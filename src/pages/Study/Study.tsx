@@ -1171,20 +1171,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                 <span>{projectLabel}</span>
                 <S.ViewerDivider />
                 <S.ViewerDescription>{projectDescription}</S.ViewerDescription>
-                {!expenseToggleOn ? (
-                  <S.ProjectSelect
-                    value={safeProjectId}
-                    onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                      handleProjectChange(event.target.value)
-                    }
-                  >
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.label}
-                      </option>
-                    ))}
-                  </S.ProjectSelect>
-                ) : (
+                {expenseToggleOn && (
                   <S.ExpandedViewModeToggle>
                     <S.ViewModeButton
                       $active={viewMode === 'single'}

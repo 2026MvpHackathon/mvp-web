@@ -32,6 +32,9 @@ export const CenterColumn = styled.div`
   gap: 14px;
 `
 
+const cardBorderStyle = '1px solid #104912'
+const cardBoxShadowStyle = '0 0 0 1px #104912'
+
 export const Card = styled.section`
   background: #202020;
   border-radius: 18px;
@@ -50,6 +53,8 @@ export const CardHeader = styled.div`
 `
 
 export const PartsCard = styled(Card)<{ $expanded?: boolean }>`
+  border: ${({ $expanded }) => ($expanded ? 'none' : cardBorderStyle)};
+  box-shadow: ${({ $expanded }) => ($expanded ? 'none' : cardBoxShadowStyle)};
   height: ${({ $expanded }) => ($expanded ? '760px' : '400px')};
   display: grid;
   grid-template-rows: auto 1fr;
@@ -183,6 +188,8 @@ export const PartsSectionLabel = styled.div`
 `
 
 export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
+  border: ${({ $expanded }) => ($expanded ? 'none' : cardBorderStyle)};
+  box-shadow: ${({ $expanded }) => ($expanded ? 'none' : cardBoxShadowStyle)};
   height: ${({ $compact, $expanded }) =>
     $compact ? '410px' : $expanded ? '360px' : '400px'};
   display: flex;
@@ -314,8 +321,8 @@ export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
   height: ${({ $expanded }) => ($expanded ? '920px' : 'clamp(560px, 72vh, 820px)')};
   min-height: ${({ $expanded }) => ($expanded ? '920px' : '0')};
   max-height: ${({ $expanded }) => ($expanded ? '920px' : 'none')};
-  border: ${({ $expanded }) => ($expanded ? '1px solid #104912' : 'none')};
-  box-shadow: ${({ $expanded }) => ($expanded ? '0 0 0 1px #104912' : 'none')};
+  border: ${cardBorderStyle};
+  box-shadow: ${cardBoxShadowStyle};
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
