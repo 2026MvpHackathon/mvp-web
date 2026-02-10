@@ -1,8 +1,8 @@
 import * as S from './Header.style';
 import Logo from '/src/assets/Logo/Logo.png'
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getCookie, deleteCookie } from '@/features/auth/cookies';
-import axiosInstance from '@/features/auth/axiosInstance'; // publicInstance를 axiosInstance로 변경
+import { getCookie, deleteCookie } from '@/features/Auth/cookies';
+import axiosInstance from '@/features/Auth/axiosInstance';
 import { useEffect, useState } from 'react';
 
 const SERVER_URL = import.meta.env.VITE_API_URL;
