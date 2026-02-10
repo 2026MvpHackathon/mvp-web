@@ -2,14 +2,14 @@ import styled from "styled-components";
 import * as token from "@/shared/values/token"
 
 export const container = styled.div`
-  width: 15.4375rem;
-  height: 15.1875rem;
+  width: 18.75rem;
+  height: auto;
   background-color: ${token.colors.fill.alternative4};
-  padding: 0.875rem 1.25rem;
+  padding: 1rem 1.25rem;
   border-radius: ${token.shapes.small};
   ${token.flexColumn}
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   cursor: pointer;
   overflow: hidden;
 `;
@@ -38,10 +38,10 @@ export const openArrow = styled.img`
 
 export const detail = styled.span`
   ${token.typography("caption", "sm", "regular")}
-  color: ${token.colors.line.neutral};
+  color: ${token.colors.secondary.alternative};
 `;
 
 export const objectImg = styled.img`
-  width: 10rem;
   object-fit: cover;
+  height: 7rem;
 `
