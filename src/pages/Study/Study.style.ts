@@ -713,11 +713,11 @@ export const NoteBody = styled.div`
   color: #d9e4d6;
 `
 
-/** 선택된 부품 좌표 표시 (ViewerFooter 바로 위, 오른쪽 벽에 붙임 / expense 시 200px 좌측) */
+/** 선택된 부품 좌표 표시 (ViewerFooter 바로 위, 오른쪽 벽에 붙임) */
 export const SelectedPartCoords = styled.div<{ $expanded?: boolean }>`
   position: absolute;
   left: auto;
-  right: ${({ $expanded }) => ($expanded ? '368px' : '18px')};
+  right: 18px;
   width: fit-content;
   max-width: calc(100% - 36px);
   /* ViewerFooter bottom 16px/45px + 푸터 콘텐츠 높이(~34px) 바로 위 */

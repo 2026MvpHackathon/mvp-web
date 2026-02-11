@@ -30,6 +30,7 @@ import { useToast } from '@/shared/ui/Toast/ToastContext'
 import './Study.css'
 import * as S from './Study.style'
 
+
 type Note = {
   id: string | number
   text: string
@@ -145,6 +146,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const [materialDescriptionFromServer, setMaterialDescriptionFromServer] = useState<string | null>(
     null,
   )
+  const [partSpecificDescriptions, setPartSpecificDescriptions] = useState<Record<string, string>>({})
   const [sessionPartsByBase, setSessionPartsByBase] = useState<
     Record<string, StudySessionPart>
   >({})
@@ -404,22 +406,38 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }, [])
 
-  const uniqueParts = parts.reduce(
-    (acc, name) => {
-      const isRobotArm = safeProjectId === 'robotArm'
-      const base = isRobotArm
-        ? name.startsWith('Part8') || name === 'Part8'
-          ? 'Part8'
-          : name
-        : normalizePartName(name)
-      if (!acc.seen.has(base)) {
-        acc.seen.add(base)
-        acc.items.push({ name, base })
-      }
-      return acc
-    },
-    { seen: new Set<string>(), items: [] as { name: string; base: string }[] },
-  ).items
+  const uniqueParts = useMemo(
+    () =>
+      parts.reduce(
+        (acc, name) => {
+          const isRobotArm = safeProjectId === 'robotArm'
+          const base = isRobotArm
+            ? name.startsWith('Part8') || name === 'Part8'
+              ? 'Part8'
+              : name
+            : normalizePartName(name)
+          if (!acc.seen.has(base)) {
+            acc.seen.add(base)
+            acc.items.push({ name, base })
+          }
+          return acc
+        },
+        { seen: new Set<string>(), items: [] as { name: string; base: string }[] },
+      ).items,
+    [parts, safeProjectId],
+  )
+
+  useEffect(() => {
+    const newDescriptions: Record<string, string> = {};
+    uniqueParts.forEach(part => {
+        const materialPart = materialPartsByBase[part.base];
+        if (materialPart?.description) {
+            newDescriptions[part.base] = materialPart.description;
+        }
+    });
+    setPartSpecificDescriptions(newDescriptions);
+  }, [uniqueParts, materialPartsByBase]);
+
 
   const displaySelectedIndex =
     viewMode === 'single'
@@ -1456,10 +1474,13 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               <S.PartTitle>{part.base}</S.PartTitle>
               {!expanded && (
                 <S.PartDesc>
-                  {getPartDescriptionText(materialPartsByBase[part.base]) ||
+                  {partSpecificDescriptions[part.base] ||
+                    getPartDescriptionText(materialPartsByBase[part.base]) ||
                     getPartDescriptionText(materialPartsByBase[part.base.toLowerCase()]) ||
                     getPartDescriptionText(materialPartsByBase[part.base.replace(/\s+/g, '')]) ||
-                    getPartDescriptionText(materialPartsByBase[part.base.replace(/\s+/g, '').toLowerCase()]) ||
+                    getPartDescriptionText(
+                      materialPartsByBase[part.base.replace(/\s+/g, '').toLowerCase()],
+                    ) ||
                     partDescription}
                 </S.PartDesc>
               )}
@@ -1811,24 +1832,26 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                 )}
 
                 <S.ViewerFooter $expanded={expenseToggleOn}>
-                  <S.ProgressRow $expanded={expenseToggleOn}>
-                    <S.ProgressWrap>
-                      <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
-                        {Math.round(explodePercent)}%
-                      </S.ProgressLabel>
-                      <S.ProgressBar
-                        ref={progressRef}
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={explodePercent}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                          handleExplodeScale(Number(event.target.value))
-                        }
-                      />
-                    </S.ProgressWrap>
-                  </S.ProgressRow>
+                  {viewMode === 'assembly' && (
+                    <S.ProgressRow $expanded={expenseToggleOn}>
+                      <S.ProgressWrap>
+                        <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
+                          {Math.round(explodePercent)}%
+                        </S.ProgressLabel>
+                        <S.ProgressBar
+                          ref={progressRef}
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={explodePercent}
+                          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                            handleExplodeScale(Number(event.target.value))
+                          }
+                        />
+                      </S.ProgressWrap>
+                    </S.ProgressRow>
+                  )}
                   {expenseToggleOn && (
                     <S.ExpenseToggleOutside
                       type="button"
