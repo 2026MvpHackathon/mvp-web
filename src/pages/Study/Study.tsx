@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import axios from 'axios'
 import * as THREE from 'three'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
@@ -70,23 +70,36 @@ type ViewerTransforms = Record<
 const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { materialId: pathMaterialId } = useParams<{ materialId: string }>(); // Get materialId from path params
   const { showToast } = useToast()
   const viewerRef = useRef<AssemblyViewerHandle | null>(null)
   const progressRef = useRef<HTMLInputElement | null>(null)
   const aiBodyRef = useRef<HTMLDivElement | null>(null)
   const [progressWidth, setProgressWidth] = useState(0)
 
-  const [projectId, setProjectId] = useState(() => {
-    const params = new URLSearchParams(window.location.search)
-    const midParam = params.get('materialId')
-    if (midParam) {
-      const mid = parseInt(midParam, 10)
-      if (Number.isFinite(mid) && materialIdToProjectId[mid]) {
-        return materialIdToProjectId[mid]
-      }
+  // Determine the current materialId early and consistently
+  const currentMaterialId = useMemo(() => {
+    if (pathMaterialId) {
+      const mid = parseInt(pathMaterialId, 10);
+      if (Number.isFinite(mid)) return mid;
     }
-    return localStorage.getItem('assembly-last-project') || 'drone'
-  })
+    const midParam = searchParams.get('materialId');
+    if (midParam) {
+      const mid = parseInt(midParam, 10);
+      if (Number.isFinite(mid)) return mid;
+    }
+    // Fallback to localStorage or default
+    const storedProjectId = localStorage.getItem('assembly-last-project');
+    if (storedProjectId && projectConfigs[storedProjectId as keyof typeof projectConfigs]) {
+        return projectConfigs[storedProjectId as keyof typeof projectConfigs].materialId;
+    }
+    return projectConfigs.drone.materialId; // Default to Drone's materialId
+  }, [pathMaterialId, searchParams]);
+
+  const [projectId, setProjectId] = useState(() => {
+    const key = currentMaterialId ? materialIdToProjectId[currentMaterialId] : 'drone';
+    return key || 'drone'; // Ensure a fallback
+  });
   const safeProjectId = Object.prototype.hasOwnProperty.call(projectConfigs, projectId)
     ? projectId
     : 'drone'
@@ -126,7 +139,14 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     rotation: [number, number, number]
     scale: number
   } | null>(null)
-  const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
+  const [viewMode, setViewMode] = useState<'single' | 'assembly'>(() => {
+    const storedViewMode = localStorage.getItem('study-view-mode');
+    return (storedViewMode === 'single' || storedViewMode === 'assembly') ? storedViewMode : 'assembly';
+  });
+  useEffect(() => {
+    localStorage.setItem('study-view-mode', viewMode);
+  }, [viewMode]);
+
   const [aiPanelOpen, setAiPanelOpen] = useState(true)
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([
     {
@@ -241,8 +261,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     return name.replace(/\s*\d+$/, '').trim()
   }
 
-  const materialId = projectConfig?.materialId
-  const activeMaterialId = studySession?.materialId ?? materialId
+
 
   const resolveBaseName = (name: string) => normalizePartName(name)
 
@@ -438,6 +457,60 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     setPartSpecificDescriptions(newDescriptions);
   }, [uniqueParts, materialPartsByBase]);
 
+  // Centralized effect to manage AssemblyViewer's view and selection based on persisted state
+  useEffect(() => {
+    if (!viewerRef.current || parts.length === 0 || !safeProjectId) return;
+
+    // Check localStorage for desired view mode and selected part
+    const storedViewMode = localStorage.getItem('study-view-mode');
+    const storedPartName = localStorage.getItem('study-selected-part-name');
+    const storedPartProject = localStorage.getItem('study-selected-part-project');
+
+    // Apply view mode to viewer
+    viewerRef.current.setViewMode?.(viewMode);
+
+    if (viewMode === 'single') {
+        // If current viewMode is single, try to restore specific part
+        if (storedViewMode === 'single' && storedPartName && storedPartProject === safeProjectId) {
+            const index = parts.indexOf(storedPartName);
+            if (index !== -1 && selectedIndex !== index) {
+                setSelectedIndex(index);
+                viewerRef.current.setSelectedIndex?.(index);
+                viewerRef.current.setHiddenParts?.(parts.filter((_, idx) => idx !== index));
+                viewerRef.current.focusOnPart?.(storedPartName);
+            } else if (index === -1 && storedPartName) {
+                // Stored part name exists but is not in current parts list (e.g., project changed, part removed)
+                // Fallback to first part in single view if no valid stored part, or assembly view
+                localStorage.removeItem('study-selected-part-name');
+                localStorage.removeItem('study-selected-part-project');
+                setSelectedIndex(0); // Select first part by default for single view
+                viewerRef.current.setSelectedIndex?.(0);
+                viewerRef.current.setHiddenParts?.(parts.filter((_, idx) => idx !== 0));
+                viewerRef.current.focusOnPart?.(parts[0]);
+                setViewMode('single'); // Explicitly keep single view if intended
+            }
+        } else {
+            // No stored single part info for this project, or stored view mode was assembly
+            // If already in single view, default to first part
+            if (viewMode === 'single' && parts.length > 0 && selectedIndex !== 0) {
+                 setSelectedIndex(0);
+                 viewerRef.current.setSelectedIndex?.(0);
+                 viewerRef.current.setHiddenParts?.(parts.filter((_, idx) => idx !== 0));
+                 viewerRef.current.focusOnPart?.(parts[0]);
+            }
+        }
+    } else { // viewMode === 'assembly'
+        viewerRef.current.setViewMode?.('assembly');
+        viewerRef.current.setHiddenParts?.([]); // Show all parts in assembly view
+        setSelectedIndex(-1); // No part specifically selected in assembly view
+        viewerRef.current.setSelectedIndex?.(-1);
+        // Clear stored single part selection if in assembly mode
+        localStorage.removeItem('study-selected-part-name');
+        localStorage.removeItem('study-selected-part-project');
+    }
+  }, [viewMode, parts, safeProjectId, selectedIndex, viewerRef.current]);
+
+
 
   const displaySelectedIndex =
     viewMode === 'single'
@@ -579,14 +652,15 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const partOverrides = partOverridesByProject[safeProjectId] ?? projectConfig?.defaultOverrides
 
   const handleExpenseToggle = () => {
-    const materialId = projectConfig?.materialId
-    const query = typeof materialId === 'number' ? `?materialId=${materialId}` : ''
+    // materialId from path params now has priority
+    const currentMaterialId = pathMaterialId ? parseInt(pathMaterialId, 10) : projectConfig?.materialId;
+    const query = typeof currentMaterialId === 'number' ? `?materialId=${currentMaterialId}` : '';
     if (expanded) {
-      navigate(`/study${query}`)
+      navigate(`/study${query}`);
     } else {
-      navigate(`/study/expense${query}`)
+      navigate(`/study/expense${query}`);
     }
-  }
+  };
 
   const handleSelectPart = (index: number) => {
     setSelectedIndex(index)
@@ -596,7 +670,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       if (name) {
         viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== index))
         viewerRef.current?.focusOnPart?.(name)
+        localStorage.setItem('study-selected-part-name', name);
+        localStorage.setItem('study-selected-part-project', safeProjectId);
       }
+    } else {
+        localStorage.removeItem('study-selected-part-name');
+        localStorage.removeItem('study-selected-part-project');
     }
   }
 
@@ -949,10 +1028,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     el.scrollTop = el.scrollHeight - el.clientHeight
   }, [aiMessages])
 
-  useEffect(() => {
-    setViewMode('assembly')
-    setSelectedIndex(-1)
-  }, [])
+
 
   const prevViewModeRef = useRef<'single' | 'assembly'>('assembly')
   useEffect(() => {
@@ -962,18 +1038,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     prevViewModeRef.current = viewMode
   }, [viewMode])
 
-  // URL의 materialId가 바뀌면 해당 프로젝트로 전환 (홈에서 다른 오브젝트 클릭 시)
-  useEffect(() => {
-    const midParam = searchParams.get('materialId')
-    if (!midParam) return
-    const mid = parseInt(midParam, 10)
-    if (!Number.isFinite(mid)) return
-    const key = materialIdToProjectId[mid]
-    if (key && key !== projectId) {
-      setProjectId(key)
-      localStorage.setItem('assembly-last-project', key)
-    }
-  }, [searchParams, projectId])
+
 
   useEffect(() => {
     if (safeProjectId !== projectId) {
@@ -985,14 +1050,15 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   useEffect(() => {
     let cancelled = false
     const createSession = async () => {
-      if (!materialId) {
+      // Use the centralized currentMaterialId here
+      if (!currentMaterialId) {
         console.warn('materialId가 없어 학습 세션을 생성하지 않습니다.')
         setStudySession(null)
         setStudySessionId(null)
         return
       }
       try {
-        const response = await createStudySession(materialId)
+        const response = await createStudySession(currentMaterialId)
         if (cancelled) return
         // API: { status, message, data: { sessionId, position, quaternion, target, zoom, ... } }
         const session = (response && typeof response === 'object' && 'data' in response)
@@ -1015,7 +1081,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           if (error.response?.status === 409) {
             try {
               const homeResponse = await getStudyHomeAll()
-              const match = homeResponse.data.find((item) => item.materialId === materialId)
+              const match = homeResponse.data.find((item) => item.materialId === currentMaterialId)
               if (match) {
                 setStudySessionId(match.sessionId)
                 try {
@@ -1078,20 +1144,21 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     return () => {
       cancelled = true
     }
-  }, [materialId])
+  }, [currentMaterialId]) // Dependency array now uses currentMaterialId
 
   // 학습 기계(프로젝트) 설명은 서버 study/home 목록에서 받아와 표시
   useEffect(() => {
     let cancelled = false
     const fetchMaterialDescription = async () => {
-      if (!materialId) {
+      // Use the centralized currentMaterialId here
+      if (!currentMaterialId) {
         setMaterialDescriptionFromServer(null)
         return
       }
       try {
         const res = await getStudyHomeAll()
         if (cancelled) return
-        const item = res.data?.find((x) => x.materialId === materialId)
+        const item = res.data?.find((x) => x.materialId === currentMaterialId)
         setMaterialDescriptionFromServer(item?.description?.trim() ?? null)
       } catch {
         if (!cancelled) setMaterialDescriptionFromServer(null)
@@ -1101,19 +1168,20 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     return () => {
       cancelled = true
     }
-  }, [materialId])
+  }, [currentMaterialId]) // Dependency array now uses currentMaterialId
 
   // 부품 설명/이미지는 현재 보고 있는 프로젝트 기준으로 조회 (세션 materialId 사용 시 드론만 조회되는 문제 방지)
   useEffect(() => {
     let cancelled = false
     const fetchMaterialParts = async () => {
-      if (!materialId) {
+      // Use the centralized currentMaterialId here
+      if (!currentMaterialId) {
         setMaterialPartsByBase({})
         return
       }
       try {
         setPartsFetchError(null)
-        const response = await getMaterialParts(materialId)
+        const response = await getMaterialParts(currentMaterialId)
         if (cancelled) return
         const raw = response?.data
         const list = Array.isArray(raw)
@@ -1158,7 +1226,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     return () => {
       cancelled = true
     }
-  }, [materialId, safeProjectId])
+  }, [currentMaterialId, safeProjectId]) // Dependency array now uses currentMaterialId
 
   useEffect(() => {
     let cancelled = false
@@ -1395,6 +1463,14 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
   }, [viewMode, parts, selectedIndex])
 
+  const activeMaterialId = studySession?.materialId ?? currentMaterialId;
+
+  const cursorStyle = useMemo(() => {
+    if (noteMode) return 'crosshair';
+    if (!editMode) return 'move'; // Swipe mode
+    return 'default'; // Select mode
+  }, [noteMode, editMode]);
+
   const renderPartsCard = (expanded: boolean) => (
     <S.PartsCard $expanded={expanded}>
       {expanded ? (
@@ -1581,7 +1657,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                   </S.ExpandedViewModeToggle>
                 )}
               </S.ViewerHeader>
-              <S.ViewerBody>
+              <S.ViewerBody $cursor={cursorStyle}>
                 <S.ViewerToolbar>
                   {expenseToggleOn ? (
                     <>
@@ -1595,7 +1671,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       <S.ToolbarButton
                         $active={!editMode}
                         onClick={handleSwipeMode}
-                        disabled={viewMode === 'single'}
+                        // Always allow swipe in single view
+                        disabled={false}
                       >
                         <S.ToolbarIcon src={toolHandIcon} alt="" />
                       </S.ToolbarButton>
@@ -1623,7 +1700,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       <S.ToolbarButton
                         $active={!editMode}
                         onClick={handleSwipeMode}
-                        disabled={viewMode === 'single'}
+                        // Always allow swipe in single view
+                        disabled={false}
                       >
                         <S.ToolbarIcon src={toolHandIcon} alt="" />
                       </S.ToolbarButton>
@@ -1810,6 +1888,34 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       setTimeout(applyPendingCamera, 100)
                       setTimeout(applyPendingCamera, 450)
                     }
+
+                    // --- New logic for restoring selected single part ---
+                    const storedViewMode = localStorage.getItem('study-view-mode');
+                    const storedPartName = localStorage.getItem('study-selected-part-name');
+                    const storedPartProject = localStorage.getItem('study-selected-part-project');
+
+                    if (storedViewMode === 'single' && storedPartName && storedPartProject === safeProjectId) {
+                        const index = nextParts.indexOf(storedPartName);
+                        if (index !== -1) {
+                            setSelectedIndex(index);
+                            viewerRef.current?.setSelectedIndex?.(index);
+                            viewerRef.current?.setHiddenParts?.(nextParts.filter((_, idx) => idx !== index));
+                            viewerRef.current?.focusOnPart?.(storedPartName);
+                            // Do NOT call setViewMode here. Let the viewMode state handle it.
+                        } else {
+                            // If stored part not found, clear storage and revert to assembly
+                            localStorage.removeItem('study-selected-part-name');
+                            localStorage.removeItem('study-selected-part-project');
+                            // Do NOT call setViewMode here.
+                        }
+                    } else if (storedViewMode === 'assembly') {
+                        // If stored view mode is assembly, ensure no single part is selected
+                        setSelectedIndex(-1);
+                        viewerRef.current?.setSelectedIndex?.(-1);
+                        viewerRef.current?.setHiddenParts?.([]);
+                        // Do NOT call setViewMode here.
+                    }
+                    // --- End new logic ---
                   }}
                   onSelectedChange={(index: number) => {
                     setSelectedIndex(index)
@@ -1818,22 +1924,20 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                   onActiveNoteChange={handleActiveNote}
                 />
 
-                {selectedPartCoords && (
-                  <S.SelectedPartCoords $expanded={expenseToggleOn}>
-                    <div>name : {selectedPartCoords.name}</div>
-                    <div>
-                      position : [{selectedPartCoords.position.map((n) => n.toFixed(2)).join(', ')}]
-                    </div>
-                    <div>
-                      rotation : [{selectedPartCoords.rotation.map((n) => n.toFixed(0)).join(', ')}]
-                    </div>
-                    <div>scale : {selectedPartCoords.scale.toFixed(2)}</div>
-                  </S.SelectedPartCoords>
-                )}
-
                 <S.ViewerFooter $expanded={expenseToggleOn}>
-                  {viewMode === 'assembly' && (
-                    <S.ProgressRow $expanded={expenseToggleOn}>
+                  {selectedPartCoords && (
+                    <S.SelectedPartCoords $expanded={expenseToggleOn}>
+                      <div>name : {selectedPartCoords.name}</div>
+                      <div>
+                        position : [{selectedPartCoords.position.map((n) => n.toFixed(2)).join(', ')}]
+                      </div>
+                      <div>
+                        rotation : [{selectedPartCoords.rotation.map((n) => n.toFixed(0)).join(', ')}]
+                      </div>
+                      <div>scale : {selectedPartCoords.scale.toFixed(2)}</div>
+                    </S.SelectedPartCoords>
+                  )}
+                    <S.ProgressRow $expanded={expenseToggleOn} $hidden={viewMode === 'single'}>
                       <S.ProgressWrap>
                         <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
                           {Math.round(explodePercent)}%
@@ -1851,7 +1955,6 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                         />
                       </S.ProgressWrap>
                     </S.ProgressRow>
-                  )}
                   {expenseToggleOn && (
                     <S.ExpenseToggleOutside
                       type="button"

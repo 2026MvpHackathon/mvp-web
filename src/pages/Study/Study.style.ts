@@ -386,10 +386,11 @@ export const ViewerDescription = styled.div`
   flex: 1;
 `
 
-export const ViewerBody = styled.div`
+export const ViewerBody = styled.div<{ $cursor?: string }>`
   position: relative;
   height: 100%;
   min-height: 0;
+  cursor: ${({ $cursor }) => $cursor || 'default'};
 `
 
 export const ExpandedPanels = styled.div`
@@ -713,15 +714,17 @@ export const NoteBody = styled.div`
   color: #d9e4d6;
 `
 
-/** 선택된 부품 좌표 표시 (ViewerFooter 바로 위, 오른쪽 벽에 붙임) */
+/** 선택된 부품 좌표 표시 - expense일 때 expense toggle 바로 위에 붙임 */
 export const SelectedPartCoords = styled.div<{ $expanded?: boolean }>`
   position: absolute;
   left: auto;
   right: 18px;
   width: fit-content;
   max-width: calc(100% - 36px);
-  /* ViewerFooter bottom 16px/45px + 푸터 콘텐츠 높이(~34px) 바로 위 */
-  bottom: ${({ $expanded }) => ($expanded ? '84px' : '52px')};
+  /* 일반: 푸터 위. expense: ViewerFooter(45px) + ExpenseToggle(39px) + 간격(6px) = toggle 바로 위 */
+  bottom: ${({ $expanded }) => ($expanded ? '90px' : '52px')};
+  /* expense일 때 푸터와 같이 왼쪽으로 밀어서 toggle 바로 위에 맞춤 */
+  transform: ${({ $expanded }) => ($expanded ? 'translateX(-325px)' : 'none')};
   z-index: 3;
   padding: 8px 8px 8px 12px;
   border-radius: 8px;
@@ -731,6 +734,10 @@ export const SelectedPartCoords = styled.div<{ $expanded?: boolean }>`
   line-height: 1.5;
   color: #90ee90;
   pointer-events: none;
+
+  @media (max-width: 1200px) {
+    transform: none;
+  }
 `
 
 export const ViewerFooter = styled.div<{ $expanded?: boolean }>`
@@ -753,13 +760,15 @@ export const ViewerFooter = styled.div<{ $expanded?: boolean }>`
   }
 `
 
-export const ProgressRow = styled.div<{ $expanded?: boolean }>`
+export const ProgressRow = styled.div<{ $expanded?: boolean; $hidden?: boolean }>`
   display: flex;
   align-items: center;
   gap: 0;
   width: ${({ $expanded }) => ($expanded ? 'calc(100% - 500px)' : '100%')};
   min-width: ${({ $expanded }) => ($expanded ? '360px' : 'auto')};
   margin: 0;
+  visibility: ${({ $hidden }) => ($hidden ? 'hidden' : 'visible')};
+  pointer-events: ${({ $hidden }) => ($hidden ? 'none' : 'auto')};
 
   @media (max-width: 1200px) {
     width: 100%;
