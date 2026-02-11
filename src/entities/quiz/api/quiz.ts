@@ -27,3 +27,4 @@ export const submitQuizResult = async (
 
   return res.data;
 };
+

@@ -17,9 +17,12 @@ import { useToast } from "@/shared/ui/Toast/ToastContext";
 import {
   fetchProducts,
   fetchAIQuizAnswers,
+  fetchWrongAnswerList,
+  fetchFavoritesList,
   type ProductItemResponse,
-  type AIQuizAnswerItemResponse,
   type StartQuizPayload,
+  type QuizItemResponse,
+  deleteQuizQuestion, // Added deleteQuizQuestion
 } from "@/shared/api/quiz";
 
 import type { QuizListItem } from "@/entities/quiz-setting/types";
@@ -31,7 +34,8 @@ interface SelectableProductItem extends ProductItemResponse {
   selected: boolean;
 }
 
-interface SelectableAIQuizAnswerItem extends AIQuizAnswerItemResponse {
+interface SelectableQuizItemResponse extends QuizItemResponse {
+  id: string; // Add id property
   problemCount: number;
   selected: boolean;
 }
@@ -44,7 +48,7 @@ const QuizPage = () => {
     useState<QuizCategory>("db");
   const [products, setProducts] = useState<SelectableProductItem[]>([]);
   const [aiQuizAnswers, setAiQuizAnswers] =
-    useState<SelectableAIQuizAnswerItem[]>([]);
+    useState<SelectableQuizItemResponse[]>([]);
 
 
 
@@ -71,56 +75,43 @@ const QuizPage = () => {
       // 히스토리가 없으면 N/A
       setAverageCorrectRate("N/A");
     }
-
-  //   const favorites = JSON.parse(
-  //     localStorage.getItem("quiz_favorites") || "[]"
-  //   ) as number[];
-  //   setFavoriteItems(
-  //     favorites.map((id) => ({
-  //       id: id.toString(),
-  //       label: `즐겨찾는 문제 ${id}`,
-  //       category: "db",
-  //     }))
-  //   );
-
-  //   const wrongs = JSON.parse(
-  //     localStorage.getItem("quiz_wrong_answers") || "[]"
-  //   ) as number[];
-  //   set
-  // ems(
-  //     wrongs.map((id) => ({
-  //       id: id.toString(),
-  //       label: `틀린 문제 ${id}`,
-  //       category: "db",
-  //     }))
-  //   );
   }, []
   );
-  /** 초기 데이터 및 더미 데이터 설정 */
+
+  /** 초기 데이터 및 틀린 문제/즐겨찾기 목록 로드 */
   useEffect(() => {
-    // 1. 평균 정답률 로드
-    const storedAverageRate = localStorage.getItem("averageQuizAccuracy");
-    setAverageCorrectRate(storedAverageRate ? `${storedAverageRate}%` : "N/A");
+    const loadQuizLists = async () => {
+      try {
+        // 1. 평균 정답률 로드 (moved from above useEffect to consolidate)
+        const storedAverageRate = localStorage.getItem("averageQuizAccuracy");
+        setAverageCorrectRate(storedAverageRate ? `${storedAverageRate}%` : "N/A");
 
-    // 2. 즐겨찾기 더미 데이터
-    const Favorites = [101, 102, 105];
-    setFavoriteItems(
-      Favorites.map((id) => ({
-        id: id.toString(),
-        label: `즐겨찾는 문제 ${id}`,
-        category: "db",
-      }))
-    );
+        // 2. 즐겨찾기 목록 로드
+        const fetchedFavorites = await fetchFavoritesList();
+        setFavoriteItems(
+          fetchedFavorites.map((item: QuizItemResponse) => ({
+            id: item.quizQuestionId.toString(),
+            label: item.question,
+            category: item.category as QuizCategory, // Assuming category from API matches QuizCategory
+          }))
+        );
 
-    // 3. 틀린 문제 더미 데이터
-    const Wrongs = [201, 203, 210, 215];
-    setWrongAnswerItems(
-      Wrongs.map((id) => ({
-        id: id.toString(),
-        label: `틀린 문제 ${id}`,
-        category: "db",
-      }))
-    );
+        // 3. 틀린 문제 목록 로드
+        const fetchedWrongAnswers = await fetchWrongAnswerList();
+        setWrongAnswerItems(
+          fetchedWrongAnswers.map((item: QuizItemResponse) => ({
+            id: item.quizQuestionId.toString(),
+            label: item.question,
+            category: item.category as QuizCategory, // Assuming category from API matches QuizCategory
+          }))
+        );
+      } catch (err) {
+        console.error("Failed to load quiz lists:", err);
+        setError("문제 목록을 불러오는데 실패했습니다.");
+      }
+    };
+
+    loadQuizLists();
   }, []); // 의존성 배열 확인: 한 번만 실행됨
 
   /** 카테고리별 로딩 */
@@ -134,11 +125,12 @@ const QuizPage = () => {
           setProducts(data.map((p) => ({ ...p, selected: false })));
           setAiQuizAnswers([]);
         } else {
-          const data = await fetchAIQuizAnswers();
+          const data = await fetchAIQuizAnswers(); // This now returns QuizItemResponse[]
           setAiQuizAnswers(
             data.map((a) => ({
               ...a,
-              problemCount: a.problemCount ?? 0,
+              id: a.quizQuestionId.toString(), // Add id property for consistent usage
+              problemCount: 1, // Assuming problemCount is 1 for AI Quiz Answers
               selected: false,
             }))
           );
@@ -204,6 +196,27 @@ const QuizPage = () => {
 
     localStorage.setItem("quizSettings", JSON.stringify(payload));
     navigate("/quiz/during");
+  };
+
+  const handleDeleteQuizQuestion = async (id: string) => {
+    try {
+      const quizQuestionId = parseInt(id, 10);
+      await deleteQuizQuestion(quizQuestionId);
+      showToast("퀴즈가 삭제되었습니다.", "success");
+      // Re-fetch AI quiz answers to update the list
+      const data = await fetchAIQuizAnswers();
+      setAiQuizAnswers(
+        data.map((a) => ({
+          ...a,
+          id: a.quizQuestionId.toString(),
+          problemCount: 1,
+          selected: false,
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to delete quiz question:", err);
+      showToast("퀴즈 삭제에 실패했습니다.", "error");
+    }
   };
 
   if (error) return <div>{error}</div>;
@@ -275,6 +288,7 @@ const QuizPage = () => {
                         )
                       )
                     }
+                    onDelete={handleDeleteQuizQuestion} // Pass the new handler
                   />
                 ))}
               </S.ProductGridContainer>
@@ -292,15 +306,12 @@ const QuizPage = () => {
             onToggle={() => setIsWrongAnswerIncluded((p) => !p)}
           />
         </S.CheckboxRow>
-        {selectedCategory === "db"? 
+
           <ProblemDropdown
             value={numberOfProblems}
             onChange={setNumberOfProblems}
             max={getMaxNumberOfProblems()}
         />
-        :
-        ""
-        }
 
         <S.StartQuizButtonWrapper>
           <S.StartQuizButton

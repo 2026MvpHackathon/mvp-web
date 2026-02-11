@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import * as token from "@/shared/values/token";
+import { colors, typography } from "@/shared/values/token";
 
 export const Wrapper = styled.div`
   width: 13.125rem;
@@ -48,8 +49,7 @@ export const Item = styled.li`
 export const ItemLeft = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
+  gap: 1.5rem;
 `;
 
 export const ListIcon = styled.img`
@@ -59,10 +59,13 @@ export const ListIcon = styled.img`
   flex-shrink: 0;
 `;
 
-export const CategoryIcon = styled.img`
+export const Label = styled.span<{ $db: boolean }>`
+  color: ${({  $db }) => ($db? colors.main.normal: colors.text.strong)};
+  ${typography("body", "md", "medium")};
+`
+
+export const CategoryIcon = styled.div`
   width: 1rem;
   height: 1rem;
-  object-fit: contain;
-  flex-shrink: 0;
 `;
 
