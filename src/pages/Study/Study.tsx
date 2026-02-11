@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import axios from 'axios'
 import * as THREE from 'three'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
@@ -70,23 +70,36 @@ type ViewerTransforms = Record<
 const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { materialId: pathMaterialId } = useParams<{ materialId: string }>(); // Get materialId from path params
   const { showToast } = useToast()
   const viewerRef = useRef<AssemblyViewerHandle | null>(null)
   const progressRef = useRef<HTMLInputElement | null>(null)
   const aiBodyRef = useRef<HTMLDivElement | null>(null)
   const [progressWidth, setProgressWidth] = useState(0)
 
-  const [projectId, setProjectId] = useState(() => {
-    const params = new URLSearchParams(window.location.search)
-    const midParam = params.get('materialId')
-    if (midParam) {
-      const mid = parseInt(midParam, 10)
-      if (Number.isFinite(mid) && materialIdToProjectId[mid]) {
-        return materialIdToProjectId[mid]
-      }
+  // Determine the current materialId early and consistently
+  const currentMaterialId = useMemo(() => {
+    if (pathMaterialId) {
+      const mid = parseInt(pathMaterialId, 10);
+      if (Number.isFinite(mid)) return mid;
     }
-    return localStorage.getItem('assembly-last-project') || 'drone'
-  })
+    const midParam = searchParams.get('materialId');
+    if (midParam) {
+      const mid = parseInt(midParam, 10);
+      if (Number.isFinite(mid)) return mid;
+    }
+    // Fallback to localStorage or default
+    const storedProjectId = localStorage.getItem('assembly-last-project');
+    if (storedProjectId && projectConfigs[storedProjectId as keyof typeof projectConfigs]) {
+        return projectConfigs[storedProjectId as keyof typeof projectConfigs].materialId;
+    }
+    return projectConfigs.drone.materialId; // Default to Drone's materialId
+  }, [pathMaterialId, searchParams]);
+
+  const [projectId, setProjectId] = useState(() => {
+    const key = currentMaterialId ? materialIdToProjectId[currentMaterialId] : 'drone';
+    return key || 'drone'; // Ensure a fallback
+  });
   const safeProjectId = Object.prototype.hasOwnProperty.call(projectConfigs, projectId)
     ? projectId
     : 'drone'
@@ -241,8 +254,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     return name.replace(/\s*\d+$/, '').trim()
   }
 
-  const materialId = projectConfig?.materialId
-  const activeMaterialId = studySession?.materialId ?? materialId
+
 
   const resolveBaseName = (name: string) => normalizePartName(name)
 
@@ -579,14 +591,15 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const partOverrides = partOverridesByProject[safeProjectId] ?? projectConfig?.defaultOverrides
 
   const handleExpenseToggle = () => {
-    const materialId = projectConfig?.materialId
-    const query = typeof materialId === 'number' ? `?materialId=${materialId}` : ''
+    // materialId from path params now has priority
+    const currentMaterialId = pathMaterialId ? parseInt(pathMaterialId, 10) : projectConfig?.materialId;
+    const query = typeof currentMaterialId === 'number' ? `?materialId=${currentMaterialId}` : '';
     if (expanded) {
-      navigate(`/study${query}`)
+      navigate(`/study${query}`);
     } else {
-      navigate(`/study/expense${query}`)
+      navigate(`/study/expense${query}`);
     }
-  }
+  };
 
   const handleSelectPart = (index: number) => {
     setSelectedIndex(index)
@@ -962,18 +975,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     prevViewModeRef.current = viewMode
   }, [viewMode])
 
-  // URL의 materialId가 바뀌면 해당 프로젝트로 전환 (홈에서 다른 오브젝트 클릭 시)
-  useEffect(() => {
-    const midParam = searchParams.get('materialId')
-    if (!midParam) return
-    const mid = parseInt(midParam, 10)
-    if (!Number.isFinite(mid)) return
-    const key = materialIdToProjectId[mid]
-    if (key && key !== projectId) {
-      setProjectId(key)
-      localStorage.setItem('assembly-last-project', key)
-    }
-  }, [searchParams, projectId])
+
 
   useEffect(() => {
     if (safeProjectId !== projectId) {
@@ -985,14 +987,15 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   useEffect(() => {
     let cancelled = false
     const createSession = async () => {
-      if (!materialId) {
+      // Use the centralized currentMaterialId here
+      if (!currentMaterialId) {
         console.warn('materialId가 없어 학습 세션을 생성하지 않습니다.')
         setStudySession(null)
         setStudySessionId(null)
         return
       }
       try {
-        const response = await createStudySession(materialId)
+        const response = await createStudySession(currentMaterialId)
         if (cancelled) return
         // API: { status, message, data: { sessionId, position, quaternion, target, zoom, ... } }
         const session = (response && typeof response === 'object' && 'data' in response)
@@ -1015,7 +1018,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           if (error.response?.status === 409) {
             try {
               const homeResponse = await getStudyHomeAll()
-              const match = homeResponse.data.find((item) => item.materialId === materialId)
+              const match = homeResponse.data.find((item) => item.materialId === currentMaterialId)
               if (match) {
                 setStudySessionId(match.sessionId)
                 try {
@@ -1078,20 +1081,21 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     return () => {
       cancelled = true
     }
-  }, [materialId])
+  }, [currentMaterialId]) // Dependency array now uses currentMaterialId
 
   // 학습 기계(프로젝트) 설명은 서버 study/home 목록에서 받아와 표시
   useEffect(() => {
     let cancelled = false
     const fetchMaterialDescription = async () => {
-      if (!materialId) {
+      // Use the centralized currentMaterialId here
+      if (!currentMaterialId) {
         setMaterialDescriptionFromServer(null)
         return
       }
       try {
         const res = await getStudyHomeAll()
         if (cancelled) return
-        const item = res.data?.find((x) => x.materialId === materialId)
+        const item = res.data?.find((x) => x.materialId === currentMaterialId)
         setMaterialDescriptionFromServer(item?.description?.trim() ?? null)
       } catch {
         if (!cancelled) setMaterialDescriptionFromServer(null)
@@ -1101,19 +1105,20 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     return () => {
       cancelled = true
     }
-  }, [materialId])
+  }, [currentMaterialId]) // Dependency array now uses currentMaterialId
 
   // 부품 설명/이미지는 현재 보고 있는 프로젝트 기준으로 조회 (세션 materialId 사용 시 드론만 조회되는 문제 방지)
   useEffect(() => {
     let cancelled = false
     const fetchMaterialParts = async () => {
-      if (!materialId) {
+      // Use the centralized currentMaterialId here
+      if (!currentMaterialId) {
         setMaterialPartsByBase({})
         return
       }
       try {
         setPartsFetchError(null)
-        const response = await getMaterialParts(materialId)
+        const response = await getMaterialParts(currentMaterialId)
         if (cancelled) return
         const raw = response?.data
         const list = Array.isArray(raw)
@@ -1158,7 +1163,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     return () => {
       cancelled = true
     }
-  }, [materialId, safeProjectId])
+  }, [currentMaterialId, safeProjectId]) // Dependency array now uses currentMaterialId
 
   useEffect(() => {
     let cancelled = false
@@ -1394,6 +1399,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       viewerRef.current?.setSelectedIndex?.(selectedIndex)
     }
   }, [viewMode, parts, selectedIndex])
+
+  const activeMaterialId = studySession?.materialId ?? currentMaterialId;
 
   const renderPartsCard = (expanded: boolean) => (
     <S.PartsCard $expanded={expanded}>

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getCookie, deleteCookie } from '@/features/Auth/cookies';
 import axiosInstance from '@/features/Auth/axiosInstance';
 import { useToast } from '../Toast/ToastContext';
+import { getRecentList } from '@/entities/recent/api/recentApi';
 
 
 
@@ -16,9 +17,10 @@ interface ImageResponse {
 }
 
 interface LinkResponse {
-    path: string;
+    path?: string; // Make path optional
     menu: string;
     active?: boolean;
+    onClick?: () => void; // Add onClick handler
 }
 
 // Added HeaderProps interface
@@ -33,11 +35,16 @@ const Image = ({path, size, alt, to}: ImageResponse) => {
     );
 }
 
-const Link = ({path, menu, active}: LinkResponse) => {
+const Link = ({path, menu, active, onClick}: LinkResponse) => {
     return(
-        <S.styled_link to ={path}>
-            <S.header_menu $active={active}>{menu}</S.header_menu>
-        </S.styled_link>
+        // Use an anchor tag or a styled div if path is not provided, otherwise use styled_link
+        onClick ? (
+            <S.header_menu $active={active} onClick={onClick}>{menu}</S.header_menu>
+        ) : (
+            <S.styled_link to ={path!}>
+                <S.header_menu $active={active}>{menu}</S.header_menu>
+            </S.styled_link>
+        )
     );
 }
 
@@ -56,7 +63,7 @@ const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure 
         if (refreshToken) {
             try {
                 await axiosInstance.post(`/api/auth/logout`, { refreshToken }); // Use relative path
-                showToast('성공적으로 로그아웃되었습니다..', 'success')
+                showToast('성공적으로 로그아웃되었습니다.', 'success')
                 // console.log("로그아웃 API 응답 (성공):", response);
             } catch (error: any) {
                 console.error("로그아웃 API 호출 중 오류 발생:", error);
@@ -78,12 +85,30 @@ const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure 
         navigate("/auth/select");
     };
 
+    const handleStudyClick = async () => {
+        try {
+            const recentItems = await getRecentList();
+            if (recentItems && recentItems.length > 0) {
+                const mostRecentMaterialId = recentItems[0].materialId;
+                navigate(`/study/${mostRecentMaterialId}`);
+            } else {
+                // If no recent items, navigate to a default study page or show a message
+                showToast('최근 학습한 기계가 없습니다. 기본 학습 페이지로 이동합니다.', 'info');
+                navigate('/study'); // Navigate to the default study page
+            }
+        } catch (error) {
+            console.error("최근 학습 목록을 불러오는 데 실패했습니다:", error);
+            showToast('최근 학습 목록을 불러오는 데 실패했습니다. 기본 학습 페이지로 이동합니다.', 'error');
+            navigate('/study'); // Navigate to the default study page on error
+        }
+    };
+
     return(
         <S.header_container>
             <Image path={Logo} size={'104px'} alt={'Logo'} to={'/home'}/>
             <S.header_menu_wrapper>
                 <Link path={'/home'} menu={'Home'} active={location.pathname === '/home'}/>
-                <Link path={'/study'} menu={'Study'} active={location.pathname === '/study'}/>
+                <Link menu={'Study'} active={location.pathname.startsWith('/study')} onClick={handleStudyClick}/>
                 <Link path={'/quiz'} menu={'Quiz'} active={location.pathname.startsWith('/quiz')}/>                                                
             </S.header_menu_wrapper>
             <S.header_btn onClick={isLoggedIn ? handleLogout : handleLoginClick} $isAuthPage={isAuthPage}>

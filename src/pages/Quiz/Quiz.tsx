@@ -154,8 +154,8 @@ const QuizPage = () => {
     load();
   }, [selectedCategory]);
 
-  const isAllSelected =
-    products.length > 0 && products.every((p) => p.selected);
+  // const isAllSelected =
+  //   products.length > 0 && products.every((p) => p.selected);
   const isAllAISelected =
     aiQuizAnswers.length > 0 && aiQuizAnswers.every((a) => a.selected);
 

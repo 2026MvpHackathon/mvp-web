@@ -30,6 +30,10 @@ const router = createBrowserRouter([
                 element: <ProtectedRoute><StudyPage /></ProtectedRoute>, // Protected
             },
             {
+                path: "study/:materialId", // New dynamic route
+                element: <ProtectedRoute><StudyPage /></ProtectedRoute>, // Protected
+            },
+            {
                 path: "study/expense",
                 element: <ProtectedRoute><StudyExpensePage /></ProtectedRoute>, // Protected
             },
