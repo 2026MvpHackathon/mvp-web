@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import * as THREE from 'three'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
