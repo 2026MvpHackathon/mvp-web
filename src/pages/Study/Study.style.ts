@@ -602,7 +602,7 @@ export const ExpenseToggleOutside = styled.button<{ $shifted?: boolean }>`
   position: ${({ $shifted }) => ($shifted ? "static" : "absolute")};
   right: ${({ $shifted }) => ($shifted ? "auto" : "15px")};
   top: ${({ $shifted }) =>
-    $shifted ? "auto" : "calc(clamp(360px, 60vh, 590px) - 10px)"};
+    $shifted ? "auto" : "calc(clamp(360px, 60vh, 590px) + 30px)"};
 
   width: 2rem;
   height: 2rem;
