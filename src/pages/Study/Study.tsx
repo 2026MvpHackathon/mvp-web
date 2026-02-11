@@ -1602,7 +1602,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       <S.ToolbarButton
                         $active={!editMode}
                         onClick={handleSwipeMode}
-                        disabled={viewMode === 'single'}
+                        // Always allow swipe in single view
+                        disabled={false}
                       >
                         <S.ToolbarIcon src={toolHandIcon} alt="" />
                       </S.ToolbarButton>
@@ -1630,7 +1631,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       <S.ToolbarButton
                         $active={!editMode}
                         onClick={handleSwipeMode}
-                        disabled={viewMode === 'single'}
+                        // Always allow swipe in single view
+                        disabled={false}
                       >
                         <S.ToolbarIcon src={toolHandIcon} alt="" />
                       </S.ToolbarButton>
@@ -1825,22 +1827,20 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                   onActiveNoteChange={handleActiveNote}
                 />
 
-                {selectedPartCoords && (
-                  <S.SelectedPartCoords $expanded={expenseToggleOn}>
-                    <div>name : {selectedPartCoords.name}</div>
-                    <div>
-                      position : [{selectedPartCoords.position.map((n) => n.toFixed(2)).join(', ')}]
-                    </div>
-                    <div>
-                      rotation : [{selectedPartCoords.rotation.map((n) => n.toFixed(0)).join(', ')}]
-                    </div>
-                    <div>scale : {selectedPartCoords.scale.toFixed(2)}</div>
-                  </S.SelectedPartCoords>
-                )}
-
                 <S.ViewerFooter $expanded={expenseToggleOn}>
-                  {viewMode === 'assembly' && (
-                    <S.ProgressRow $expanded={expenseToggleOn}>
+                  {selectedPartCoords && (
+                    <S.SelectedPartCoords $expanded={expenseToggleOn}>
+                      <div>name : {selectedPartCoords.name}</div>
+                      <div>
+                        position : [{selectedPartCoords.position.map((n) => n.toFixed(2)).join(', ')}]
+                      </div>
+                      <div>
+                        rotation : [{selectedPartCoords.rotation.map((n) => n.toFixed(0)).join(', ')}]
+                      </div>
+                      <div>scale : {selectedPartCoords.scale.toFixed(2)}</div>
+                    </S.SelectedPartCoords>
+                  )}
+                    <S.ProgressRow $expanded={expenseToggleOn} $hidden={viewMode === 'single'}>
                       <S.ProgressWrap>
                         <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
                           {Math.round(explodePercent)}%
@@ -1858,7 +1858,6 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                         />
                       </S.ProgressWrap>
                     </S.ProgressRow>
-                  )}
                   {expenseToggleOn && (
                     <S.ExpenseToggleOutside
                       type="button"
