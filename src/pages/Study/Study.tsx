@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import * as THREE from 'three'
@@ -120,7 +120,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const noteIdMapRef = useRef<Record<number, number>>({})
   const prevNotesRef = useRef<Note[]>([])
   const isHydratingNotesRef = useRef(false)
-  const [notePanelOpen, setNotePanelOpen] = useState(true)
+  const [notePanelOpen, setNotePanelOpen] = useState(false)
   const expenseToggleOn = expanded
   const [partThumbnails, setPartThumbnails] = useState<Record<string, string>>({})
   const [selectedPartCoords, setSelectedPartCoords] = useState<{
@@ -130,7 +130,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     scale: number
   } | null>(null)
   const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
-  const [aiPanelOpen, setAiPanelOpen] = useState(true)
+  const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([
     {
       id: 'ai-1',
@@ -1564,333 +1564,363 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           </S.LeftColumn>
         )}
 
-        <S.CenterColumn>
-          <S.ViewerCard $expanded={expenseToggleOn}>
-              <S.ViewerHeader>
-                <span>{projectLabel}</span>
-                <S.ViewerDivider />
-                <S.ViewerDescription>{projectDescription}</S.ViewerDescription>
-                {expenseToggleOn && (
-                  <S.ExpandedViewModeToggle>
-                    <S.ViewModeButton
-                      $active={viewMode === 'single'}
-                      onClick={() => setViewMode('single')}
-                    >
-                      단일 부품
-                    </S.ViewModeButton>
-                    <S.ViewModeButton
-                      $active={viewMode === 'assembly'}
-                      onClick={() => setViewMode('assembly')}
-                    >
-                      조립도
-                    </S.ViewModeButton>
-                  </S.ExpandedViewModeToggle>
-                )}
-              </S.ViewerHeader>
-              <S.ViewerBody>
-                <S.ViewerToolbar>
-                  {expenseToggleOn ? (
-                    <>
-                      <S.ToolbarButton
-                        $active={editMode}
-                        onClick={handleSelectMode}
-                        disabled={viewMode === 'single'}
-                      >
-                        <S.ToolbarIcon src={toolSelectIcon} alt="" />
-                      </S.ToolbarButton>
-                      <S.ToolbarButton
-                        $active={!editMode}
-                        onClick={handleSwipeMode}
-                        disabled={viewMode === 'single'}
-                      >
-                        <S.ToolbarIcon src={toolHandIcon} alt="" />
-                      </S.ToolbarButton>
-                      <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
-                        <S.ToolbarIcon src={toolChatIcon} alt="" />
-                      </S.ToolbarButton>
-                      <S.ToolbarDivider />
-                      <S.ToolbarButton
-                        type="button"
-                        $active={aiPanelOpen}
-                        onClick={() => setAiPanelOpen((prev) => !prev)}
-                      >
-                        <S.ToolbarIcon2 src={toolAiIcon} alt="" />
-                      </S.ToolbarButton>
-                    </>
-                  ) : (
-                    <>
-                      <S.ToolbarButton
-                        $active={editMode}
-                        onClick={handleSelectMode}
-                        disabled={viewMode === 'single'}
-                      >
-                        <S.ToolbarIcon src={toolSelectIcon} alt="" />
-                      </S.ToolbarButton>
-                      <S.ToolbarButton
-                        $active={!editMode}
-                        onClick={handleSwipeMode}
-                        disabled={viewMode === 'single'}
-                      >
-                        <S.ToolbarIcon src={toolHandIcon} alt="" />
-                      </S.ToolbarButton>
-                      <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
-                        <S.ToolbarIcon src={toolChatIcon} alt="" />
-                      </S.ToolbarButton>
-                    </>
-                  )}
-                </S.ViewerToolbar>
-                {!expenseToggleOn && (
-                  <S.ViewModeToggle>
-                    <S.ViewModeButton
-                      $active={viewMode === 'single'}
-                      onClick={() => setViewMode('single')}
-                    >
-                      단일 부품
-                    </S.ViewModeButton>
-                    <S.ViewModeButton
-                      $active={viewMode === 'assembly'}
-                      onClick={() => setViewMode('assembly')}
-                    >
-                      조립도
-                    </S.ViewModeButton>
-                  </S.ViewModeToggle>
-                )}
+    <S.CenterColumn>
+    <S.ViewerCard $expanded={expenseToggleOn}>
+      <S.ViewerHeader>
+        <span>{projectLabel}</span>
+        <S.ViewerDivider />
+        <S.ViewerDescription>{projectDescription}</S.ViewerDescription>
 
-                <S.NoteToggleOutside
-                type="button"
-                $shifted={expenseToggleOn}
-                onClick={() => setNotePanelOpen((prev) => !prev)}
-                >
-                <S.NoteToggleIcon src={notePanelOpen ? NoteClose : NoteOpen} alt="note toggle" />
-                </S.NoteToggleOutside>
+        {expenseToggleOn && (
+          <S.ExpandedViewModeSlider>
+            <S.ViewModeSliderTrack $index={viewMode === 'single' ? 0 : 1} />
 
-                {!expenseToggleOn && (
-                  <S.ExpenseToggleOutside
-                    type="button"
-                    aria-label="expense toggle"
-                    title="expense toggle"
-                    data-active={expenseToggleOn}
-                    $shifted={expenseToggleOn}
-                    onClick={handleExpenseToggle}
-                  />
-                )}
-                {notePanelOpen && (
-                  <S.NotePanel $shifted={expenseToggleOn}>
-                    <S.NoteHeader>
-                      <span>note</span>
-                      <S.NoteSearch placeholder="검색" />
-                    </S.NoteHeader>
-                    {noteEditor.visible && noteMode && (
-                      <S.NoteEditorPanel>
-                        <S.NoteEditorInput
-                          placeholder="메모 입력"
-                          value={noteEditor.text}
-                          onChange={(event) => handleNoteEditorChange(event.target.value)}
-                        />
-                        <S.NoteEditorActions>
-                          <S.NoteEditorButton type="button" onClick={handleNoteSubmit}>
-                            저장
-                          </S.NoteEditorButton>
-                        </S.NoteEditorActions>
-                      </S.NoteEditorPanel>
-                    )}
-                    <S.NoteList>
-                    {notes.slice(0, 4).map((note) => (
-                      <S.NoteItem key={note.id}>
-                        <S.NoteMeta>
-                          <span>{note.parentName || '알 수 없는 부품'}</span>
-                          <S.NoteActions>
-                            <S.NoteActionButton
-                              type="button"
-                              aria-label="note edit"
-                              $icon={noteEditIcon}
-                              onClick={() => handleEditNote(note.id)}
-                            />
-                            <S.NoteActionButton
-                              type="button"
-                              aria-label="note delete"
-                              $icon={noteDeleteIcon}
-                              onClick={() => handleDeleteNote(note.id)}
-                            />
-                          </S.NoteActions>
-                        </S.NoteMeta>
-                        <S.NoteBody>{note.text ? note.text : '메모가 없습니다.'}</S.NoteBody>
-                      </S.NoteItem>
-                    ))}
-                    {!notes.length && (
-                      <S.NoteEmpty>
-                        <S.NoteBody>메모가 없습니다.</S.NoteBody>
-                      </S.NoteEmpty>
-                    )}
-                    </S.NoteList>
-                  </S.NotePanel>
-                )}
+            <S.ViewModeSliderOption
+              type="button"
+              $active={viewMode === 'single'}
+              onClick={() => setViewMode('single')}
+            >
+              단일 부품
+            </S.ViewModeSliderOption>
 
-                {expenseToggleOn && (
-                  <S.ExpandedPanels>
-                    {aiPanelOpen && (
-                      <S.ExpandedLeftPanel>{renderAiCard(true, true, true)}</S.ExpandedLeftPanel>
-                    )}
-                    <S.ExpandedRightPanel>
-                      {renderPartsCard(true)}
-                    </S.ExpandedRightPanel>
-                  </S.ExpandedPanels>
-                )}
+            <S.ViewModeSliderOption
+              type="button"
+              $active={viewMode === 'assembly'}
+              onClick={() => setViewMode('assembly')}
+            >
+              조립도
+            </S.ViewModeSliderOption>
+          </S.ExpandedViewModeSlider>
+        )}
+      </S.ViewerHeader>
 
-                <AssemblyViewer
-                  ref={viewerRef}
-                  projectId={safeProjectId}
-                  partOverrides={partOverrides}
-                  onStatusChange={setStatus}
-                  onCameraChange={handleCameraChange}
-                  onPartsChange={(nextParts: string[]) => {
-                    setParts(nextParts)
-                    if (nextParts.length) {
-                      setSelectedIndex(-1)
-                      viewerRef.current?.setSelectedIndex?.(-1)
-                    }
-                    if (Object.keys(sessionPartsByBase).length === 0) {
-                      const raw =
-                        localStorage.getItem(storageKey) ||
-                        localStorage.getItem(defaultStorageKey)
-                      if (raw) {
-                        try {
-                          const transforms = JSON.parse(raw)
-                          if (safeProjectId === 'leafSpring') {
-                            const remapped: ViewerTransforms = {}
-                            Object.entries(transforms).forEach(([name, values]) => {
-                              if (name.startsWith('Pin ')) {
-                                remapped[`Spring Pin ${name.replace('Pin ', '')}`] =
-                                  values as ViewerTransforms[string]
-                              } else {
-                                remapped[name] = values as ViewerTransforms[string]
-                              }
-                            })
-                            viewerRef.current?.applyTransformsByName?.(remapped)
-                          } else if (safeProjectId === 'robotGripper') {
-                            const filtered: ViewerTransforms = {}
-                            Object.entries(transforms).forEach(([name, values]) => {
-                              if (name.startsWith('Spring Pin ')) return
-                              filtered[name] = values as ViewerTransforms[string]
-                            })
-                            viewerRef.current?.applyTransformsByName?.(filtered)
-                          } else {
-                            viewerRef.current?.applyTransformsByName?.(transforms)
-                          }
-                          setStatus('로컬 저장값 적용')
-                        } catch (error) {
-                          console.error('레이아웃 자동 불러오기 실패', error)
-                        }
-                      }
-                    }
-                    if (safeProjectId === 'drone') {
-                      const manualDefaults = projectConfig?.manualDefaults as
-                        | Record<string, { pos?: number[]; rot?: number[]; scale?: number; scaleX?: number; scaleY?: number; scaleZ?: number }>
-                        | undefined
-                      if (manualDefaults) {
-                        const hardwareOverrides: ViewerTransforms = {}
-                        Object.entries(manualDefaults).forEach(([name, values]) => {
-                          if (!name.startsWith('Nut ') && !name.startsWith('Screw ')) return
-                          const pos =
-                            Array.isArray(values.pos) && values.pos.length === 3
-                              ? (values.pos as [number, number, number])
-                              : undefined
-                          const rot =
-                            Array.isArray(values.rot) && values.rot.length === 3
-                              ? (values.rot as [number, number, number])
-                              : undefined
-                          hardwareOverrides[name] = {
-                            pos,
-                            rot,
-                            scale: values.scale,
-                            scaleX: values.scaleX,
-                            scaleY: values.scaleY,
-                            scaleZ: values.scaleZ,
-                          }
-                        })
-                        if (Object.keys(hardwareOverrides).length > 0) {
-                          viewerRef.current?.applyTransformsByName?.(hardwareOverrides)
-                        }
-                      }
-                    }
-                    if (nextParts.length) {
-                      setTimeout(applyPendingCamera, 100)
-                      setTimeout(applyPendingCamera, 450)
-                    }
-                  }}
-                  onSelectedChange={(index: number) => {
-                    setSelectedIndex(index)
-                  }}
-                  onNotesChange={(nextNotes: unknown[]) => handleNotesChange(nextNotes as Note[])}
-                  onActiveNoteChange={handleActiveNote}
-                />
-
-                {selectedPartCoords && (
-                  <S.SelectedPartCoords $expanded={expenseToggleOn}>
-                    <div>name : {selectedPartCoords.name}</div>
-                    <div>
-                      position : [{selectedPartCoords.position.map((n) => n.toFixed(2)).join(', ')}]
-                    </div>
-                    <div>
-                      rotation : [{selectedPartCoords.rotation.map((n) => n.toFixed(0)).join(', ')}]
-                    </div>
-                    <div>scale : {selectedPartCoords.scale.toFixed(2)}</div>
-                  </S.SelectedPartCoords>
-                )}
-
-                <S.ViewerFooter $expanded={expenseToggleOn}>
-                  {viewMode === 'assembly' && (
-                    <S.ProgressRow $expanded={expenseToggleOn}>
-                      <S.ProgressWrap>
-                        <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
-                          {Math.round(explodePercent)}%
-                        </S.ProgressLabel>
-                        <S.ProgressBar
-                          ref={progressRef}
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={explodePercent}
-                          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                            handleExplodeScale(Number(event.target.value))
-                          }
-                        />
-                      </S.ProgressWrap>
-                    </S.ProgressRow>
-                  )}
-                  {expenseToggleOn && (
-                    <S.ExpenseToggleOutside
-                      type="button"
-                      aria-label="expense toggle"
-                      title="expense toggle"
-                      data-active={expenseToggleOn}
-                      $shifted={expenseToggleOn}
-                      onClick={handleExpenseToggle}
-                    />
-                  )}
-                </S.ViewerFooter>
-              </S.ViewerBody>
-          </S.ViewerCard>
-
-            {!expenseToggleOn && (
-              <S.BottomChat
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  handleSendAiMessage(bottomPromptInput, 'bottom')
-                }}
+      <S.ViewerBody>
+        <S.ViewerToolbar>
+          {expenseToggleOn ? (
+            <>
+              <S.ToolbarButton
+                $active={editMode}
+                onClick={handleSelectMode}
+                disabled={viewMode === 'single'}
               >
-                <S.ChatInput
-                  value={bottomPromptInput}
-                  placeholder="무엇이 궁금한가요?"
-                  onChange={(event) => setBottomPromptInput(event.target.value)}
+                <S.ToolbarIcon src={toolSelectIcon} alt="" />
+              </S.ToolbarButton>
+              <S.ToolbarButton
+                $active={!editMode}
+                onClick={handleSwipeMode}
+                disabled={viewMode === 'single'}
+              >
+                <S.ToolbarIcon src={toolHandIcon} alt="" />
+              </S.ToolbarButton>
+              <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
+                <S.ToolbarIcon src={toolChatIcon} alt="" />
+              </S.ToolbarButton>
+              <S.ToolbarDivider />
+              <S.ToolbarButton
+                type="button"
+                $active={aiPanelOpen}
+                onClick={() => setAiPanelOpen((prev) => !prev)}
+              >
+                <S.ToolbarIcon2 src={toolAiIcon} alt="" />
+              </S.ToolbarButton>
+            </>
+          ) : (
+            <>
+              <S.ToolbarButton
+                $active={editMode}
+                onClick={handleSelectMode}
+                disabled={viewMode === 'single'}
+              >
+                <S.ToolbarIcon src={toolSelectIcon} alt="" />
+              </S.ToolbarButton>
+              <S.ToolbarButton
+                $active={!editMode}
+                onClick={handleSwipeMode}
+                disabled={viewMode === 'single'}
+              >
+                <S.ToolbarIcon src={toolHandIcon} alt="" />
+              </S.ToolbarButton>
+              <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
+                <S.ToolbarIcon src={toolChatIcon} alt="" />
+              </S.ToolbarButton>
+            </>
+          )}
+        </S.ViewerToolbar>
+
+        {!expenseToggleOn && (
+          <S.ViewModeSlider>
+            <S.ViewModeSliderTrack $index={viewMode === 'single' ? 0 : 1} />
+
+            <S.ViewModeSliderOption
+              type="button"
+              $active={viewMode === 'single'}
+              onClick={() => setViewMode('single')}
+            >
+              단일 부품
+            </S.ViewModeSliderOption>
+
+            <S.ViewModeSliderOption
+              type="button"
+              $active={viewMode === 'assembly'}
+              onClick={() => setViewMode('assembly')}
+            >
+              조립도
+            </S.ViewModeSliderOption>
+          </S.ViewModeSlider>
+        )}
+
+        <S.NoteToggleOutside
+          type="button"
+          $shifted={expenseToggleOn}
+          onClick={() => setNotePanelOpen((prev) => !prev)}
+        >
+          <S.NoteToggleIcon src={notePanelOpen ? NoteClose : NoteOpen} alt="note toggle" />
+        </S.NoteToggleOutside>
+
+        {!expenseToggleOn && (
+          <S.ExpenseToggleOutside
+            type="button"
+            aria-label="expense toggle"
+            title="expense toggle"
+            data-active={expenseToggleOn}
+            $shifted={expenseToggleOn}
+            onClick={handleExpenseToggle}
+          />
+        )}
+
+        {notePanelOpen && (
+          <S.NotePanel $shifted={expenseToggleOn}>
+            <S.NoteHeader>
+              <span>note</span>
+              <S.NoteSearch placeholder="검색" />
+            </S.NoteHeader>
+
+            {noteEditor.visible && noteMode && (
+              <S.NoteEditorPanel>
+                <S.NoteEditorInput
+                  placeholder="메모 입력"
+                  value={noteEditor.text}
+                  onChange={(event) => handleNoteEditorChange(event.target.value)}
                 />
-                <S.ChatSend type="submit" disabled={!bottomPromptInput.trim()}>
-                  ↗
-                </S.ChatSend>
-              </S.BottomChat>
+                <S.NoteEditorActions>
+                  <S.NoteEditorButton type="button" onClick={handleNoteSubmit}>
+                    저장
+                  </S.NoteEditorButton>
+                </S.NoteEditorActions>
+              </S.NoteEditorPanel>
             )}
-        </S.CenterColumn>
+
+            <S.NoteList>
+              {notes.slice(0, 4).map((note) => (
+                <S.NoteItem key={note.id}>
+                  <S.NoteMeta>
+                    <span>{note.parentName || '알 수 없는 부품'}</span>
+                    <S.NoteActions>
+                      <S.NoteActionButton
+                        type="button"
+                        aria-label="note edit"
+                        $icon={noteEditIcon}
+                        onClick={() => handleEditNote(note.id)}
+                      />
+                      <S.NoteActionButton
+                        type="button"
+                        aria-label="note delete"
+                        $icon={noteDeleteIcon}
+                        onClick={() => handleDeleteNote(note.id)}
+                      />
+                    </S.NoteActions>
+                  </S.NoteMeta>
+                  <S.NoteBody>{note.text ? note.text : '메모가 없습니다.'}</S.NoteBody>
+                </S.NoteItem>
+              ))}
+
+              {!notes.length && (
+                <S.NoteEmpty>
+                  <S.NoteBody>메모가 없습니다.</S.NoteBody>
+                </S.NoteEmpty>
+              )}
+            </S.NoteList>
+          </S.NotePanel>
+        )}
+
+        {expenseToggleOn && (
+          <S.ExpandedPanels>
+            {aiPanelOpen && (
+              <S.ExpandedLeftPanel>
+                {renderAiCard(true, true, true)}
+              </S.ExpandedLeftPanel>
+            )}
+            <S.ExpandedRightPanel>
+              {renderPartsCard(true)}
+            </S.ExpandedRightPanel>
+          </S.ExpandedPanels>
+        )}
+
+        <AssemblyViewer
+          ref={viewerRef}
+          projectId={safeProjectId}
+          partOverrides={partOverrides}
+          onStatusChange={setStatus}
+          onCameraChange={handleCameraChange}
+          onPartsChange={(nextParts: string[]) => {
+            setParts(nextParts)
+            if (nextParts.length) {
+              setSelectedIndex(-1)
+              viewerRef.current?.setSelectedIndex?.(-1)
+            }
+            if (Object.keys(sessionPartsByBase).length === 0) {
+              const raw =
+                localStorage.getItem(storageKey) ||
+                localStorage.getItem(defaultStorageKey)
+              if (raw) {
+                try {
+                  const transforms = JSON.parse(raw)
+                  if (safeProjectId === 'leafSpring') {
+                    const remapped: ViewerTransforms = {}
+                    Object.entries(transforms).forEach(([name, values]) => {
+                      if (name.startsWith('Pin ')) {
+                        remapped[`Spring Pin ${name.replace('Pin ', '')}`] =
+                          values as ViewerTransforms[string]
+                      } else {
+                        remapped[name] = values as ViewerTransforms[string]
+                      }
+                    })
+                    viewerRef.current?.applyTransformsByName?.(remapped)
+                  } else if (safeProjectId === 'robotGripper') {
+                    const filtered: ViewerTransforms = {}
+                    Object.entries(transforms).forEach(([name, values]) => {
+                      if (name.startsWith('Spring Pin ')) return
+                      filtered[name] = values as ViewerTransforms[string]
+                    })
+                    viewerRef.current?.applyTransformsByName?.(filtered)
+                  } else {
+                    viewerRef.current?.applyTransformsByName?.(transforms)
+                  }
+                  setStatus('로컬 저장값 적용')
+                } catch (error) {
+                  console.error('레이아웃 자동 불러오기 실패', error)
+                }
+              }
+            }
+
+            if (safeProjectId === 'drone') {
+              const manualDefaults = projectConfig?.manualDefaults as
+                | Record<
+                    string,
+                    {
+                      pos?: number[]
+                      rot?: number[]
+                      scale?: number
+                      scaleX?: number
+                      scaleY?: number
+                      scaleZ?: number
+                    }
+                  >
+                | undefined
+
+              if (manualDefaults) {
+                const hardwareOverrides: ViewerTransforms = {}
+                Object.entries(manualDefaults).forEach(([name, values]) => {
+                  if (!name.startsWith('Nut ') && !name.startsWith('Screw ')) return
+                  hardwareOverrides[name] = {
+                    pos: values.pos as [number, number, number] | undefined,
+                    rot: values.rot as [number, number, number] | undefined,
+                    scale: values.scale,
+                    scaleX: values.scaleX,
+                    scaleY: values.scaleY,
+                    scaleZ: values.scaleZ,
+                  }
+                })
+                if (Object.keys(hardwareOverrides).length > 0) {
+                  viewerRef.current?.applyTransformsByName?.(hardwareOverrides)
+                }
+              }
+            }
+
+            if (nextParts.length) {
+              setTimeout(applyPendingCamera, 100)
+              setTimeout(applyPendingCamera, 450)
+            }
+          }}
+          onSelectedChange={(index: number) => {
+            setSelectedIndex(index)
+          }}
+          onNotesChange={(nextNotes: unknown[]) =>
+            handleNotesChange(nextNotes as Note[])
+          }
+          onActiveNoteChange={handleActiveNote}
+        />
+
+        {selectedPartCoords && (
+          <S.SelectedPartCoords $expanded={expenseToggleOn}>
+            <div>name : {selectedPartCoords.name}</div>
+            <div>
+              position : [
+              {selectedPartCoords.position.map((n) => n.toFixed(2)).join(', ')}]
+            </div>
+            <div>
+              rotation : [
+              {selectedPartCoords.rotation.map((n) => n.toFixed(0)).join(', ')}]
+            </div>
+            <div>scale : {selectedPartCoords.scale.toFixed(2)}</div>
+          </S.SelectedPartCoords>
+        )}
+
+        <S.ViewerFooter $expanded={expenseToggleOn}>
+          {viewMode === 'assembly' && (
+            <S.ProgressRow $expanded={expenseToggleOn}>
+              <S.ProgressWrap>
+                <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
+                  {Math.round(explodePercent)}%
+                </S.ProgressLabel>
+                <S.ProgressBar
+                  ref={progressRef}
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={explodePercent}
+                  onChange={(event) =>
+                    handleExplodeScale(Number(event.target.value))
+                  }
+                />
+              </S.ProgressWrap>
+            </S.ProgressRow>
+          )}
+
+          {expenseToggleOn && (
+            <S.ExpenseToggleOutside
+              type="button"
+              aria-label="expense toggle"
+              title="expense toggle"
+              data-active={expenseToggleOn}
+              $shifted={expenseToggleOn}
+              onClick={handleExpenseToggle}
+            />
+          )}
+        </S.ViewerFooter>
+      </S.ViewerBody>
+    </S.ViewerCard>
+
+    {!expenseToggleOn && (
+      <S.BottomChat
+        onSubmit={(event) => {
+          event.preventDefault()
+          handleSendAiMessage(bottomPromptInput, 'bottom')
+        }}
+      >
+        <S.ChatInput
+          value={bottomPromptInput}
+          placeholder="무엇이 궁금한가요?"
+          onChange={(event) => setBottomPromptInput(event.target.value)}
+        />
+        <S.ChatSend type="submit" disabled={!bottomPromptInput.trim()}>
+          ↗
+        </S.ChatSend>
+      </S.BottomChat>
+    )}
+    </S.CenterColumn>
+
       </S.ContentGrid>
     </S.PageBody>
   )

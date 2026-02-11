@@ -30,12 +30,12 @@ export const ContentGrid = styled.div<{ $expanded?: boolean }>`
 
 export const LeftColumn = styled.div`
   display: grid;
-  gap: 18px;
+  gap: 20px;
 `
 
 export const CenterColumn = styled.div`
   display: grid;
-  gap: 14px;
+  gap: 0;
 `
 
 const cardBorderStyle = '1px solid #104912'
@@ -203,7 +203,7 @@ export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
     $compact ? '410px' : $expanded ? '360px' : '400px'};
   display: flex;
   flex-direction: column;
-  padding-bottom: 25px;
+  padding-bottom: 10px;
   min-height: 0;
   overflow: hidden;
 
@@ -353,7 +353,7 @@ export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
   position: relative;
   width: ${({ $expanded }) => ($expanded ? 'calc(100% + 40px)' : '100%')};
   margin: ${({ $expanded }) => ($expanded ? '0 -20px' : '0')};
-  height: ${({ $expanded }) => ($expanded ? '920px' : 'clamp(560px, 72vh, 820px)')};
+  height: ${({ $expanded }) => ($expanded ? '920px' : 'calc(clamp(580px, 72vh, 840px) + 40px)')};
   min-height: ${({ $expanded }) => ($expanded ? '920px' : '0')};
   max-height: ${({ $expanded }) => ($expanded ? '920px' : 'none')};
   border: ${cardBorderStyle};
@@ -366,19 +366,21 @@ export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
     width: 100%;
     margin: 0;
     height: ${({ $expanded }) =>
-      $expanded ? 'clamp(520px, 70vh, 820px)' : 'clamp(500px, 70vh, 680px)'};
-    min-height: ${({ $expanded }) => ($expanded ? '520px' : '0')};
+      $expanded ? 'clamp(540px, 70vh, 840px)' : 'clamp(520px, 70vh, 700px)'};
+    min-height: ${({ $expanded }) => ($expanded ? '540px' : '0')};
     max-height: none;
   }
 `
 
 export const ViewerHeader = styled.div`
   padding: 18px 20px 10px;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  column-gap: 12px;
+  row-gap: 4px;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
 `
+
 
 export const ViewerDivider = styled.div`
   width: 2px;
@@ -388,10 +390,14 @@ export const ViewerDivider = styled.div`
 
 export const ViewerDescription = styled.div`
   ${token.typography("caption", "md", "medium")}
-  color: #aeb8cc;
+  color: ${token.colors.secondary.assistive};
   line-height: 1.4;
-  flex: 1;
+
+  min-width: 0;
+  max-width: 1000px;
+  word-break: keep-all;
 `
+
 
 export const ViewerBody = styled.div`
   position: relative;
@@ -558,16 +564,15 @@ export const NotePanel = styled.div<{ $shifted?: boolean }>`
 export const NoteHeader = styled.div`
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 18px;
-  ${token.typography("heading", "lg", "semibold")}
-  color: #e6e8ee;
-  margin-top: 0;
+  justify-content: space-between;
+  /* gap: 18px; */
+  ${token.typography("body", "md", "semibold")}
+  color: ${token.colors.text.normal};
 `
 
 export const NoteToggleOutside = styled.button<{ $shifted?: boolean }>`
   position: absolute;
-  right: ${({ $shifted }) => ($shifted ? '350px' : '5px')};
+  right: ${({ $shifted }) => ($shifted ? '360px' : '15px')};
   top: ${({ $shifted }) => ($shifted ? '30px' : '30px')};
   width: 2rem;
   height: 2rem;
@@ -597,7 +602,7 @@ export const ExpenseToggleOutside = styled.button<{ $shifted?: boolean }>`
   position: ${({ $shifted }) => ($shifted ? "static" : "absolute")};
   right: ${({ $shifted }) => ($shifted ? "auto" : "15px")};
   top: ${({ $shifted }) =>
-    $shifted ? "auto" : "clamp(360px, 60vh, 590px)"};
+    $shifted ? "auto" : "calc(clamp(360px, 60vh, 590px) - 10px)"};
 
   width: 2rem;
   height: 2rem;
@@ -690,6 +695,7 @@ export const NoteEmpty = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  ${token.typography("caption", "sm", "semibold")}
 `
 
 export const NoteMeta = styled.div`
@@ -697,7 +703,7 @@ export const NoteMeta = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-size: 16px;
+  ${token.typography("body", "md", "semibold")}
   color: #8b8f94;
 
   span {
@@ -732,6 +738,8 @@ export const NoteBody = styled.div`
   font-size: 22px;
   line-height: 1.4;
   color: #d9e4d6;
+  white-space: normal;
+  word-break: break-word;
 `
 
 /** 선택된 부품 좌표 표시 (ViewerFooter 바로 위, 오른쪽 벽에 붙임) */
@@ -748,7 +756,7 @@ export const SelectedPartCoords = styled.div<{ $expanded?: boolean }>`
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.75);
   font-family: ui-monospace, monospace;
-  font-size: 11px;
+  ${token.typography("caption", "md", "medium")}
   line-height: 1.5;
   color: #90ee90;
   pointer-events: none;
@@ -844,11 +852,11 @@ export const ProgressBar = styled.input`
 `
 
 export const BottomChat = styled.form`
-  background: #202020;
+  background: ${token.colors.background.Dark};
   border-radius: 18px;
-  border: none;
+  border: 1px solid ${token.colors.secondary.normal};
   box-shadow: none;
-  padding: 14px 18px;
+  padding: 0px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -857,7 +865,7 @@ export const BottomChat = styled.form`
 
 export const ChatPlaceholder = styled.div`
   color: #7b849a;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")};
 `
 
 export const ChatInput = styled.input`
@@ -865,11 +873,11 @@ export const ChatInput = styled.input`
   border: none;
   outline: none;
   background: transparent;
-  color: #e6e8ee;
-  font-size: 12px;
+  color: ${token.colors.text.normal};
+  ${token.typography("body", "md", "medium")};
 
   &::placeholder {
-    color: #7b849a;
+    color: ${token.colors.line.normal};;
   }
 `
 export const ChatTag = styled.span`
@@ -897,3 +905,72 @@ export const ChatSend = styled.button`
     cursor: not-allowed;
   }
 `
+
+
+export const ViewModeSlider = styled.div`
+  position: absolute;
+  left: 76px;
+  top: 20px;
+
+  width: 13.5rem;
+  height: 2.5rem;
+  padding: 0.5rem;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+
+  border: 1px solid rgba(109, 167, 117, 0.45);
+  border-radius: ${token.shapes.large};
+  background: #1b1b1b;
+
+  z-index: 3;
+
+  @media (max-width: 1200px) {
+    left: 72px;
+    top: 12px;
+  }
+`;
+
+export const ViewModeSliderTrack = styled.div<{ $index: number }>`
+  position: absolute;
+  top: 50%;
+  left: 0.5rem;
+
+  height: 1.6rem;
+  width: 6.125rem;
+
+  transform: translateY(-50%) translateX(${({ $index }) => `${$index * 100}%`});
+  transition: transform 0.25s ease;
+
+  background: ${token.colors.background.Dark};
+  border-radius: ${token.shapes.small};
+  border: 1px solid ${token.colors.line.alternative};
+
+  pointer-events: none;
+`;
+
+export const ViewModeSliderOption = styled.button<{ $active: boolean }>`
+  position: relative;
+  z-index: 1;
+  min-width: 6.125rem;
+
+  padding: 0.275rem 0.75rem 0.475rem 0.75rem;
+
+  ${token.typography("body", "sm", "medium")};
+  color: ${({ $active }) =>
+    $active ? token.colors.text.strong : token.colors.text.alternative};
+
+  background: transparent;
+  border: none;
+  border-radius: ${token.shapes.small};
+  cursor: pointer;
+  transition: color 0.2s ease;
+`;
+
+
+/* 확장 모드용 (Expanded) */
+export const ExpandedViewModeSlider = styled(ViewModeSlider)`
+  position: static;
+  transform: translateX(-37px);
+`;
