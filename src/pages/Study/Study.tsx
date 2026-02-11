@@ -139,7 +139,14 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     rotation: [number, number, number]
     scale: number
   } | null>(null)
-  const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
+  const [viewMode, setViewMode] = useState<'single' | 'assembly'>(() => {
+    const storedViewMode = localStorage.getItem('study-view-mode');
+    return (storedViewMode === 'single' || storedViewMode === 'assembly') ? storedViewMode : 'assembly';
+  });
+  useEffect(() => {
+    localStorage.setItem('study-view-mode', viewMode);
+  }, [viewMode]);
+
   const [aiPanelOpen, setAiPanelOpen] = useState(true)
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([
     {
@@ -451,6 +458,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   }, [uniqueParts, materialPartsByBase]);
 
 
+
   const displaySelectedIndex =
     viewMode === 'single'
       ? selectedIndex >= 0
@@ -609,7 +617,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       if (name) {
         viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== index))
         viewerRef.current?.focusOnPart?.(name)
+        localStorage.setItem('study-selected-part-name', name);
+        localStorage.setItem('study-selected-part-project', safeProjectId);
       }
+    } else {
+        localStorage.removeItem('study-selected-part-name');
+        localStorage.removeItem('study-selected-part-project');
     }
   }
 
@@ -962,10 +975,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     el.scrollTop = el.scrollHeight - el.clientHeight
   }, [aiMessages])
 
-  useEffect(() => {
-    setViewMode('assembly')
-    setSelectedIndex(-1)
-  }, [])
+
 
   const prevViewModeRef = useRef<'single' | 'assembly'>('assembly')
   useEffect(() => {
@@ -1819,6 +1829,34 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       setTimeout(applyPendingCamera, 100)
                       setTimeout(applyPendingCamera, 450)
                     }
+
+                    // --- New logic for restoring selected single part ---
+                    const storedViewMode = localStorage.getItem('study-view-mode');
+                    const storedPartName = localStorage.getItem('study-selected-part-name');
+                    const storedPartProject = localStorage.getItem('study-selected-part-project');
+
+                    if (storedViewMode === 'single' && storedPartName && storedPartProject === safeProjectId) {
+                        const index = nextParts.indexOf(storedPartName);
+                        if (index !== -1) {
+                            setSelectedIndex(index);
+                            viewerRef.current?.setSelectedIndex?.(index);
+                            viewerRef.current?.setHiddenParts?.(nextParts.filter((_, idx) => idx !== index));
+                            viewerRef.current?.focusOnPart?.(storedPartName);
+                            setViewMode('single'); // Ensure viewMode is set to single
+                        } else {
+                            // If stored part not found, clear storage and revert to assembly
+                            localStorage.removeItem('study-selected-part-name');
+                            localStorage.removeItem('study-selected-part-project');
+                            setViewMode('assembly'); // Fallback to assembly if stored part is invalid
+                        }
+                    } else if (storedViewMode === 'assembly') {
+                        // If stored view mode is assembly, ensure no single part is selected
+                        setSelectedIndex(-1);
+                        viewerRef.current?.setSelectedIndex?.(-1);
+                        viewerRef.current?.setHiddenParts?.([]);
+                        setViewMode('assembly');
+                    }
+                    // --- End new logic ---
                   }}
                   onSelectedChange={(index: number) => {
                     setSelectedIndex(index)
