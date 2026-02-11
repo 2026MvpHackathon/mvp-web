@@ -68,6 +68,7 @@ export const ProductSelectionContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  height: 100%;
 `;
 
 export const SelectAllWrapper = styled.div`
@@ -79,6 +80,8 @@ export const ProductGridContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 2rem;
+  max-height: 651.13px;
+  overflow-y: scroll;
 `;
 
 export const AverageRateContainer = styled.div`
