@@ -35,6 +35,7 @@ interface SelectableProductItem extends ProductItemResponse {
 }
 
 interface SelectableQuizItemResponse extends QuizItemResponse {
+  id: string; // Add id property
   problemCount: number;
   selected: boolean;
 }
