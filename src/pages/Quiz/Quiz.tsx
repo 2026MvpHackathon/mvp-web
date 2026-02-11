@@ -228,15 +228,6 @@ const QuizPage = () => {
         <S.ProductSelectionContainer>
           {selectedCategory === "db" ? (
             <>
-              <SelectCircle
-                selected={isAllSelected}
-                label="전체 선택"
-                onToggle={() => {
-                  // DB 카테고리에서는 다중 선택 비활성화
-                  showToast("교재는 한 번에 하나만 선택할 수 있습니다.", "info");
-                }}
-              />
-
               <S.ProductGridContainer>
                 {products.map((product) => (
                   <SelectObject
@@ -301,12 +292,15 @@ const QuizPage = () => {
             onToggle={() => setIsWrongAnswerIncluded((p) => !p)}
           />
         </S.CheckboxRow>
-
-        <ProblemDropdown
-          value={numberOfProblems}
-          onChange={setNumberOfProblems}
-          max={getMaxNumberOfProblems()}
+        {selectedCategory === "db"? 
+          <ProblemDropdown
+            value={numberOfProblems}
+            onChange={setNumberOfProblems}
+            max={getMaxNumberOfProblems()}
         />
+        :
+        ""
+        }
 
         <S.StartQuizButtonWrapper>
           <S.StartQuizButton
