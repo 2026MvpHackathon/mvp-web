@@ -29,6 +29,7 @@ import type { MaterialPart, StudySession, StudySessionPart } from '../../entitie
 import { useToast } from '@/shared/ui/Toast/ToastContext'
 import './Study.css'
 import * as S from './Study.style'
+import AiImg from '@/assets/Ai-assistant.png'
 
 
 type Note = {
@@ -1420,7 +1421,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               getPartDescriptionText(selectedMeta) || partDescription
             return (
               <S.PartsDetail>
-                <S.PartsDetailLabel>Detail</S.PartsDetailLabel>
+                <S.PartsDetailLabel>상세 설명</S.PartsDetailLabel>
                 <S.PartsDetailImage style={{ backgroundImage: `url(${selectedThumb})` }} />
                 <S.PartsDetailTitle>{selectedLabel}</S.PartsDetailTitle>
                 <S.PartsDetailDesc>{selectedDesc}</S.PartsDetailDesc>
@@ -1428,10 +1429,10 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
             )
           })()}
           <S.PartsDivider />
-          <S.PartsSectionLabel>Parts</S.PartsSectionLabel>
+          <S.PartsSectionLabel>부품</S.PartsSectionLabel>
         </S.PartsDetailSection>
       ) : (
-        <S.CardHeader>Parts</S.CardHeader>
+        <S.CardHeader>부품</S.CardHeader>
       )}
       {partsFetchError && (
         <S.PartsFetchError role="alert">{partsFetchError}</S.PartsFetchError>
@@ -1494,7 +1495,10 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const renderAiCard = (expanded: boolean, compact: boolean = false, showPrompt: boolean = false) => (
     <S.AiCard $expanded={expanded} $compact={compact}>
       <S.AiHeader>
-        <span>AI Assistant</span>
+        <S.AiHeaderContainer>
+          <S.AiImg src={AiImg}/>
+          <span>AI Assistant</span>
+        </S.AiHeaderContainer>
         <S.AiBadge>AI</S.AiBadge>
       </S.AiHeader>
       <S.AiBody ref={aiBodyRef}>

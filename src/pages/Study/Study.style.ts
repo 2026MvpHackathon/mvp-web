@@ -1,4 +1,5 @@
 import styled from 'styled-components'
+import * as token from "@/shared/values/token";
 
 export const PageBody = styled.div`
   flex: 1;
@@ -36,7 +37,6 @@ export const CenterColumn = styled.div`
 `
 
 const cardBorderStyle = '1px solid #104912'
-const cardBoxShadowStyle = '0 0 0 1px #104912'
 
 export const Card = styled.section`
   background: #202020;
@@ -47,17 +47,15 @@ export const Card = styled.section`
 
 export const CardHeader = styled.div`
   padding: 18px 18px 10px;
-  font-weight: 600;
-  font-size: 14px;
-  color: #c9d3e6;
+  ${token.typography("body", "lg", "semibold")}
+  color: ${token.colors.secondary.alternative};
   display: flex;
   align-items: center;
   gap: 8px;
 `
 
 export const PartsCard = styled(Card)<{ $expanded?: boolean }>`
-  border: ${({ $expanded }) => ($expanded ? 'none' : cardBorderStyle)};
-  box-shadow: ${({ $expanded }) => ($expanded ? 'none' : cardBoxShadowStyle)};
+  border: ${({ $expanded }) => ($expanded ? 'none' : `1px solid ${token.colors.secondary.normal}`)};
   height: ${({ $expanded }) => ($expanded ? '760px' : '400px')};
   display: grid;
   grid-template-rows: auto 1fr;
@@ -75,7 +73,7 @@ export const PartsFetchError = styled.div`
   background: rgba(220, 80, 80, 0.15);
   border: 1px solid rgba(220, 80, 80, 0.4);
   color: #f0a0a0;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   line-height: 1.4;
 `
 
@@ -123,8 +121,6 @@ export const PartIcon = styled.div<{ $expanded?: boolean }>`
   background-repeat: no-repeat;
   display: grid;
   place-items: center;
-  color: #6da775;
-  font-size: 12px;
   margin: ${({ $expanded }) => ($expanded ? '0 auto' : '0')};
 `
 
@@ -136,13 +132,13 @@ export const PartMeta = styled.div<{ $expanded?: boolean }>`
 `
 
 export const PartTitle = styled.div`
-  font-size: 12px;
-  font-weight: 600;
+  ${token.typography("body", "md", "semibold")}
+  color: ${token.colors.secondary.assistive};
 `
 
 export const PartDesc = styled.div`
-  font-size: 10px;
-  color: #9ca3af;
+  ${token.typography("caption", "md", "medium")}
+  color: ${token.colors.secondary.alternative};
 `
 
 export const PartsDetail = styled.div`
@@ -158,9 +154,8 @@ export const PartsDetailSection = styled.div`
 `
 
 export const PartsDetailLabel = styled.div`
-  font-size: 16px;
-  font-weight: 600;
-  color: #8aa191;
+  ${token.typography("body", "lg", "semibold")}
+  color: ${token.colors.secondary.alternative};
 `
 
 export const PartsDetailImage = styled.div`
@@ -175,15 +170,15 @@ export const PartsDetailImage = styled.div`
 `
 
 export const PartsDetailTitle = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: #e6e8ee;
+  ${token.typography("body", "md", "semibold")}
+  color: ${token.colors.main.normal};
   text-align: center;
 `
 
 export const PartsDetailDesc = styled.div`
   font-size: 12px;
-  color: #aeb8cc;
+  ${token.typography("caption", "md", "medium")}
+  color: ${token.colors.secondary.assistive};
   line-height: 1.4;
   text-align: center;
 `
@@ -196,14 +191,12 @@ export const PartsDivider = styled.div`
 
 export const PartsSectionLabel = styled.div`
   padding: 6px 16px 2px;
-  font-size: 14px;
-  font-weight: 600;
+  ${token.typography("body", "lg", "semibold")}
   color: #8aa191;
 `
 
 export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
   border: ${({ $expanded }) => ($expanded ? 'none' : cardBorderStyle)};
-  box-shadow: ${({ $expanded }) => ($expanded ? 'none' : cardBoxShadowStyle)};
   height: ${({ $compact, $expanded }) =>
     $compact ? '410px' : $expanded ? '360px' : '400px'};
   display: flex;
@@ -218,8 +211,24 @@ export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
   }
 `
 
-export const AiHeader = styled(CardHeader)`
+export const AiHeader = styled.span`
+  padding: 18px 20px;
+  ${token.typography("body", "lg", "semibold")}
+  color: ${token.colors.main.normal};
+  ${token.flexCenter}
+  gap: 0.5rem;
   justify-content: space-between;
+`
+
+export const AiImg = styled.img`
+  width: 1.2rem;
+  height: 1.2rem;
+`
+
+export const AiHeaderContainer = styled.div`
+  ${token.flexCenter}
+  gap: 0.7rem;
+
 `
 
 export const AiBadge = styled.span`
@@ -350,7 +359,7 @@ export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
   min-height: ${({ $expanded }) => ($expanded ? '920px' : '0')};
   max-height: ${({ $expanded }) => ($expanded ? '920px' : 'none')};
   border: ${cardBorderStyle};
-  box-shadow: ${cardBoxShadowStyle};
+
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
