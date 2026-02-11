@@ -457,6 +457,59 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     setPartSpecificDescriptions(newDescriptions);
   }, [uniqueParts, materialPartsByBase]);
 
+  // Centralized effect to manage AssemblyViewer's view and selection based on persisted state
+  useEffect(() => {
+    if (!viewerRef.current || parts.length === 0 || !safeProjectId) return;
+
+    // Check localStorage for desired view mode and selected part
+    const storedViewMode = localStorage.getItem('study-view-mode');
+    const storedPartName = localStorage.getItem('study-selected-part-name');
+    const storedPartProject = localStorage.getItem('study-selected-part-project');
+
+    // Apply view mode to viewer
+    viewerRef.current.setViewMode?.(viewMode);
+
+    if (viewMode === 'single') {
+        // If current viewMode is single, try to restore specific part
+        if (storedViewMode === 'single' && storedPartName && storedPartProject === safeProjectId) {
+            const index = parts.indexOf(storedPartName);
+            if (index !== -1 && selectedIndex !== index) {
+                setSelectedIndex(index);
+                viewerRef.current.setSelectedIndex?.(index);
+                viewerRef.current.setHiddenParts?.(parts.filter((_, idx) => idx !== index));
+                viewerRef.current.focusOnPart?.(storedPartName);
+            } else if (index === -1 && storedPartName) {
+                // Stored part name exists but is not in current parts list (e.g., project changed, part removed)
+                // Fallback to first part in single view if no valid stored part, or assembly view
+                localStorage.removeItem('study-selected-part-name');
+                localStorage.removeItem('study-selected-part-project');
+                setSelectedIndex(0); // Select first part by default for single view
+                viewerRef.current.setSelectedIndex?.(0);
+                viewerRef.current.setHiddenParts?.(parts.filter((_, idx) => idx !== 0));
+                viewerRef.current.focusOnPart?.(parts[0]);
+                setViewMode('single'); // Explicitly keep single view if intended
+            }
+        } else {
+            // No stored single part info for this project, or stored view mode was assembly
+            // If already in single view, default to first part
+            if (viewMode === 'single' && parts.length > 0 && selectedIndex !== 0) {
+                 setSelectedIndex(0);
+                 viewerRef.current.setSelectedIndex?.(0);
+                 viewerRef.current.setHiddenParts?.(parts.filter((_, idx) => idx !== 0));
+                 viewerRef.current.focusOnPart?.(parts[0]);
+            }
+        }
+    } else { // viewMode === 'assembly'
+        viewerRef.current.setViewMode?.('assembly');
+        viewerRef.current.setHiddenParts?.([]); // Show all parts in assembly view
+        setSelectedIndex(-1); // No part specifically selected in assembly view
+        viewerRef.current.setSelectedIndex?.(-1);
+        // Clear stored single part selection if in assembly mode
+        localStorage.removeItem('study-selected-part-name');
+        localStorage.removeItem('study-selected-part-project');
+    }
+  }, [viewMode, parts, safeProjectId, selectedIndex, viewerRef.current]);
+
 
 
   const displaySelectedIndex =
@@ -1412,6 +1465,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
 
   const activeMaterialId = studySession?.materialId ?? currentMaterialId;
 
+  const cursorStyle = useMemo(() => {
+    if (noteMode) return 'crosshair';
+    if (!editMode) return 'move'; // Swipe mode
+    return 'default'; // Select mode
+  }, [noteMode, editMode]);
+
   const renderPartsCard = (expanded: boolean) => (
     <S.PartsCard $expanded={expanded}>
       {expanded ? (
@@ -1598,7 +1657,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                   </S.ExpandedViewModeToggle>
                 )}
               </S.ViewerHeader>
-              <S.ViewerBody>
+              <S.ViewerBody $cursor={cursorStyle}>
                 <S.ViewerToolbar>
                   {expenseToggleOn ? (
                     <>
@@ -1842,19 +1901,19 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                             viewerRef.current?.setSelectedIndex?.(index);
                             viewerRef.current?.setHiddenParts?.(nextParts.filter((_, idx) => idx !== index));
                             viewerRef.current?.focusOnPart?.(storedPartName);
-                            setViewMode('single'); // Ensure viewMode is set to single
+                            // Do NOT call setViewMode here. Let the viewMode state handle it.
                         } else {
                             // If stored part not found, clear storage and revert to assembly
                             localStorage.removeItem('study-selected-part-name');
                             localStorage.removeItem('study-selected-part-project');
-                            setViewMode('assembly'); // Fallback to assembly if stored part is invalid
+                            // Do NOT call setViewMode here.
                         }
                     } else if (storedViewMode === 'assembly') {
                         // If stored view mode is assembly, ensure no single part is selected
                         setSelectedIndex(-1);
                         viewerRef.current?.setSelectedIndex?.(-1);
                         viewerRef.current?.setHiddenParts?.([]);
-                        setViewMode('assembly');
+                        // Do NOT call setViewMode here.
                     }
                     // --- End new logic ---
                   }}
