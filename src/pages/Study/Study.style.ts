@@ -1,4 +1,7 @@
 import styled from 'styled-components'
+import * as token from "@/shared/values/token";
+import expenseToggleExpand from "@/assets/Study/expense-toggle-expand.png";
+import expenseToggleCollapse from "@/assets/Study/expense-toggle-collapse.png";
 
 export const PageBody = styled.div`
   flex: 1;
@@ -27,16 +30,15 @@ export const ContentGrid = styled.div<{ $expanded?: boolean }>`
 
 export const LeftColumn = styled.div`
   display: grid;
-  gap: 18px;
+  gap: 20px;
 `
 
 export const CenterColumn = styled.div`
   display: grid;
-  gap: 14px;
+  gap: 0;
 `
 
 const cardBorderStyle = '1px solid #104912'
-const cardBoxShadowStyle = '0 0 0 1px #104912'
 
 export const Card = styled.section`
   background: #202020;
@@ -47,17 +49,15 @@ export const Card = styled.section`
 
 export const CardHeader = styled.div`
   padding: 18px 18px 10px;
-  font-weight: 600;
-  font-size: 14px;
-  color: #c9d3e6;
+  ${token.typography("body", "lg", "semibold")}
+  color: ${token.colors.secondary.alternative};
   display: flex;
   align-items: center;
   gap: 8px;
 `
 
 export const PartsCard = styled(Card)<{ $expanded?: boolean }>`
-  border: ${({ $expanded }) => ($expanded ? 'none' : cardBorderStyle)};
-  box-shadow: ${({ $expanded }) => ($expanded ? 'none' : cardBoxShadowStyle)};
+  border: ${({ $expanded }) => ($expanded ? 'none' : `1px solid ${token.colors.secondary.normal}`)};
   height: ${({ $expanded }) => ($expanded ? '760px' : '400px')};
   display: grid;
   grid-template-rows: auto 1fr;
@@ -75,7 +75,7 @@ export const PartsFetchError = styled.div`
   background: rgba(220, 80, 80, 0.15);
   border: 1px solid rgba(220, 80, 80, 0.4);
   color: #f0a0a0;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   line-height: 1.4;
 `
 
@@ -123,8 +123,6 @@ export const PartIcon = styled.div<{ $expanded?: boolean }>`
   background-repeat: no-repeat;
   display: grid;
   place-items: center;
-  color: #6da775;
-  font-size: 12px;
   margin: ${({ $expanded }) => ($expanded ? '0 auto' : '0')};
 `
 
@@ -136,13 +134,13 @@ export const PartMeta = styled.div<{ $expanded?: boolean }>`
 `
 
 export const PartTitle = styled.div`
-  font-size: 12px;
-  font-weight: 600;
+  ${token.typography("body", "md", "semibold")}
+  color: ${token.colors.secondary.assistive};
 `
 
 export const PartDesc = styled.div`
-  font-size: 10px;
-  color: #9ca3af;
+  ${token.typography("caption", "md", "medium")}
+  color: ${token.colors.secondary.alternative};
 `
 
 export const PartsDetail = styled.div`
@@ -158,9 +156,8 @@ export const PartsDetailSection = styled.div`
 `
 
 export const PartsDetailLabel = styled.div`
-  font-size: 16px;
-  font-weight: 600;
-  color: #8aa191;
+  ${token.typography("body", "lg", "semibold")}
+  color: ${token.colors.secondary.alternative};
 `
 
 export const PartsDetailImage = styled.div`
@@ -175,15 +172,15 @@ export const PartsDetailImage = styled.div`
 `
 
 export const PartsDetailTitle = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: #e6e8ee;
+  ${token.typography("body", "md", "semibold")}
+  color: ${token.colors.main.normal};
   text-align: center;
 `
 
 export const PartsDetailDesc = styled.div`
   font-size: 12px;
-  color: #aeb8cc;
+  ${token.typography("caption", "md", "medium")}
+  color: ${token.colors.secondary.assistive};
   line-height: 1.4;
   text-align: center;
 `
@@ -196,19 +193,17 @@ export const PartsDivider = styled.div`
 
 export const PartsSectionLabel = styled.div`
   padding: 6px 16px 2px;
-  font-size: 14px;
-  font-weight: 600;
+  ${token.typography("body", "lg", "semibold")}
   color: #8aa191;
 `
 
 export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
   border: ${({ $expanded }) => ($expanded ? 'none' : cardBorderStyle)};
-  box-shadow: ${({ $expanded }) => ($expanded ? 'none' : cardBoxShadowStyle)};
   height: ${({ $compact, $expanded }) =>
     $compact ? '410px' : $expanded ? '360px' : '400px'};
   display: flex;
   flex-direction: column;
-  padding-bottom: 0;
+  padding-bottom: 10px;
   min-height: 0;
   overflow: hidden;
 
@@ -218,12 +213,28 @@ export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
   }
 `
 
-export const AiHeader = styled(CardHeader)`
+export const AiHeader = styled.span`
+  padding: 18px 20px;
+  ${token.typography("body", "lg", "semibold")}
+  color: ${token.colors.main.normal};
+  ${token.flexCenter}
+  gap: 0.5rem;
   justify-content: space-between;
 `
 
+export const AiImg = styled.img`
+  width: 1.2rem;
+  height: 1.2rem;
+`
+
+export const AiHeaderContainer = styled.div`
+  ${token.flexCenter}
+  gap: 0.7rem;
+
+`
+
 export const AiBadge = styled.span`
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   color: #6da775;
 `
 
@@ -231,7 +242,7 @@ export const AiBody = styled.div`
   padding: 0 16px;
   display: flex;
   flex-direction: column;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -251,7 +262,7 @@ export const AiBodySpacer = styled.div`
 export const AiBodyInner = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
   flex-shrink: 0;
 `
 
@@ -267,21 +278,16 @@ export const AiPromptBar = styled.form`
   background: #1b1b1b;
 `
 
-export const AiPromptPlaceholder = styled.div`
-  color: #7b849a;
-  font-size: 12px;
-`
-
 export const AiPromptInput = styled.input`
   flex: 1;
   border: none;
   outline: none;
   background: transparent;
-  color: #e6e8ee;
-  font-size: 12px;
+  color: ${token.colors.text.normal};
+  ${token.typography("caption", "lg", "medium")}
 
   &::placeholder {
-    color: #7b849a;
+    color: ${token.colors.text.alternative2};
   }
 `
 export const AiChatBubble = styled.div`
@@ -289,7 +295,7 @@ export const AiChatBubble = styled.div`
   color: #1b1f1b;
   padding: 10px 12px;
   border-radius: 10px;
-  font-size: 11px;
+  ${token.typography("caption", "lg", "medium")}
   line-height: 1.4;
   align-self: flex-start;
   display: flex;
@@ -299,10 +305,11 @@ export const AiChatBubble = styled.div`
 
 export const AiChatText = styled.div`
   white-space: pre-wrap;
+  
 `
 
 export const AiQuizAction = styled.button`
-  font-size: 10px;
+  ${token.typography("caption", "sm", "medium")}
   color: rgba(207, 224, 214, 0.7);
   background: transparent;
   border: none;
@@ -328,16 +335,16 @@ export const AiQuizAction = styled.button`
 export const AiChatBlock = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   align-self: flex-start;
 `
 
 export const AiUserBubble = styled.div`
-  background: rgba(109, 167, 117, 0.18);
-  color: #e6e8ee;
-  padding: 10px 12px;
+  background-color: ${token.colors.secondary.normal};
+  color: ${token.colors.text.normal};
+  padding: 10px 15px;
   border-radius: 10px;
-  font-size: 11px;
+  ${token.typography("caption", "md", "medium")}
   line-height: 1.4;
   align-self: flex-end;
 `
@@ -346,11 +353,11 @@ export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
   position: relative;
   width: ${({ $expanded }) => ($expanded ? 'calc(100% + 40px)' : '100%')};
   margin: ${({ $expanded }) => ($expanded ? '0 -20px' : '0')};
-  height: ${({ $expanded }) => ($expanded ? '920px' : 'clamp(560px, 72vh, 820px)')};
+  height: ${({ $expanded }) => ($expanded ? '920px' : 'calc(clamp(580px, 72vh, 840px) + 40px)')};
   min-height: ${({ $expanded }) => ($expanded ? '920px' : '0')};
   max-height: ${({ $expanded }) => ($expanded ? '920px' : 'none')};
   border: ${cardBorderStyle};
-  box-shadow: ${cardBoxShadowStyle};
+
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
@@ -359,19 +366,21 @@ export const ViewerCard = styled(Card)<{ $expanded?: boolean }>`
     width: 100%;
     margin: 0;
     height: ${({ $expanded }) =>
-      $expanded ? 'clamp(520px, 70vh, 820px)' : 'clamp(500px, 70vh, 680px)'};
-    min-height: ${({ $expanded }) => ($expanded ? '520px' : '0')};
+      $expanded ? 'clamp(540px, 70vh, 840px)' : 'clamp(520px, 70vh, 700px)'};
+    min-height: ${({ $expanded }) => ($expanded ? '540px' : '0')};
     max-height: none;
   }
 `
 
 export const ViewerHeader = styled.div`
   padding: 18px 20px 10px;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  column-gap: 12px;
+  row-gap: 4px;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
 `
+
 
 export const ViewerDivider = styled.div`
   width: 2px;
@@ -380,11 +389,15 @@ export const ViewerDivider = styled.div`
 `
 
 export const ViewerDescription = styled.div`
-  font-size: 11px;
-  color: #aeb8cc;
+  ${token.typography("caption", "md", "medium")}
+  color: ${token.colors.secondary.assistive};
   line-height: 1.4;
-  flex: 1;
+
+  min-width: 0;
+  max-width: 1000px;
+  word-break: keep-all;
 `
+
 
 export const ViewerBody = styled.div`
   position: relative;
@@ -486,7 +499,7 @@ export const ViewModeButton = styled.button<{ $active?: boolean }>`
   border: 1px solid ${({ $active }) => ($active ? '#6da775' : 'transparent')};
   background: ${({ $active }) => ($active ? 'rgba(109, 167, 117, 0.2)' : 'transparent')};
   color: ${({ $active }) => ($active ? '#cfe0d6' : '#a3b5aa')};
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   font-weight: 600;
   cursor: pointer;
 `
@@ -495,19 +508,29 @@ export const ToolbarButton = styled.button<{ $active?: boolean }>`
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  border: 1px solid ${({ $active }) => ($active ? '#6da775' : 'transparent')};
-  background: ${({ $active }) => ($active ? 'rgba(109, 167, 117, 0.25)' : '#090909')};
+  background: ${({ $active }) => ($active ? token.colors.secondary.normal : '#090909')};
   color: #c9d3e6;
   cursor: pointer;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
+
+  ${token.flexCenter}
+  box-sizing: border-box;
 `
 
 export const ToolbarIcon = styled.img`
-  width: 22px;
-  height: 18px;
+  width: 0.8rem;
+  height: 0.8rem;
   display: block;
-  transform: translateX(2px);
+  transform: none;
 `
+
+export const ToolbarIcon2 = styled.img`
+  width: 1.1875rem;
+  height: 1.1875rem;
+  display: block;
+  transform: none;
+`
+
 
 export const ToolbarDivider = styled.div`
   width: 60%;
@@ -541,20 +564,18 @@ export const NotePanel = styled.div<{ $shifted?: boolean }>`
 export const NoteHeader = styled.div`
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 18px;
-  font-size: 28px;
-  font-weight: 600;
-  color: #e6e8ee;
-  margin-top: 0;
+  justify-content: space-between;
+  /* gap: 18px; */
+  ${token.typography("body", "md", "semibold")}
+  color: ${token.colors.text.normal};
 `
 
 export const NoteToggleOutside = styled.button<{ $shifted?: boolean }>`
   position: absolute;
-  right: ${({ $shifted }) => ($shifted ? '350px' : '5px')};
+  right: ${({ $shifted }) => ($shifted ? '360px' : '15px')};
   top: ${({ $shifted }) => ($shifted ? '30px' : '30px')};
-  width: 52px;
-  height: 52px;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   border: 1px solid rgba(109, 167, 117, 0.5);
   background: rgba(109, 167, 117, 0.35);
@@ -571,35 +592,40 @@ export const NoteToggleOutside = styled.button<{ $shifted?: boolean }>`
   }
 `
 
-export const NoteToggleIcon = styled.span`
-  display: inline-block;
-  transform: translateY(-23px);
+export const NoteToggleIcon = styled.img`
+  width: 0.1rem, ;
+  height: 0.5rem;
+  display: block;
 `
 
 export const ExpenseToggleOutside = styled.button<{ $shifted?: boolean }>`
-  position: ${({ $shifted }) => ($shifted ? 'static' : 'absolute')};
-  right: ${({ $shifted }) => ($shifted ? 'auto' : '15px')};
-  top: ${({ $shifted }) => ($shifted ? 'auto' : 'clamp(360px, 60vh, 590px)')};
-  width: 39px;
-  height: 39px;
+  position: ${({ $shifted }) => ($shifted ? "static" : "absolute")};
+  right: ${({ $shifted }) => ($shifted ? "auto" : "15px")};
+  top: ${({ $shifted }) =>
+    $shifted ? "auto" : "calc(clamp(360px, 60vh, 590px) - 10px)"};
+
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   border: 1px solid #303030;
+
   background-color: #303030;
   background-image: ${({ $shifted }) =>
     $shifted
-      ? "url(\"/src/assets/Study/expense-toggle-expand.png\")"
-      : "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%232b2f2b'/><path d='M14 38v12h12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M50 26v-12h-12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>\")"};
+      ? `url(${expenseToggleCollapse})`
+      : `url(${expenseToggleExpand})`};
+
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 100%;
-  color: transparent;
-  font-size: 0;
-  line-height: 1;
+  background-size: 1rem;
+
+
   display: grid;
   place-items: center;
   cursor: pointer;
-  z-index: 4;
-`
+  z-index: 9999;
+`;
+
 
 export const NoteSearch = styled.input`
   width: calc(45% + 60px);
@@ -669,6 +695,7 @@ export const NoteEmpty = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  ${token.typography("caption", "sm", "semibold")}
 `
 
 export const NoteMeta = styled.div`
@@ -676,7 +703,7 @@ export const NoteMeta = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-size: 16px;
+  ${token.typography("body", "md", "semibold")}
   color: #8b8f94;
 
   span {
@@ -711,6 +738,8 @@ export const NoteBody = styled.div`
   font-size: 22px;
   line-height: 1.4;
   color: #d9e4d6;
+  white-space: normal;
+  word-break: break-word;
 `
 
 /** 선택된 부품 좌표 표시 - expense일 때 expense toggle 바로 위에 붙임 */
@@ -729,7 +758,7 @@ export const SelectedPartCoords = styled.div<{ $expanded?: boolean }>`
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.75);
   font-family: ui-monospace, monospace;
-  font-size: 11px;
+  ${token.typography("caption", "md", "medium")}
   line-height: 1.5;
   color: #90ee90;
   pointer-events: none;
@@ -792,7 +821,7 @@ export const ProgressLabel = styled.div`
 `
 
 export const ProgressBar = styled.input`
-  width: 100%;
+  width: 95%;
   appearance: none;
   height: 12px;
   border-radius: 999px;
@@ -831,11 +860,11 @@ export const ProgressBar = styled.input`
 `
 
 export const BottomChat = styled.form`
-  background: #202020;
+  background: ${token.colors.background.Dark};
   border-radius: 18px;
-  border: none;
+  border: 1px solid ${token.colors.secondary.normal};
   box-shadow: none;
-  padding: 14px 18px;
+  padding: 0px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -844,7 +873,7 @@ export const BottomChat = styled.form`
 
 export const ChatPlaceholder = styled.div`
   color: #7b849a;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")};
 `
 
 export const ChatInput = styled.input`
@@ -852,11 +881,11 @@ export const ChatInput = styled.input`
   border: none;
   outline: none;
   background: transparent;
-  color: #e6e8ee;
-  font-size: 12px;
+  color: ${token.colors.text.normal};
+  ${token.typography("body", "md", "medium")};
 
   &::placeholder {
-    color: #7b849a;
+    color: ${token.colors.line.normal};;
   }
 `
 export const ChatTag = styled.span`
@@ -864,7 +893,7 @@ export const ChatTag = styled.span`
   border-radius: 999px;
   background: rgba(109, 167, 117, 0.2);
   color: #cfe0d6;
-  font-size: 11px;
+  ${token.typography("caption", "md", "medium")}
 `
 
 export const ChatSend = styled.button`
@@ -876,7 +905,7 @@ export const ChatSend = styled.button`
   color: #cfe0d6;
   display: grid;
   place-items: center;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   cursor: pointer;
 
   &:disabled {
@@ -884,3 +913,72 @@ export const ChatSend = styled.button`
     cursor: not-allowed;
   }
 `
+
+
+export const ViewModeSlider = styled.div`
+  position: absolute;
+  left: 76px;
+  top: 20px;
+
+  width: 13.5rem;
+  height: 2.5rem;
+  padding: 0.5rem;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+
+  border: 1px solid rgba(109, 167, 117, 0.45);
+  border-radius: ${token.shapes.large};
+  background: #1b1b1b;
+
+  z-index: 3;
+
+  @media (max-width: 1200px) {
+    left: 72px;
+    top: 12px;
+  }
+`;
+
+export const ViewModeSliderTrack = styled.div<{ $index: number }>`
+  position: absolute;
+  top: 50%;
+  left: 0.5rem;
+
+  height: 1.6rem;
+  width: 6.125rem;
+
+  transform: translateY(-50%) translateX(${({ $index }) => `${$index * 100}%`});
+  transition: transform 0.25s ease;
+
+  background: ${token.colors.background.Dark};
+  border-radius: ${token.shapes.small};
+  border: 1px solid ${token.colors.line.alternative};
+
+  pointer-events: none;
+`;
+
+export const ViewModeSliderOption = styled.button<{ $active: boolean }>`
+  position: relative;
+  z-index: 1;
+  min-width: 6.125rem;
+
+  padding: 0.275rem 0.75rem 0.475rem 0.75rem;
+
+  ${token.typography("body", "sm", "medium")};
+  color: ${({ $active }) =>
+    $active ? token.colors.text.strong : token.colors.text.alternative};
+
+  background: transparent;
+  border: none;
+  border-radius: ${token.shapes.small};
+  cursor: pointer;
+  transition: color 0.2s ease;
+`;
+
+
+/* 확장 모드용 (Expanded) */
+export const ExpandedViewModeSlider = styled(ViewModeSlider)`
+  position: static;
+  transform: translateX(-37px);
+`;
