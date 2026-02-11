@@ -1,5 +1,7 @@
 import styled from 'styled-components'
 import * as token from "@/shared/values/token";
+import expenseToggleExpand from "@/assets/Study/expense-toggle-expand.png";
+import expenseToggleCollapse from "@/assets/Study/expense-toggle-collapse.png";
 
 export const PageBody = styled.div`
   flex: 1;
@@ -201,7 +203,7 @@ export const AiCard = styled(Card)<{ $expanded?: boolean; $compact?: boolean }>`
     $compact ? '410px' : $expanded ? '360px' : '400px'};
   display: flex;
   flex-direction: column;
-  padding-bottom: 0;
+  padding-bottom: 25px;
   min-height: 0;
   overflow: hidden;
 
@@ -232,7 +234,7 @@ export const AiHeaderContainer = styled.div`
 `
 
 export const AiBadge = styled.span`
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   color: #6da775;
 `
 
@@ -240,7 +242,7 @@ export const AiBody = styled.div`
   padding: 0 16px;
   display: flex;
   flex-direction: column;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -260,7 +262,7 @@ export const AiBodySpacer = styled.div`
 export const AiBodyInner = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
   flex-shrink: 0;
 `
 
@@ -276,21 +278,16 @@ export const AiPromptBar = styled.form`
   background: #1b1b1b;
 `
 
-export const AiPromptPlaceholder = styled.div`
-  color: #7b849a;
-  font-size: 12px;
-`
-
 export const AiPromptInput = styled.input`
   flex: 1;
   border: none;
   outline: none;
   background: transparent;
-  color: #e6e8ee;
-  font-size: 12px;
+  color: ${token.colors.text.normal};
+  ${token.typography("caption", "lg", "medium")}
 
   &::placeholder {
-    color: #7b849a;
+    color: ${token.colors.text.alternative2};
   }
 `
 export const AiChatBubble = styled.div`
@@ -298,7 +295,7 @@ export const AiChatBubble = styled.div`
   color: #1b1f1b;
   padding: 10px 12px;
   border-radius: 10px;
-  font-size: 11px;
+  ${token.typography("caption", "lg", "medium")}
   line-height: 1.4;
   align-self: flex-start;
   display: flex;
@@ -308,10 +305,11 @@ export const AiChatBubble = styled.div`
 
 export const AiChatText = styled.div`
   white-space: pre-wrap;
+  
 `
 
 export const AiQuizAction = styled.button`
-  font-size: 10px;
+  ${token.typography("caption", "sm", "medium")}
   color: rgba(207, 224, 214, 0.7);
   background: transparent;
   border: none;
@@ -337,16 +335,16 @@ export const AiQuizAction = styled.button`
 export const AiChatBlock = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   align-self: flex-start;
 `
 
 export const AiUserBubble = styled.div`
-  background: rgba(109, 167, 117, 0.18);
-  color: #e6e8ee;
-  padding: 10px 12px;
+  background-color: ${token.colors.secondary.normal};
+  color: ${token.colors.text.normal};
+  padding: 10px 15px;
   border-radius: 10px;
-  font-size: 11px;
+  ${token.typography("caption", "md", "medium")}
   line-height: 1.4;
   align-self: flex-end;
 `
@@ -389,7 +387,7 @@ export const ViewerDivider = styled.div`
 `
 
 export const ViewerDescription = styled.div`
-  font-size: 11px;
+  ${token.typography("caption", "md", "medium")}
   color: #aeb8cc;
   line-height: 1.4;
   flex: 1;
@@ -495,7 +493,7 @@ export const ViewModeButton = styled.button<{ $active?: boolean }>`
   border: 1px solid ${({ $active }) => ($active ? '#6da775' : 'transparent')};
   background: ${({ $active }) => ($active ? 'rgba(109, 167, 117, 0.2)' : 'transparent')};
   color: ${({ $active }) => ($active ? '#cfe0d6' : '#a3b5aa')};
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   font-weight: 600;
   cursor: pointer;
 `
@@ -504,19 +502,29 @@ export const ToolbarButton = styled.button<{ $active?: boolean }>`
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  border: 1px solid ${({ $active }) => ($active ? '#6da775' : 'transparent')};
-  background: ${({ $active }) => ($active ? 'rgba(109, 167, 117, 0.25)' : '#090909')};
+  background: ${({ $active }) => ($active ? token.colors.secondary.normal : '#090909')};
   color: #c9d3e6;
   cursor: pointer;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
+
+  ${token.flexCenter}
+  box-sizing: border-box;
 `
 
 export const ToolbarIcon = styled.img`
-  width: 22px;
-  height: 18px;
+  width: 0.8rem;
+  height: 0.8rem;
   display: block;
-  transform: translateX(2px);
+  transform: none;
 `
+
+export const ToolbarIcon2 = styled.img`
+  width: 1.1875rem;
+  height: 1.1875rem;
+  display: block;
+  transform: none;
+`
+
 
 export const ToolbarDivider = styled.div`
   width: 60%;
@@ -552,8 +560,7 @@ export const NoteHeader = styled.div`
   align-items: center;
   justify-content: flex-start;
   gap: 18px;
-  font-size: 28px;
-  font-weight: 600;
+  ${token.typography("heading", "lg", "semibold")}
   color: #e6e8ee;
   margin-top: 0;
 `
@@ -562,8 +569,8 @@ export const NoteToggleOutside = styled.button<{ $shifted?: boolean }>`
   position: absolute;
   right: ${({ $shifted }) => ($shifted ? '350px' : '5px')};
   top: ${({ $shifted }) => ($shifted ? '30px' : '30px')};
-  width: 52px;
-  height: 52px;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   border: 1px solid rgba(109, 167, 117, 0.5);
   background: rgba(109, 167, 117, 0.35);
@@ -580,35 +587,40 @@ export const NoteToggleOutside = styled.button<{ $shifted?: boolean }>`
   }
 `
 
-export const NoteToggleIcon = styled.span`
-  display: inline-block;
-  transform: translateY(-23px);
+export const NoteToggleIcon = styled.img`
+  width: 0.1rem, ;
+  height: 0.5rem;
+  display: block;
 `
 
 export const ExpenseToggleOutside = styled.button<{ $shifted?: boolean }>`
-  position: ${({ $shifted }) => ($shifted ? 'static' : 'absolute')};
-  right: ${({ $shifted }) => ($shifted ? 'auto' : '15px')};
-  top: ${({ $shifted }) => ($shifted ? 'auto' : 'clamp(360px, 60vh, 590px)')};
-  width: 39px;
-  height: 39px;
+  position: ${({ $shifted }) => ($shifted ? "static" : "absolute")};
+  right: ${({ $shifted }) => ($shifted ? "auto" : "15px")};
+  top: ${({ $shifted }) =>
+    $shifted ? "auto" : "clamp(360px, 60vh, 590px)"};
+
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   border: 1px solid #303030;
+
   background-color: #303030;
   background-image: ${({ $shifted }) =>
     $shifted
-      ? "url(\"/src/assets/Study/expense-toggle-expand.png\")"
-      : "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%232b2f2b'/><path d='M14 38v12h12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M50 26v-12h-12' stroke='%237fb08a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>\")"};
+      ? `url(${expenseToggleCollapse})`
+      : `url(${expenseToggleExpand})`};
+
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 100%;
-  color: transparent;
-  font-size: 0;
-  line-height: 1;
+  background-size: 1rem;
+
+
   display: grid;
   place-items: center;
   cursor: pointer;
-  z-index: 4;
-`
+  z-index: 9999;
+`;
+
 
 export const NoteSearch = styled.input`
   width: calc(45% + 60px);
@@ -793,7 +805,7 @@ export const ProgressLabel = styled.div`
 `
 
 export const ProgressBar = styled.input`
-  width: 100%;
+  width: 95%;
   appearance: none;
   height: 12px;
   border-radius: 999px;
@@ -865,7 +877,7 @@ export const ChatTag = styled.span`
   border-radius: 999px;
   background: rgba(109, 167, 117, 0.2);
   color: #cfe0d6;
-  font-size: 11px;
+  ${token.typography("caption", "md", "medium")}
 `
 
 export const ChatSend = styled.button`
@@ -877,7 +889,7 @@ export const ChatSend = styled.button`
   color: #cfe0d6;
   display: grid;
   place-items: center;
-  font-size: 12px;
+  ${token.typography("caption", "lg", "medium")}
   cursor: pointer;
 
   &:disabled {

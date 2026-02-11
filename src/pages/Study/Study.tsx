@@ -3,10 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import * as THREE from 'three'
 import AssemblyViewer, { type AssemblyViewerHandle } from '../../components/assembly/AssemblyViewer'
-import toolSelectIcon from '/src/assets/Study/viewer-tool-select.png'
-import toolHandIcon from '/src/assets/Study/viewer-tool-hand.png'
-import toolChatIcon from '/src/assets/Study/viewer-tool-chat.png'
-import toolAiIcon from '/src/assets/Study/viewer-tool-ai.png'
+import toolSelectIcon from '@/assets/Study/viewer-tool-select2.png'
+import toolHandIcon from '@/assets/Study/viewer-tool-hand2.png'
+import toolChatIcon from '@/assets/Study/viewer-tool-chat2.png'
+import toolAiIcon from '@/assets/Study/viewer-tool-ai4.png'
 import noteEditIcon from '/src/assets/Study/note-edit.png'
 import noteDeleteIcon from '/src/assets/Study/note-delete.png'
 import { projectConfigs, materialIdToProjectId } from '../../data/projects'
@@ -30,6 +30,8 @@ import { useToast } from '@/shared/ui/Toast/ToastContext'
 import './Study.css'
 import * as S from './Study.style'
 import AiImg from '@/assets/Ai-assistant.png'
+import NoteOpen from '@/assets/Study/memotoggleOpen.png'
+import NoteClose from '@/assets/Study/memotoggle.png'
 
 
 type Note = {
@@ -1612,7 +1614,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                         $active={aiPanelOpen}
                         onClick={() => setAiPanelOpen((prev) => !prev)}
                       >
-                        <S.ToolbarIcon src={toolAiIcon} alt="" />
+                        <S.ToolbarIcon2 src={toolAiIcon} alt="" />
                       </S.ToolbarButton>
                     </>
                   ) : (
@@ -1655,12 +1657,13 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                 )}
 
                 <S.NoteToggleOutside
-                  type="button"
-                  $shifted={expenseToggleOn}
-                  onClick={() => setNotePanelOpen((prev) => !prev)}
+                type="button"
+                $shifted={expenseToggleOn}
+                onClick={() => setNotePanelOpen((prev) => !prev)}
                 >
-                  <S.NoteToggleIcon>⌄</S.NoteToggleIcon>
+                <S.NoteToggleIcon src={notePanelOpen ? NoteClose : NoteOpen} alt="note toggle" />
                 </S.NoteToggleOutside>
+
                 {!expenseToggleOn && (
                   <S.ExpenseToggleOutside
                     type="button"
