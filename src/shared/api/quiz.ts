@@ -15,17 +15,21 @@ export interface BaseResponseDataListStudySummaryResponse {
   data: StudySummaryResponse[];
 }
 
-export interface QuizQuestionListResponse {
+export interface QuizItemResponse {
   quizQuestionId: number;
-  userQuestion: string;
-  aiAnswerSummary: string;
+  question: string;
+  options: string[];
+  correctAnswerIndex: number;
+  aiAnswer: string;
+  category: string;
 }
 
-export interface BaseResponseDataListQuizQuestionListResponse {
+export interface BaseResponseDataListQuizItemResponse {
   status: number;
   message: string;
-  data: QuizQuestionListResponse[];
+  data: QuizItemResponse[];
 }
+
 // --- End New Interfaces ---
 
 // --- Original Interfaces still in use ---
@@ -34,12 +38,6 @@ export interface ProductItemResponse {
   title: string;
   image: string; // Thumbnail URL
   problemCount: number; // Added problemCount
-}
-
-export interface AIQuizAnswerItemResponse {
-  problemCount: number;
-  id: string; // Quiz Question ID (string conversion)
-  answerText: string; // AI Answer Summary
 }
 
 export interface AverageRateResponse { // Still exists in Quiz.tsx, will remove later
@@ -60,14 +58,10 @@ export const fetchProducts = async (): Promise<ProductItemResponse[]> => {
   }));
 };
 
-// --- Modified fetchAIQuizAnswers ---
-export const fetchAIQuizAnswers = async (): Promise<AIQuizAnswerItemResponse[]> => {
-  const response = await axiosInstance.get<BaseResponseDataListQuizQuestionListResponse>(`/api/quiz/questions`);
-  return response.data.data.map(item => ({
-    id: item.quizQuestionId.toString(),
-    answerText: item.aiAnswerSummary,
-    problemCount: 1,
-  }));
+// --- Modified fetchAIQuizAnswers to directly return QuizItemResponse[] ---
+export const fetchAIQuizAnswers = async (): Promise<QuizItemResponse[]> => {
+  const response = await axiosInstance.get<BaseResponseDataListQuizItemResponse>(`/api/quiz/questions`);
+  return response.data.data;
 };
 
 export const fetchAverageCorrectRate = async (): Promise<AverageRateResponse> => {
@@ -138,5 +132,20 @@ export const startQuizSession = async (payload: StartQuizPayload): Promise<any> 
 
   // Using axiosInstance, not apiClient
   const response = await axiosInstance.post(`/api/quiz/generate`, quizGenerateRequest);
+  return response.data;
+};
+
+export const fetchWrongAnswerList = async (): Promise<QuizItemResponse[]> => {
+  const response = await axiosInstance.get<BaseResponseDataListQuizItemResponse>(`/api/quiz/incorrect`);
+  return response.data.data;
+};
+
+export const fetchFavoritesList = async (): Promise<QuizItemResponse[]> => {
+  const response = await axiosInstance.get<BaseResponseDataListQuizItemResponse>(`/api/quiz/favorite`);
+  return response.data.data;
+};
+
+export const deleteQuizQuestion = async (quizQuestionId: number): Promise<any> => {
+  const response = await axiosInstance.delete(`/api/quiz/${quizQuestionId}`);
   return response.data;
 };

@@ -1,10 +1,10 @@
 import * as S from "./WrongAnswerList.style";
 import wrongAnswerIcon from "@/assets/wrongAnswer.png";
-import dbQuizIcon from "@/assets/DBquiz.png";
-import aiQuizIcon from "@/assets/AIquiz.png";
 import type { QuizListItem } from "../types";
+import QuizDB from "@/assets/icons/Quiz/QuizDB";
+import QuizAI from "@/assets/icons/Quiz/QuizAI";
+import { colors } from "@/shared/values/token";
 
-const categoryIcons = { db: dbQuizIcon, ai: aiQuizIcon } as const;
 
 interface WrongAnswerListProps {
   items?: QuizListItem[];
@@ -22,11 +22,14 @@ const WrongAnswerList = ({ items = [] }: WrongAnswerListProps) => {
         {items.map((item) => (
           <S.Item key={item.id}>
             <S.ItemLeft>
-              <S.CategoryIcon
-                src={categoryIcons[item.category]}
-                alt={item.category === "db" ? "제품별" : "AI퀴즈"}
-              />
-              <span>{item.label}</span>
+              <S.CategoryIcon>
+                {item.category === "db" ? <QuizDB color={colors.main.normal}/>:<QuizAI color={colors.text.strong}/>}
+             </S.CategoryIcon>            
+                {item.category === "db" ?
+                  <S.Label $db={true}>{item.label}</S.Label>
+                :
+                  <S.Label $db={false}>{item.label}</S.Label>
+                }
             </S.ItemLeft>
             <S.ListIcon src={wrongAnswerIcon} alt="오답" />
           </S.Item>
