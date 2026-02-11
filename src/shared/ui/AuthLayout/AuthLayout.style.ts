@@ -11,7 +11,7 @@ export const container = styled.div`
 export const auth_container = styled.div`
     width: 100%;
     height: 100%;
-    background-image: url('/src/assets/AuthBackground.png');
+    background-image: url('/AuthBg/AuthBackground.png');
     background-size: cover;
 
     ${flexRow}
