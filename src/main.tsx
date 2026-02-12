@@ -6,8 +6,8 @@ import router from './router'
 // 콘솔 출력 비활성화
 const noop = () => {}
 ;['log', 'error', 'warn', 'info', 'debug'].forEach(m => {
-  if (typeof console !== 'undefined' && console[m]) {
-    console[m] = noop
+  if (typeof console !== 'undefined' && (console as any)[m]) {
+    (console as any)[m] = noop
   }
 })
 
