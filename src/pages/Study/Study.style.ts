@@ -612,8 +612,8 @@ export const ExpenseToggleOutside = styled.button<{ $shifted?: boolean }>`
   background-color: #303030;
   background-image: ${({ $shifted }) =>
     $shifted
-      ? `url(${expenseToggleCollapse})`
-      : `url(${expenseToggleExpand})`};
+      ? `url(${expenseToggleExpand})`
+      : `url(${expenseToggleCollapse})`};
 
   background-repeat: no-repeat;
   background-position: center;

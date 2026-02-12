@@ -28,3 +28,14 @@ export const submitQuizResult = async (
   return res.data;
 };
 
+export const toggleFavorite = async (
+  quizQuestionId: number,
+  isFavorite: boolean
+): Promise<any> => {
+  const response = await axiosInstance.patch(
+    `/api/quiz/${quizQuestionId}/favorite?isFavorite=${isFavorite}`
+  );
+  return response.data;
+};
+
+

@@ -23,6 +23,7 @@ import {
   type StartQuizPayload,
   type QuizItemResponse,
   deleteQuizQuestion, // Added deleteQuizQuestion
+  toggleFavorite,
 } from "@/shared/api/quiz";
 
 import type { QuizListItem } from "@/entities/quiz-setting/types";
@@ -78,6 +79,17 @@ const QuizPage = () => {
   }, []
   );
 
+  const loadFavorites = async () => {
+    const fetchedFavorites = await fetchFavoritesList();
+    setFavoriteItems(
+      fetchedFavorites.map((item: QuizItemResponse) => ({
+        id: item.quizQuestionId.toString(),
+        label: item.question,
+        category: item.category as QuizCategory,
+      }))
+    );
+  };
+
   /** 초기 데이터 및 틀린 문제/즐겨찾기 목록 로드 */
   useEffect(() => {
     const loadQuizLists = async () => {
@@ -87,14 +99,7 @@ const QuizPage = () => {
         setAverageCorrectRate(storedAverageRate ? `${storedAverageRate}%` : "N/A");
 
         // 2. 즐겨찾기 목록 로드
-        const fetchedFavorites = await fetchFavoritesList();
-        setFavoriteItems(
-          fetchedFavorites.map((item: QuizItemResponse) => ({
-            id: item.quizQuestionId.toString(),
-            label: item.question,
-            category: item.category as QuizCategory, // Assuming category from API matches QuizCategory
-          }))
-        );
+        loadFavorites();
 
         // 3. 틀린 문제 목록 로드
         const fetchedWrongAnswers = await fetchWrongAnswerList();
@@ -113,6 +118,18 @@ const QuizPage = () => {
 
     loadQuizLists();
   }, []); // 의존성 배열 확인: 한 번만 실행됨
+
+  const handleToggleFavorite = async (id: string) => {
+    try {
+      await toggleFavorite(parseInt(id, 10), false);
+      showToast("즐겨찾기에서 삭제되었습니다.", "success");
+      await loadFavorites(); // Reload the favorites list
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
+      showToast("즐겨찾기 상태 변경에 실패했습니다.", "error");
+    }
+  };
+
 
   /** 카테고리별 로딩 */
   useEffect(() => {
@@ -231,7 +248,7 @@ const QuizPage = () => {
           </S.AverageRateDescription>
         </S.AverageRateContainer>
 
-        <FavoritesList items={favoriteItems} />
+        <FavoritesList items={favoriteItems} onToggleFavorite={handleToggleFavorite} />
         <WrongAnswerList items={wrongAnswerItems} />
       </S.LeftPanel>
 
@@ -326,5 +343,6 @@ const QuizPage = () => {
     </S.Layout>
   );
 };
+
 
 export default QuizPage;

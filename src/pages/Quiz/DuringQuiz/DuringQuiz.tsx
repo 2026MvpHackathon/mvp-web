@@ -9,7 +9,7 @@ import DuringQuizChoiceItem from "@/widgets/quiz/ui/DuringQuizChoiceItem/DuringQ
 import QuizBtn from "@/widgets/quiz/ui/QuizBtn/QuizBtn";
 
 import * as S from "./DuringQuiz.style";
-import { createQuiz, submitQuizResult } from "@/entities/quiz/api/quiz";
+import { createQuiz, submitQuizResult, toggleFavorite } from "@/entities/quiz/api/quiz";
 import type { QuizItem, QuizOption, QuizRequest } from "@/entities/quiz/types/createQuiz";
 import type { StartQuizPayload } from "@/shared/api/quiz";
 
@@ -42,6 +42,23 @@ const DuringQuizPage = () => {
 
   const hasFetchedQuizRef = useRef(false);
   const currentQuiz = quizItems[currentQuizIndex];
+
+  const handleToggleFavorite = async () => {
+    if (!currentQuiz) return;
+
+    const newIsFavorite = !currentQuiz.isFavorite;
+
+    try {
+      await toggleFavorite(currentQuiz.quizQuestionId, newIsFavorite);
+      setQuizItems(prev =>
+        prev.map((q, idx) =>
+          idx === currentQuizIndex ? { ...q, isFavorite: newIsFavorite } : q
+        )
+      );
+    } catch (error) {
+      console.error("Failed to toggle favorite status", error);
+    }
+  };
 
   /** 퀴즈 생성 */
   const handleCreateQuiz = useCallback(async () => {
@@ -100,7 +117,7 @@ const DuringQuizPage = () => {
             state: "disabled",
           })),
           isSubmitted: false,
-          isFavorite: false,
+          isFavorite: settings.isFavoriteIncluded,
         }))
       );
     } finally {
@@ -260,7 +277,7 @@ const DuringQuizPage = () => {
           currentQuestionText={`${currentQuizIndex + 1}/${quizItems.length}`}
           progressPercent={progressPercent}
           isFavorite={currentQuiz.isFavorite}
-          onToggleFavorite={() => {}}
+          onToggleFavorite={handleToggleFavorite}
         />
 
         <S.main_content_container>
