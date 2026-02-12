@@ -1,3 +1,5 @@
+                                
+                                
 import styled from "styled-components";
 import * as token from "@/shared/values/token";
 
@@ -35,9 +37,18 @@ export const Icon = styled.img`
   height: 0.546875rem;
 `;
 
-export const objectImg = styled.img`
+export const ObjectImgContainer = styled.div`
   width: 100%;
-  object-fit: cover;
+  height: 6.5rem;       // 카드 안에서 차지할 높이 고정
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 `;
 
-
+export const objectImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+`;
+                            

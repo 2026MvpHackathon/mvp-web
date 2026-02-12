@@ -1,3 +1,5 @@
+                                
+                                
 import * as S from "./SelectObject.style";
 import checkIcon from "@/assets/check.png";
 
@@ -18,9 +20,13 @@ const SelectObject = ({ id, title, image, selected, onToggle }: SelectObjectProp
           <S.Icon src={checkIcon} />
         </S.Circle>
       </S.TitleSelectContainer>
-      <S.objectImg src={image}/>
+      <S.ObjectImgContainer>
+        <S.objectImg src={image}/>
+      </S.ObjectImgContainer>
+
     </S.Container>
   );
 };
 
 export default SelectObject;
+                            

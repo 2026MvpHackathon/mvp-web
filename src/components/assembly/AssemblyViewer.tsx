@@ -1989,6 +1989,8 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const { showToast } = useToast();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -2000,12 +2002,12 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
       onActiveNoteChange,
       onGroupTransformChange,
       onCameraChange,
-      onError: (msg) => showToast(msg, "error")
+      onError: (msg) => showToastRef.current(msg, "error")
     });
     return () => {
       engineRef.current?.dispose();
     };
-  }, [showToast]);
+  }, []);
 
   useEffect(() => {
     if (!engineRef.current) return;

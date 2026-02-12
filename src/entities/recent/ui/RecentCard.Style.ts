@@ -54,6 +54,7 @@ export const bottom = styled.div`
 export const img = styled.img`
   width: 10rem;
   object-fit: cover;
+  
 `;
 
 export const openButtonContainer = styled.div`

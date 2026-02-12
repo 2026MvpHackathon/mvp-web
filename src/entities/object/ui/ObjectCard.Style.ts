@@ -42,6 +42,6 @@ export const detail = styled.span`
 `;
 
 export const objectImg = styled.img`
-  object-fit: cover;
+  object-fit: contain;
   height: 7rem;
 `
