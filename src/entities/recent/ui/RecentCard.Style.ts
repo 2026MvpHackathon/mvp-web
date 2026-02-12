@@ -1,3 +1,5 @@
+                                
+                                
 import styled from "styled-components";
 import * as token from "@/shared/values/token"
 
@@ -48,13 +50,15 @@ export const detail = styled.span`
 
 export const bottom = styled.div`
   width: 100%;
-  ${token.flexRight}
-`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+`;
+
 
 export const img = styled.img`
-  width: 10rem;
-  object-fit: cover;
-  
+object-fit: contain;
+  height: 7rem;
 `;
 
 export const openButtonContainer = styled.div`
@@ -72,3 +76,4 @@ export const openButton = styled.button`
   color: ${token.colors.text.normal};
   border-radius: ${token.shapes.small};
 `
+                            
