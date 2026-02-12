@@ -7,7 +7,5 @@ export const setNavigateFunction = (navigate: (to: string) => void) => {
 export const navigate = (to: string) => {
   if (navigateFunction) {
     navigateFunction(to);
-  } else {
-    console.error("navigateFunction not initialized.");
   }
 };

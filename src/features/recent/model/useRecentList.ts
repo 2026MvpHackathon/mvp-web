@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { formatTime } from "@/entities/recent/lib/formatRecentTime";
 import { getRecentList } from "@/entities/recent/api/recentApi";
 import type { RecentItem } from "@/entities/recent/types";
+import { useToast } from "@/shared/ui/Toast/ToastContext";
 
 export interface RecentCardItem {
   id: number;
@@ -18,6 +19,7 @@ interface RecentCardItemWithRaw extends RecentCardItem {
 }
 
 export const useRecentList = () => {
+  const { showToast } = useToast();
   const [rawItems, setRawItems] = useState<RecentCardItemWithRaw[]>([]);
   const [items, setItems] = useState<RecentCardItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,8 +42,8 @@ export const useRecentList = () => {
         }));
         setRawItems(mapped);
         setItems(mapped);
-      } catch (error) {
-        console.error("Failed to fetch recent items:", error);
+      } catch {
+        showToast("최근 학습 목록을 불러오는데 실패했습니다.", "error");
         setIsError(true);
       } finally {
         setIsLoading(false);

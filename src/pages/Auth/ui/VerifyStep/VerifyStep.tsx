@@ -15,7 +15,6 @@ const VerifyStep = () => {
             navigate('/auth/login');
             showToast('성공적으로 회원가입이 되었습니다.', 'success')
         } else {
-            console.warn("checkBox 비활성화"); // Changed to warn, as it might be an intentional UI state
             showToast('개인정보 수집 및 이용에 동의가 필요합니다.', 'error');
             
         }

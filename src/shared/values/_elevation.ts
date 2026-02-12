@@ -21,7 +21,6 @@ export const elevation = (level: keyof typeof elevations) => {
   const shadow = elevations[level];
 
   if (!shadow) {
-    console.warn(`Unknown elevation level: ${level}`);
     return css``;
   }
 

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { useToast } from "@/shared/ui/Toast/ToastContext";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
@@ -628,7 +629,7 @@ class AssemblyEngine {
         { name: "xyz", file: "xyz.glb", explode: new THREE.Vector3(0, 0, -160) }
       ];
     } catch (error) {
-      console.error("Parts build error", error);
+      this.callbacks?.onError?.(`부품 구성 오류: ${error.message}`);
       this.emitStatus(`구성 오류: ${error.message}`);
     }
 
@@ -1118,7 +1119,7 @@ class AssemblyEngine {
           this.prepareObject(part, object);
           resolve();
         } catch (error) {
-          console.error(`Failed to build ${part.name}`, error);
+          this.callbacks?.onError?.(`부품 로드 실패: ${part.name}`);
           reject(error);
         }
       });
@@ -1142,7 +1143,7 @@ class AssemblyEngine {
         },
         undefined,
         (error) => {
-          console.error(`Failed to load ${part.file}`, error);
+          this.callbacks?.onError?.(`파일 로드 실패: ${part.file}`);
           reject(error);
         }
       );
@@ -1987,6 +1988,7 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
 ) {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -1997,12 +1999,13 @@ const AssemblyViewer = forwardRef<AssemblyViewerHandle, AssemblyViewerProps>(fun
       onNotesChange,
       onActiveNoteChange,
       onGroupTransformChange,
-      onCameraChange
+      onCameraChange,
+      onError: (msg) => showToast(msg, "error")
     });
     return () => {
       engineRef.current?.dispose();
     };
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     if (!engineRef.current) return;

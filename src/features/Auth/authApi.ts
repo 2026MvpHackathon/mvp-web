@@ -23,7 +23,6 @@ export const tokenRefresh = async (token: string, userId: string) => {
     deleteCookie("refreshToken");
     deleteCookie("userId")
     deleteCookie("email")
-    console.log('토큰이 만료되었습니다.'); // Added console log
     window.location.replace("/auth/login"); // Changed from /auth/select
     return null;
   }
@@ -59,6 +58,5 @@ export const logout = () => {
   deleteCookie("refreshToken");
   deleteCookie("email")
   deleteCookie("userId")
-  console.log('토큰이 만료되었습니다.'); // Added console log
   window.location.replace("/auth/login"); // Changed from /auth/select
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { checkLogin } from '@/features/Auth/authApi';
+import { useToast } from '@/shared/ui/Toast/ToastContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,6 +9,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -18,7 +20,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       setIsLoading(false);
 
       if (!loggedIn) {
-        console.warn("로그인하세요."); // Changed to warn, as it's an important user message
+        showToast("로그인이 필요합니다.", "info");
         navigate("/auth/select");
       }
     };

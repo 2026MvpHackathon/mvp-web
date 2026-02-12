@@ -54,19 +54,14 @@ const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure 
     const navigate = useNavigate();
     const isAuthPage = location.pathname.startsWith('/auth');
 
-    // console.log("Header Rendered in AuthPage context"); // 디버깅용 로그 추가
-
     const handleLogout = async () => {
         const refreshToken = getCookie("refreshToken");
-        // console.log("Logout 시도 - RefreshToken:", refreshToken);
 
         if (refreshToken) {
             try {
-                await axiosInstance.post(`/api/auth/logout`, { refreshToken }); // Use relative path
+                await axiosInstance.post(`/api/auth/logout`, { refreshToken });
                 showToast('성공적으로 로그아웃되었습니다.', 'success')
-                // console.log("로그아웃 API 응답 (성공):", response);
-            } catch (error: any) {
-                console.error("로그아웃 API 호출 중 오류 발생:", error);
+            } catch {
                 showToast('로그아웃 처리 중 오류가 발생했습니다.', 'error')
                 
                 
@@ -96,8 +91,7 @@ const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => { // Destructure 
                 showToast('최근 학습한 기계가 없습니다. 기본 학습 페이지로 이동합니다.', 'info');
                 navigate('/study'); // Navigate to the default study page
             }
-        } catch (error) {
-            console.error("최근 학습 목록을 불러오는 데 실패했습니다:", error);
+        } catch {
             showToast('최근 학습 목록을 불러오는 데 실패했습니다. 기본 학습 페이지로 이동합니다.', 'error');
             navigate('/study'); // Navigate to the default study page on error
         }

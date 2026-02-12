@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getObjectList } from "@/entities/object/api/objectApi";
 import type { ObjectItem } from "@/entities/object/types";
+import { useToast } from "@/shared/ui/Toast/ToastContext";
 
 export interface ObjectCardItem {
   id: number;
@@ -10,6 +11,7 @@ export interface ObjectCardItem {
 }
 
 export const useObjectList = () => {
+  const { showToast } = useToast();
   const [items, setItems] = useState<ObjectCardItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -28,8 +30,8 @@ export const useObjectList = () => {
             image: item.thumbnailUrl,
           }))
         );
-      } catch (error) {
-        console.error("Failed to fetch object items:", error);
+      } catch {
+        showToast("학습 대상 목록을 불러오는데 실패했습니다.", "error");
         setIsError(true);
       } finally {
         setIsLoading(false);

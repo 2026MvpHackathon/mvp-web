@@ -110,8 +110,8 @@ const QuizPage = () => {
             category: item.category as QuizCategory, // Assuming category from API matches QuizCategory
           }))
         );
-      } catch (err) {
-        console.error("Failed to load quiz lists:", err);
+      } catch {
+        showToast("문제 목록을 불러오는데 실패했습니다.", "error");
         setError("문제 목록을 불러오는데 실패했습니다.");
       }
     };
@@ -124,8 +124,7 @@ const QuizPage = () => {
       await toggleFavorite(parseInt(id, 10), false);
       showToast("즐겨찾기에서 삭제되었습니다.", "success");
       await loadFavorites(); // Reload the favorites list
-    } catch (err) {
-      console.error("Failed to toggle favorite:", err);
+    } catch {
       showToast("즐겨찾기 상태 변경에 실패했습니다.", "error");
     }
   };
@@ -191,15 +190,6 @@ const QuizPage = () => {
       return;
     }
 
-    // 선택된 교재/답변 정보 확인
-    const selectedProducts = products.filter((p) => p.selected);
-    const selectedAIAnswers = aiQuizAnswers.filter((a) => a.selected);
-    
-    console.log("선택된 교재:", selectedProducts);
-    console.log("선택된 AI 답변:", selectedAIAnswers);
-    console.log("총 문제 수:", getMaxNumberOfProblems());
-    console.log("요청할 문제 수:", numberOfProblems);
-
     const payload: StartQuizPayload = {
       category: selectedCategory,
       productIds: products.filter((p) => p.selected).map((p) => p.id),
@@ -208,8 +198,6 @@ const QuizPage = () => {
       isWrongAnswerIncluded,
       numberOfProblems,
     };
-
-    console.log("저장할 퀴즈 설정:", payload);
 
     localStorage.setItem("quizSettings", JSON.stringify(payload));
     navigate("/quiz/during");
@@ -230,8 +218,7 @@ const QuizPage = () => {
           selected: false,
         }))
       );
-    } catch (err) {
-      console.error("Failed to delete quiz question:", err);
+    } catch {
       showToast("퀴즈 삭제에 실패했습니다.", "error");
     }
   };

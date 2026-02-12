@@ -87,7 +87,6 @@ export const registerQuiz = async (registrationData: any): Promise<any> => {
 // --- This generateQuiz seems unused or redundant with startQuizSession, keeping for now ---
 export const generateQuiz = async (settings: StartQuizPayload): Promise<any> => {
   const response = await axiosInstance.post(`/api/quiz/generate`, settings);
-  console.log("Quiz Generation Response:", response); // Log the response
   return response.data;
 };
 

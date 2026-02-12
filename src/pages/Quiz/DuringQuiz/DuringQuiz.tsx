@@ -9,6 +9,7 @@ import DuringQuizChoiceItem from "@/widgets/quiz/ui/DuringQuizChoiceItem/DuringQ
 import QuizBtn from "@/widgets/quiz/ui/QuizBtn/QuizBtn";
 
 import * as S from "./DuringQuiz.style";
+import { useToast } from "@/shared/ui/Toast/ToastContext";
 import { createQuiz, submitQuizResult, toggleFavorite } from "@/entities/quiz/api/quiz";
 import type { QuizItem, QuizOption, QuizRequest } from "@/entities/quiz/types/createQuiz";
 import type { StartQuizPayload } from "@/shared/api/quiz";
@@ -29,6 +30,7 @@ type LocalQuizItem = Omit<QuizItem, "options"> & {
 
 const DuringQuizPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { setText, setIsBlur, setLoadingAnimationType } =
     useOutletContext<LayoutContext>();
 
@@ -55,8 +57,9 @@ const DuringQuizPage = () => {
           idx === currentQuizIndex ? { ...q, isFavorite: newIsFavorite } : q
         )
       );
-    } catch (error) {
-      console.error("Failed to toggle favorite status", error);
+      showToast(newIsFavorite ? "즐겨찾기에 추가되었습니다." : "즐겨찾기에서 삭제되었습니다.", "success");
+    } catch {
+      showToast("즐겨찾기 상태 변경에 실패했습니다.", "error");
     }
   };
 

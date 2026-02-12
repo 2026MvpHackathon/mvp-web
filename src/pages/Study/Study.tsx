@@ -142,7 +142,22 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     rotation: [number, number, number]
     scale: number
   } | null>(null)
-  const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
+  const [viewMode, setViewModeState] = useState<'single' | 'assembly'>(() => {
+    try {
+      const stored = sessionStorage.getItem('assembly-viewMode')
+      return stored === 'single' || stored === 'assembly' ? stored : 'assembly'
+    } catch {
+      return 'assembly'
+    }
+  })
+  const setViewMode = (mode: 'single' | 'assembly') => {
+    setViewModeState(mode)
+    try {
+      sessionStorage.setItem('assembly-viewMode', mode)
+    } catch {
+      // ignore
+    }
+  }
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([
     {
@@ -367,8 +382,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         zoom,
         percent,
       })
-    } catch (error) {
-      console.error('학습 세션 저장 실패', error)
+    } catch {
       showToast('진행 상황 저장에 실패했습니다.', 'error')
     }
   }
@@ -411,7 +425,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           target,
           zoom,
           percent,
-        }).catch((err) => console.error('학습 세션 저장 실패', err))
+        }).catch(() => showToast('진행 상황 저장에 실패했습니다.', 'error'))
       }
     }
     window.addEventListener('beforeunload', flushSave)
@@ -594,7 +608,11 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const partOverrides = partOverridesByProject[safeProjectId] ?? projectConfig?.defaultOverrides
 
   const handleExpenseToggle = () => {
-    // materialId from path params now has priority
+    try {
+      sessionStorage.setItem('assembly-justNavigated', '1')
+    } catch {
+      // ignore
+    }
     const currentMaterialId = pathMaterialId ? parseInt(pathMaterialId, 10) : projectConfig?.materialId;
     const query = typeof currentMaterialId === 'number' ? `?materialId=${currentMaterialId}` : '';
     if (expanded) {
@@ -607,12 +625,19 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const handleSelectPart = (index: number) => {
     setSelectedIndex(index)
     viewerRef.current?.setSelectedIndex?.(index)
-    if (viewMode === 'single' && index >= 0) {
+    if (index >= 0) {
       const name = parts[index]
       if (name) {
-        viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== index))
-        viewerRef.current?.focusOnPart?.(name)
+        try {
+          sessionStorage.setItem(`assembly-selectedPart-${safeProjectId}`, name)
+        } catch {
+          // ignore
+        }
       }
+    }
+    if (viewMode === 'single' && index >= 0 && parts[index]) {
+      viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== index))
+      viewerRef.current?.focusOnPart?.(parts[index])
     }
   }
 
@@ -691,8 +716,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     try {
       await deleteStudyNote(studySessionId, serverId)
       delete noteIdMapRef.current[localId]
-    } catch (error) {
-      console.error('노트 삭제 실패', error)
+      showToast('노트가 삭제되었습니다.', 'success')
+    } catch {
+      showToast('노트 삭제에 실패했습니다.', 'error')
     }
   }
 
@@ -727,8 +753,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         noteIdMapRef.current[localId] = serverId
         isHydratingNotesRef.current = true
         viewerRef.current?.replaceNoteId?.(localId, serverId)
-      } catch (error) {
-        console.error('노트 생성 실패', error)
+        showToast('노트가 저장되었습니다.', 'success')
+      } catch {
+        showToast('노트 저장에 실패했습니다.', 'error')
       } finally {
         isHydratingNotesRef.current = false
       }
@@ -736,8 +763,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     }
     try {
       await updateStudyNote(studySessionId, mappedId, noteEditor.text)
-    } catch (error) {
-      console.error('노트 수정 실패', error)
+      showToast('노트가 수정되었습니다.', 'success')
+    } catch {
+      showToast('노트 수정에 실패했습니다.', 'error')
     }
   }
 
@@ -772,8 +800,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         isFavorite: false,
       })
       setQuizAddedIds((prev) => new Set(prev).add(message.id))
-    } catch (error) {
-      console.error('퀴즈 등록 실패', error)
+      showToast('퀴즈가 등록되었습니다.', 'success')
+    } catch {
+      showToast('퀴즈 등록에 실패했습니다.', 'error')
     } finally {
       setQuizSubmittingId(null)
     }
@@ -811,8 +840,9 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         if (noteEditor.id === note.id) {
           setNoteEditor((prev) => ({ ...prev, id: serverId }))
         }
-      } catch (error) {
-        console.error('노트 생성 실패', error)
+        showToast('노트가 저장되었습니다.', 'success')
+      } catch {
+        showToast('노트 저장에 실패했습니다.', 'error')
       } finally {
         isHydratingNotesRef.current = false
       }
@@ -869,8 +899,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         userQuestion: text,
       }
       setAiMessages((prev) => [...prev, assistantMessage])
-    } catch (error) {
-      console.error('AI 질문 실패', error)
+    } catch {
+      showToast('AI 답변을 가져오는데 실패했습니다. 잠시 후 다시 시도해 주세요.', 'error')
       const fallbackMessage: AiMessage = {
         id: `assistant-${Date.now() + 1}`,
         role: 'assistant',
@@ -965,10 +995,24 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     el.scrollTop = el.scrollHeight - el.clientHeight
   }, [aiMessages])
 
+  // 선택된 부품을 expense 토글로 페이지 이동 시에만 복원 (새로고침 시에는 복원하지 않음)
   useEffect(() => {
-    setViewMode('assembly')
-    setSelectedIndex(-1)
-  }, [])
+    if (parts.length === 0) return
+    try {
+      const justNavigated = sessionStorage.getItem('assembly-justNavigated')
+      if (justNavigated !== '1') return
+      sessionStorage.removeItem('assembly-justNavigated')
+      const stored = sessionStorage.getItem(`assembly-selectedPart-${safeProjectId}`)
+      if (stored) {
+        const idx = parts.indexOf(stored)
+        if (idx >= 0) {
+          setSelectedIndex(idx)
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [parts, safeProjectId])
 
   const prevViewModeRef = useRef<'single' | 'assembly'>('assembly')
   useEffect(() => {
@@ -992,7 +1036,6 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     const createSession = async () => {
       // Use the centralized currentMaterialId here
       if (!currentMaterialId) {
-        console.warn('materialId가 없어 학습 세션을 생성하지 않습니다.')
         setStudySession(null)
         setStudySessionId(null)
         return
@@ -1025,7 +1068,6 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
               if (match) {
                 setStudySessionId(match.sessionId)
                 try {
-                  console.log('[세션 조회] sessionId로 GET 요청:', match.sessionId)
                   const sessionRes = await getStudySession(match.sessionId)
                   
                   const session = (sessionRes && typeof sessionRes === 'object' && 'data' in sessionRes)
@@ -1057,25 +1099,22 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                         viewerRef.current.setTarget?.(1)
                       }
                     }
-                    console.log('[세션 조회] 분해 수치 복원 완료:', savedPercent)
                     // --- [수치 복구 코드 끝] ---
           
-                  } else {
-                    console.warn('[세션 조회] session이 없거나 sessionId 없음')
                   }
-                } catch (err) {
-                  console.warn('GET /api/study/session/{id} 조회 실패:', err)
+                } catch {
+                  showToast('세션 정보를 불러오는데 실패했습니다.', 'error')
                 }
               } else {
-                console.warn('세션이 이미 존재하지만 sessionId를 찾지 못했습니다.')
+                showToast('세션 정보를 불러오는데 실패했습니다.', 'error')
               }
-            } catch (homeError) {
-              console.warn('세션이 이미 존재하지만 sessionId를 조회하지 못했습니다.', homeError)
+            } catch {
+              showToast('세션 정보를 불러오는데 실패했습니다.', 'error')
             }
             return
           }
         }
-        console.error('학습 세션 생성 실패', error)
+        showToast('학습 세션 생성에 실패했습니다.', 'error')
       } finally {
         // no-op
       }
@@ -1147,18 +1186,15 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           next[part.name.replace(/\s+/g, '')] = part
           next[part.name.replace(/\s+/g, '').toLowerCase()] = part
         })
-        if (import.meta.env.DEV && list.length > 0) {
-          console.log('[부품 API 응답 샘플] 첫 번째 부품 구조:', list[0])
-        }
         setMaterialPartsByBase(next)
       } catch (error) {
-        console.error('부품 목록 조회 실패', error)
         if (!cancelled) {
           const message =
             axios.isAxiosError(error) && error.response?.status === 401
               ? '로그인이 필요합니다. 로그인 후 다시 시도해 주세요.'
-              : '서버에 연결되지 않아 부품 설명을 불러올 수 없습니다. .env의 VITE_API_URL과 서버 상태를 확인해 주세요.'
+              : '서버에 연결되지 않아 부품 설명을 불러올 수 없습니다.'
           setPartsFetchError(message)
+          showToast(message, 'error')
         }
       }
     }
@@ -1199,8 +1235,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           }))
           setAiMessages(nextMessages)
         }
-      } catch (error) {
-        console.error('세션 데이터 조회 실패', error)
+      } catch {
+        showToast('세션 데이터를 불러오는데 실패했습니다.', 'error')
       }
     }
     fetchSessionData()
@@ -1228,8 +1264,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           acc[note.noteId] = note.noteId
           return acc
         }, {})
-      } catch (error) {
-        console.error('노트 목록 조회 실패', error)
+      } catch {
+        showToast('노트 목록을 불러오는데 실패했습니다.', 'error')
       } finally {
         isHydratingNotesRef.current = false
       }
@@ -1260,7 +1296,6 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     const tgt = s.target ?? (typeof s.target_x === 'number' ? [s.target_x, s.target_y, s.target_z] : null)
     const zm = s.zoom ?? s.zoom_value
     if (!Array.isArray(pos) || pos.length !== 3 || !Array.isArray(tgt) || tgt.length !== 3 || !Number.isFinite(Number(zm))) {
-      console.warn('[세션 조회] 카메라 복원 스킵 (필수 필드 부족):', { pos: !!pos, posLen: Array.isArray(pos) ? pos.length : 0, tgt: !!tgt, tgtLen: Array.isArray(tgt) ? tgt.length : 0, zoom: zm })
       pendingCameraRef.current = null
       return
     }
@@ -1280,7 +1315,6 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
   const applyPendingCamera = () => {
     const pending = pendingCameraRef.current
     if (!pending || !viewerRef.current?.setCameraState || appliedCameraSessionIdRef.current === pending.sessionId) return
-    console.log('[세션 조회] 저장된 카메라 적용:', { position: pending.position, target: pending.target, zoom: pending.zoom })
     viewerRef.current.setCameraState({
       position: pending.position,
       quaternion: pending.quaternion,
@@ -1804,8 +1838,8 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                     viewerRef.current?.applyTransformsByName?.(transforms)
                   }
                   setStatus('로컬 저장값 적용')
-                } catch (error) {
-                  console.error('레이아웃 자동 불러오기 실패', error)
+                } catch {
+                  showToast('레이아웃 불러오기에 실패했습니다.', 'error')
                 }
               }
             }
@@ -1874,26 +1908,24 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
         )}
 
         <S.ViewerFooter $expanded={expenseToggleOn}>
-          {viewMode === 'assembly' && (
-            <S.ProgressRow $expanded={expenseToggleOn}>
-              <S.ProgressWrap>
-                <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
-                  {Math.round(explodePercent)}%
-                </S.ProgressLabel>
-                <S.ProgressBar
-                  ref={progressRef}
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={explodePercent}
-                  onChange={(event) =>
-                    handleExplodeScale(Number(event.target.value))
-                  }
-                />
-              </S.ProgressWrap>
-            </S.ProgressRow>
-          )}
+          <S.ProgressRow $expanded={expenseToggleOn} $hidden={viewMode === 'single'}>
+            <S.ProgressWrap>
+              <S.ProgressLabel style={{ left: `${progressLeft}px` }}>
+                {Math.round(explodePercent)}%
+              </S.ProgressLabel>
+              <S.ProgressBar
+                ref={progressRef}
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={explodePercent}
+                onChange={(event) =>
+                  handleExplodeScale(Number(event.target.value))
+                }
+              />
+            </S.ProgressWrap>
+          </S.ProgressRow>
 
           {expenseToggleOn && (
             <S.ExpenseToggleOutside
