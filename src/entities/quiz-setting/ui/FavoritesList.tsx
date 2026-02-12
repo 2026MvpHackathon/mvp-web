@@ -25,12 +25,10 @@ const FavoritesList = ({ items = [] }: FavoritesListProps) => {
               <S.CategoryIcon>
                 {item.category === "db" ? <QuizDB color={colors.main.normal}/>:<QuizAI color={colors.text.strong}/>}
               </S.CategoryIcon>
-              {item.category === "db" ?
-                <S.Label $db={true}>{item.label}</S.Label>
-              :
-                <S.Label $db={false}>{item.label}</S.Label>
-              }
-            </S.ItemLeft>
+              <S.Label $db={item.category === "db"}>
+                {item.label.length > 8 ? `${item.label.slice(0, 8)}...` : item.label}
+              </S.Label>            
+              </S.ItemLeft>
             <S.ListIcon src={bookmarkIcon} alt="즐겨찾기" />
           </S.Item>
         ))}
