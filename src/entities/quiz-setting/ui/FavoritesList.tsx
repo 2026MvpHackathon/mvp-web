@@ -1,9 +1,9 @@
 import * as S from "./FavoritesList.style";
-import bookmarkIcon from "@/assets/bookmark.png";
 import type { QuizListItem } from "../types";
 import QuizAI from "@/assets/icons/Quiz/QuizAI";
 import QuizDB from "@/assets/icons/Quiz/QuizDB";
 import { colors } from "@/shared/values/token";
+import VisibilityOn from "@/assets/icons/VisibilityOn";
 
 
 interface FavoritesListProps {
@@ -29,7 +29,7 @@ const FavoritesList = ({ items = [] }: FavoritesListProps) => {
                 {item.label.length > 8 ? `${item.label.slice(0, 8)}...` : item.label}
               </S.Label>            
               </S.ItemLeft>
-            <S.ListIcon src={bookmarkIcon} alt="즐겨찾기" />
+            <VisibilityOn size={"17px"} />
           </S.Item>
         ))}
       </S.List>
