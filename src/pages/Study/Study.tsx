@@ -142,8 +142,15 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     rotation: [number, number, number]
     scale: number
   } | null>(null)
-  const [viewMode, setViewMode] = useState<'single' | 'assembly'>('assembly')
-  const [aiPanelOpen, setAiPanelOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'single' | 'assembly'>(() => {
+    const storedViewMode = localStorage.getItem('study-view-mode');
+    return (storedViewMode === 'single' || storedViewMode === 'assembly') ? storedViewMode : 'assembly';
+  });
+  useEffect(() => {
+    localStorage.setItem('study-view-mode', viewMode);
+  }, [viewMode]);
+
+  const [aiPanelOpen, setAiPanelOpen] = useState(true)
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([
     {
       id: 'ai-1',
@@ -453,6 +460,60 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     setPartSpecificDescriptions(newDescriptions);
   }, [uniqueParts, materialPartsByBase]);
 
+  // Centralized effect to manage AssemblyViewer's view and selection based on persisted state
+  useEffect(() => {
+    if (!viewerRef.current || parts.length === 0 || !safeProjectId) return;
+
+    // Check localStorage for desired view mode and selected part
+    const storedViewMode = localStorage.getItem('study-view-mode');
+    const storedPartName = localStorage.getItem('study-selected-part-name');
+    const storedPartProject = localStorage.getItem('study-selected-part-project');
+
+    // Apply view mode to viewer
+    viewerRef.current.setViewMode?.(viewMode);
+
+    if (viewMode === 'single') {
+        // If current viewMode is single, try to restore specific part
+        if (storedViewMode === 'single' && storedPartName && storedPartProject === safeProjectId) {
+            const index = parts.indexOf(storedPartName);
+            if (index !== -1 && selectedIndex !== index) {
+                setSelectedIndex(index);
+                viewerRef.current.setSelectedIndex?.(index);
+                viewerRef.current.setHiddenParts?.(parts.filter((_, idx) => idx !== index));
+                viewerRef.current.focusOnPart?.(storedPartName);
+            } else if (index === -1 && storedPartName) {
+                // Stored part name exists but is not in current parts list (e.g., project changed, part removed)
+                // Fallback to first part in single view if no valid stored part, or assembly view
+                localStorage.removeItem('study-selected-part-name');
+                localStorage.removeItem('study-selected-part-project');
+                setSelectedIndex(0); // Select first part by default for single view
+                viewerRef.current.setSelectedIndex?.(0);
+                viewerRef.current.setHiddenParts?.(parts.filter((_, idx) => idx !== 0));
+                viewerRef.current.focusOnPart?.(parts[0]);
+                setViewMode('single'); // Explicitly keep single view if intended
+            }
+        } else {
+            // No stored single part info for this project, or stored view mode was assembly
+            // If already in single view, default to first part
+            if (viewMode === 'single' && parts.length > 0 && selectedIndex !== 0) {
+                 setSelectedIndex(0);
+                 viewerRef.current.setSelectedIndex?.(0);
+                 viewerRef.current.setHiddenParts?.(parts.filter((_, idx) => idx !== 0));
+                 viewerRef.current.focusOnPart?.(parts[0]);
+            }
+        }
+    } else { // viewMode === 'assembly'
+        viewerRef.current.setViewMode?.('assembly');
+        viewerRef.current.setHiddenParts?.([]); // Show all parts in assembly view
+        setSelectedIndex(-1); // No part specifically selected in assembly view
+        viewerRef.current.setSelectedIndex?.(-1);
+        // Clear stored single part selection if in assembly mode
+        localStorage.removeItem('study-selected-part-name');
+        localStorage.removeItem('study-selected-part-project');
+    }
+  }, [viewMode, parts, safeProjectId, selectedIndex, viewerRef.current]);
+
+
 
   const displaySelectedIndex =
     viewMode === 'single'
@@ -612,7 +673,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
       if (name) {
         viewerRef.current?.setHiddenParts?.(parts.filter((_, idx) => idx !== index))
         viewerRef.current?.focusOnPart?.(name)
+        localStorage.setItem('study-selected-part-name', name);
+        localStorage.setItem('study-selected-part-project', safeProjectId);
       }
+    } else {
+        localStorage.removeItem('study-selected-part-name');
+        localStorage.removeItem('study-selected-part-project');
     }
   }
 
@@ -965,10 +1031,7 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
     el.scrollTop = el.scrollHeight - el.clientHeight
   }, [aiMessages])
 
-  useEffect(() => {
-    setViewMode('assembly')
-    setSelectedIndex(-1)
-  }, [])
+
 
   const prevViewModeRef = useRef<'single' | 'assembly'>('assembly')
   useEffect(() => {
@@ -1405,6 +1468,12 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
 
   const activeMaterialId = studySession?.materialId ?? currentMaterialId;
 
+  const cursorStyle = useMemo(() => {
+    if (noteMode) return 'crosshair';
+    if (!editMode) return 'move'; // Swipe mode
+    return 'default'; // Select mode
+  }, [noteMode, editMode]);
+
   const renderPartsCard = (expanded: boolean) => (
     <S.PartsCard $expanded={expanded}>
       {expanded ? (
@@ -1571,159 +1640,53 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
           </S.LeftColumn>
         )}
 
-    <S.CenterColumn>
-    <S.ViewerCard $expanded={expenseToggleOn}>
-      <S.ViewerHeader>
-        <span>{projectLabel}</span>
-        <S.ViewerDivider />
-        <S.ViewerDescription>{projectDescription}</S.ViewerDescription>
-
-        {expenseToggleOn && (
-          <S.ExpandedViewModeSlider>
-            <S.ViewModeSliderTrack $index={viewMode === 'single' ? 0 : 1} />
-
-            <S.ViewModeSliderOption
-              type="button"
-              $active={viewMode === 'single'}
-              onClick={() => setViewMode('single')}
-            >
-              단일 부품
-            </S.ViewModeSliderOption>
-
-            <S.ViewModeSliderOption
-              type="button"
-              $active={viewMode === 'assembly'}
-              onClick={() => setViewMode('assembly')}
-            >
-              조립도
-            </S.ViewModeSliderOption>
-          </S.ExpandedViewModeSlider>
-        )}
-      </S.ViewerHeader>
-
-      <S.ViewerBody>
-        <S.ViewerToolbar>
-          {expenseToggleOn ? (
-            <>
-              <S.ToolbarButton
-                $active={editMode}
-                onClick={handleSelectMode}
-                disabled={viewMode === 'single'}
-              >
-                <S.ToolbarIcon src={toolSelectIcon} alt="" />
-              </S.ToolbarButton>
-              <S.ToolbarButton
-                $active={!editMode}
-                onClick={handleSwipeMode}
-                disabled={viewMode === 'single'}
-              >
-                <S.ToolbarIcon src={toolHandIcon} alt="" />
-              </S.ToolbarButton>
-              <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
-                <S.ToolbarIcon src={toolChatIcon} alt="" />
-              </S.ToolbarButton>
-              <S.ToolbarDivider />
-              <S.ToolbarButton
-                type="button"
-                $active={aiPanelOpen}
-                onClick={() => setAiPanelOpen((prev) => !prev)}
-              >
-                <S.ToolbarIcon2 src={toolAiIcon} alt="" />
-              </S.ToolbarButton>
-            </>
-          ) : (
-            <>
-              <S.ToolbarButton
-                $active={editMode}
-                onClick={handleSelectMode}
-                disabled={viewMode === 'single'}
-              >
-                <S.ToolbarIcon src={toolSelectIcon} alt="" />
-              </S.ToolbarButton>
-              <S.ToolbarButton
-                $active={!editMode}
-                onClick={handleSwipeMode}
-                disabled={viewMode === 'single'}
-              >
-                <S.ToolbarIcon src={toolHandIcon} alt="" />
-              </S.ToolbarButton>
-              <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
-                <S.ToolbarIcon src={toolChatIcon} alt="" />
-              </S.ToolbarButton>
-            </>
-          )}
-        </S.ViewerToolbar>
-
-        {!expenseToggleOn && (
-          <S.ViewModeSlider>
-            <S.ViewModeSliderTrack $index={viewMode === 'single' ? 0 : 1} />
-
-            <S.ViewModeSliderOption
-              type="button"
-              $active={viewMode === 'single'}
-              onClick={() => setViewMode('single')}
-            >
-              단일 부품
-            </S.ViewModeSliderOption>
-
-            <S.ViewModeSliderOption
-              type="button"
-              $active={viewMode === 'assembly'}
-              onClick={() => setViewMode('assembly')}
-            >
-              조립도
-            </S.ViewModeSliderOption>
-          </S.ViewModeSlider>
-        )}
-
-        <S.NoteToggleOutside
-          type="button"
-          $shifted={expenseToggleOn}
-          onClick={() => setNotePanelOpen((prev) => !prev)}
-        >
-          <S.NoteToggleIcon src={notePanelOpen ? NoteClose : NoteOpen} alt="note toggle" />
-        </S.NoteToggleOutside>
-
-        {!expenseToggleOn && (
-          <S.ExpenseToggleOutside
-            type="button"
-            aria-label="expense toggle"
-            title="expense toggle"
-            data-active={expenseToggleOn}
-            $shifted={expenseToggleOn}
-            onClick={handleExpenseToggle}
-          />
-        )}
-
-        {notePanelOpen && (
-          <S.NotePanel $shifted={expenseToggleOn}>
-            <S.NoteHeader>
-              <span>note</span>
-              <S.NoteSearch placeholder="검색" />
-            </S.NoteHeader>
-
-            {noteEditor.visible && noteMode && (
-              <S.NoteEditorPanel>
-                <S.NoteEditorInput
-                  placeholder="메모 입력"
-                  value={noteEditor.text}
-                  onChange={(event) => handleNoteEditorChange(event.target.value)}
-                />
-                <S.NoteEditorActions>
-                  <S.NoteEditorButton type="button" onClick={handleNoteSubmit}>
-                    저장
-                  </S.NoteEditorButton>
-                </S.NoteEditorActions>
-              </S.NoteEditorPanel>
-            )}
-
-            <S.NoteList>
-              {notes.slice(0, 4).map((note) => (
-                <S.NoteItem key={note.id}>
-                  <S.NoteMeta>
-                    <span>{note.parentName || '알 수 없는 부품'}</span>
-                    <S.NoteActions>
-                      <S.NoteActionButton
+        <S.CenterColumn>
+          <S.ViewerCard $expanded={expenseToggleOn}>
+              <S.ViewerHeader>
+                <span>{projectLabel}</span>
+                <S.ViewerDivider />
+                <S.ViewerDescription>{projectDescription}</S.ViewerDescription>
+                {expenseToggleOn && (
+                  <S.ExpandedViewModeToggle>
+                    <S.ViewModeButton
+                      $active={viewMode === 'single'}
+                      onClick={() => setViewMode('single')}
+                    >
+                      단일 부품
+                    </S.ViewModeButton>
+                    <S.ViewModeButton
+                      $active={viewMode === 'assembly'}
+                      onClick={() => setViewMode('assembly')}
+                    >
+                      조립도
+                    </S.ViewModeButton>
+                  </S.ExpandedViewModeToggle>
+                )}
+              </S.ViewerHeader>
+              <S.ViewerBody $cursor={cursorStyle}>
+                <S.ViewerToolbar>
+                  {expenseToggleOn ? (
+                    <>
+                      <S.ToolbarButton
+                        $active={editMode}
+                        onClick={handleSelectMode}
+                        disabled={viewMode === 'single'}
+                      >
+                        <S.ToolbarIcon src={toolSelectIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton
+                        $active={!editMode}
+                        onClick={handleSwipeMode}
+                        // Always allow swipe in single view
+                        disabled={false}
+                      >
+                        <S.ToolbarIcon src={toolHandIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarButton $active={noteMode} onClick={handleToggleNote}>
+                        <S.ToolbarIcon src={toolChatIcon} alt="" />
+                      </S.ToolbarButton>
+                      <S.ToolbarDivider />
+                      <S.ToolbarButton
                         type="button"
                         aria-label="note edit"
                         $icon={noteEditIcon}
@@ -1822,27 +1785,45 @@ const StudyLayout = ({ expanded }: { expanded: boolean }) => {
                       scaleY?: number
                       scaleZ?: number
                     }
-                  >
-                | undefined
+                    if (nextParts.length) {
+                      setTimeout(applyPendingCamera, 100)
+                      setTimeout(applyPendingCamera, 450)
+                    }
 
-              if (manualDefaults) {
-                const hardwareOverrides: ViewerTransforms = {}
-                Object.entries(manualDefaults).forEach(([name, values]) => {
-                  if (!name.startsWith('Nut ') && !name.startsWith('Screw ')) return
-                  hardwareOverrides[name] = {
-                    pos: values.pos as [number, number, number] | undefined,
-                    rot: values.rot as [number, number, number] | undefined,
-                    scale: values.scale,
-                    scaleX: values.scaleX,
-                    scaleY: values.scaleY,
-                    scaleZ: values.scaleZ,
-                  }
-                })
-                if (Object.keys(hardwareOverrides).length > 0) {
-                  viewerRef.current?.applyTransformsByName?.(hardwareOverrides)
-                }
-              }
-            }
+                    // --- New logic for restoring selected single part ---
+                    const storedViewMode = localStorage.getItem('study-view-mode');
+                    const storedPartName = localStorage.getItem('study-selected-part-name');
+                    const storedPartProject = localStorage.getItem('study-selected-part-project');
+
+                    if (storedViewMode === 'single' && storedPartName && storedPartProject === safeProjectId) {
+                        const index = nextParts.indexOf(storedPartName);
+                        if (index !== -1) {
+                            setSelectedIndex(index);
+                            viewerRef.current?.setSelectedIndex?.(index);
+                            viewerRef.current?.setHiddenParts?.(nextParts.filter((_, idx) => idx !== index));
+                            viewerRef.current?.focusOnPart?.(storedPartName);
+                            // Do NOT call setViewMode here. Let the viewMode state handle it.
+                        } else {
+                            // If stored part not found, clear storage and revert to assembly
+                            localStorage.removeItem('study-selected-part-name');
+                            localStorage.removeItem('study-selected-part-project');
+                            // Do NOT call setViewMode here.
+                        }
+                    } else if (storedViewMode === 'assembly') {
+                        // If stored view mode is assembly, ensure no single part is selected
+                        setSelectedIndex(-1);
+                        viewerRef.current?.setSelectedIndex?.(-1);
+                        viewerRef.current?.setHiddenParts?.([]);
+                        // Do NOT call setViewMode here.
+                    }
+                    // --- End new logic ---
+                  }}
+                  onSelectedChange={(index: number) => {
+                    setSelectedIndex(index)
+                  }}
+                  onNotesChange={(nextNotes: unknown[]) => handleNotesChange(nextNotes as Note[])}
+                  onActiveNoteChange={handleActiveNote}
+                />
 
             if (nextParts.length) {
               setTimeout(applyPendingCamera, 100)

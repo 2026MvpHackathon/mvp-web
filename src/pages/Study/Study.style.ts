@@ -398,11 +398,11 @@ export const ViewerDescription = styled.div`
   word-break: keep-all;
 `
 
-
-export const ViewerBody = styled.div`
+export const ViewerBody = styled.div<{ $cursor?: string }>`
   position: relative;
   height: 100%;
   min-height: 0;
+  cursor: ${({ $cursor }) => $cursor || 'default'};
 `
 
 export const ExpandedPanels = styled.div`
