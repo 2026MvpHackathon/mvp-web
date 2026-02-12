@@ -65,7 +65,7 @@ const QuizPage = () => {
 
   const [isFavoriteIncluded, setIsFavoriteIncluded] = useState(false);
   const [isWrongAnswerIncluded, setIsWrongAnswerIncluded] = useState(false);
-  const [numberOfProblems, setNumberOfProblems] = useState(10);
+  const [numberOfProblems, setNumberOfProblems] = useState(8);
 
   /** 초기 데이터 */
   useEffect(() => {

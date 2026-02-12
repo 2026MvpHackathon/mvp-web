@@ -104,7 +104,7 @@ const EXPENSE_BG = colors.background.Dark;
 
             {isBlur && (
             <S.top_ui>
-                <S.accuracy_rate>{text}</S.accuracy_rate>
+                <S.accuracy_rate>{text === "퀴즈를 생성 중..."? text:`${text} %`}</S.accuracy_rate>
                 <S.evaluation>{evaluation}</S.evaluation>
                 <S.LoadingBarWrapper>
                 {loadingAnimationType !== 'none' && (

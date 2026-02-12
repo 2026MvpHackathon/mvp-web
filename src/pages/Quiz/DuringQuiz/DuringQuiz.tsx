@@ -102,11 +102,11 @@ const DuringQuizPage = () => {
     
       // 범위 설정
       if (metadata) {
-        const metadataString = `${metadata.materialName} / ${
-            metadata.isFavorite ? "즐겨찾기 포함" : "즐겨찾기 미포함"
-          } / ${
-            metadata.isIncorrect ? "오답 포함" : "오답 미포함"
-          } / ${metadata.totalQuestions} 문제`;
+        const metadataString = `${metadata.materialName} /${
+            metadata.isFavorite ?"" : " 즐겨찾기 /"
+          } ${
+            metadata.isIncorrect ? "" : " 오답 /"
+          } ${metadata.totalQuestions} 문제`;
           
           setQuizMetadataText(metadataString);
         }
